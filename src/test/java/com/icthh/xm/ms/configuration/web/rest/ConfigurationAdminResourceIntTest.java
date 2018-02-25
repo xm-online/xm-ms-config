@@ -6,11 +6,10 @@ import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.icthh.xm.commons.errors.ExceptionTranslator;
+import com.icthh.xm.commons.exceptions.spring.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.ConfigurationApp;
-import com.icthh.xm.ms.configuration.config.LocalJGitRespotioryConfiguration;
+import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
-import com.icthh.xm.ms.configuration.config.tenant.TenantContext;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,12 +17,14 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRespotioryConfiguration.class})
+@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRepositoryConfiguration.class})
+@WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationAdminResourceIntTest {
 
     @Autowired
@@ -39,7 +40,6 @@ public class ConfigurationAdminResourceIntTest {
         mockMvc = MockMvcBuilders.standaloneSetup(configurationAdminResource)
                 .setControllerAdvice(exceptionTranslator)
                 .build();
-        TenantContext.setCurrent("test");
     }
 
     @Test

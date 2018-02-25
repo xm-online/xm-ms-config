@@ -63,7 +63,7 @@ jhipster:
     security:
         authentication:
             jwt:
-                secret: 
+                secret:
                 # Token is valid 24 hours
                 token-validity-in-seconds: 86400
         client-authorization:
@@ -86,6 +86,9 @@ jhipster:
 # https://jhipster.github.io/common-application-properties/
 # ===================================================================
 
+xm-config:
+    enabled: false
+
 application:
     git:
         uri: null
@@ -97,9 +100,11 @@ application:
         interfaces: 127.0.0.1
         consul-host: ${spring.cloud.consul.host}
         consul-port: ${spring.cloud.consul.port}
-        consul-service-name: 
+        consul-service-name: test-xm-tenant-config-hazelcast-cluster
         consul-healthy-only: true
         consul-service-tags: 'hazelcast'
         consul-discovery-delay-ms: 10000
-        group-name: 
-        group-pass: 
+        group-name: test-xm-tenant-config-hazelcast-cluster
+        group-pass: test
+    kafka-system-queue: system_queue
+

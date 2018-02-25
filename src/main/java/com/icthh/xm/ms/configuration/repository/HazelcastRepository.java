@@ -10,13 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-public class HazelcastRepository {
+public class HazelcastRepository implements DistributedConfigRepository {
 
     private final HazelcastInstance hazelcast;
 
@@ -24,6 +23,7 @@ public class HazelcastRepository {
         this.hazelcast = hazelcast;
     }
 
+    @Override
     public Configuration find(String path) {
         log.debug("Get configuration from hazelcast by path {}", path);
         if (getMap().containsKey(path)) {
@@ -37,21 +37,30 @@ public class HazelcastRepository {
         return hazelcast.getMap(TENANT_CONFIGURATION_MAP);
     }
 
+    @Override
     public void save(Configuration configuration) {
         log.info("Save configuration to hazelcast with path {}", configuration.getPath());
         getMap().put(configuration.getPath(), configuration.getContent());
     }
 
+    @Override
     public void saveAll(List<Configuration> configurations) {
-        log.info("Save configuration to hazelcast with path {}", configurations);
+        log.info("Save all configuration to hazelcast with path {}", configurations.stream().map
+            (Configuration::getPath).collect(Collectors.toList()));
         Map<String, String> map = new HashMap<>();
         configurations.forEach(c -> map.put(c.getPath(), c.getContent()));
         getMap().putAll(map);
     }
 
+    @Override
     public void delete(String path) {
         log.info("Delete configuration from hazelcast by path {}", path);
         getMap().remove(path);
+    }
+
+    @Override
+    public List<String> getKeysList() {
+        return new ArrayList<>(getMap().keySet());
     }
 
 }

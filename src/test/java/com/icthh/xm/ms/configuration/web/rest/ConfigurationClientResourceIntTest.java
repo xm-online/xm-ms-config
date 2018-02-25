@@ -1,14 +1,17 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.icthh.xm.ms.configuration.config.Constants.*;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
+import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.icthh.xm.commons.errors.ExceptionTranslator;
+import com.icthh.xm.commons.exceptions.spring.web.ExceptionTranslator;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.ConfigurationApp;
-import com.icthh.xm.ms.configuration.config.LocalJGitRespotioryConfiguration;
+import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
-import com.icthh.xm.ms.configuration.config.tenant.TenantContext;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,12 +19,14 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRespotioryConfiguration.class})
+@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRepositoryConfiguration.class})
+@WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationClientResourceIntTest {
 
     public static final String TENANT_NAME = "test75";
@@ -35,6 +40,9 @@ public class ConfigurationClientResourceIntTest {
     @Autowired
     private ExceptionTranslator exceptionTranslator;
 
+    @Autowired
+    private TenantContextHolder tenantContextHolder;
+
     private MockMvc mockMvc;
 
     @Before
@@ -42,7 +50,7 @@ public class ConfigurationClientResourceIntTest {
         mockMvc = MockMvcBuilders.standaloneSetup(configurationClientResource, configurationAdminResource)
                 .setControllerAdvice(exceptionTranslator)
                 .build();
-        TenantContext.setCurrent(TENANT_NAME);
+        TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
     }
 
     @Test
@@ -86,6 +94,38 @@ public class ConfigurationClientResourceIntTest {
                 .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(content().string("some content 2"))
                 .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateDocumentWithHash() {
+        String content = "some content";
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
+                .content(content)
+                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(put(API_PREFIX + PROFILE + "/folder/subfolder/documentname2?" + OLD_CONFIG_HASH + "=" + sha1Hex(content))
+                .content("some content 2")
+                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
+                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("some content 2"))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateDocumentWithUncorrectHash() {
+        String content = "some content";
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
+                .content(content)
+                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(put(API_PREFIX + PROFILE + "/folder/subfolder/documentname2?" + OLD_CONFIG_HASH + "=uncorrectHash")
+                .content("some content 2")
+                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().isConflict());
     }
 
     @Test

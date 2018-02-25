@@ -47,6 +47,16 @@ spring:
             enabled: false
     thymeleaf:
         mode: XHTML
+    kafka:
+        consumer:
+            group-id: config
+            key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+            value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        listener:
+            concurrency: 16
+        producer:
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 security:
     basic:
@@ -104,6 +114,29 @@ jhipster:
 # More documentation is available at:
 # https://jhipster.github.io/common-application-properties/
 # ===================================================================
+xm-config:
+    enabled: true
+    hazelcast:
+        hazelcast-config-url: classpath:./config/hazelcast-consul.xml
+        # interfaces:
+        consul-host: ${spring.cloud.consul.host}
+        consul-port: ${spring.cloud.consul.port}
+        consul-service-name: xm-tenant-config-hazelcast-cluster
+        consul-healthy-only: true
+        consul-service-tags: 'hazelcast'
+        consul-discovery-delay-ms: 10000
+        group-name: xm-tenant-config-hazelcast-cluster
+        group-pass:
+    xm-config-url: http://config
+
+tenant.reject-suspended: false
 
 application:
     tenant-ignored-path-list: /api/token_key
+    kafka-enabled: true
+    kafka-system-queue: system_queue
+    retry:
+        max-attempts: 3
+        delay: 10000 #in milliseconds
+        multiplier: 2
+

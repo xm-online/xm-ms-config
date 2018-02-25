@@ -1,10 +1,9 @@
 package com.icthh.xm.ms.configuration.config;
 
 import static com.icthh.xm.ms.configuration.config.Constants.CERTIFICATE;
-import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.PUBLIC_KEY;
 
-import com.icthh.xm.ms.configuration.security.AuthoritiesConstants;
+import com.icthh.xm.commons.permission.constants.RoleConstant;
 import com.icthh.xm.ms.configuration.security.DomainJwtAccessTokenConverter;
 import com.icthh.xm.ms.configuration.service.TokenKeyService;
 import io.github.jhipster.config.JHipsterProperties;
@@ -62,9 +61,8 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
             .authorizeRequests()
             .antMatchers("/api/profile-info").permitAll()
             .antMatchers("/api/config").authenticated()
-            .antMatchers("/api" + PROFILE + "/**").permitAll()
             .antMatchers("/management/health").permitAll()
-            .antMatchers("/management/**").hasAuthority(AuthoritiesConstants.ADMIN)
+            .antMatchers("/management/**").hasAuthority(RoleConstant.SUPER_ADMIN)
             .antMatchers("/swagger-resources/configuration/ui").permitAll();
     }
 

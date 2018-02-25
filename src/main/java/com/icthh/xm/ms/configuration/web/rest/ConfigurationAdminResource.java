@@ -2,20 +2,28 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
 import static com.icthh.xm.ms.configuration.config.Constants.*;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.MediaType.*;
 
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.icthh.xm.commons.errors.exception.EntityNotFoundException;
+import com.icthh.xm.commons.exceptions.EntityNotFoundException;
+import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UrlPathHelper;
@@ -42,6 +50,7 @@ public class ConfigurationAdminResource {
     @PostMapping(value =  CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed
     @SneakyThrows
+    @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
     public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files,
                                                      @PathVariable("tenant") String tenant) {
         configurationService.createConfigurations(files);
@@ -51,6 +60,7 @@ public class ConfigurationAdminResource {
     @PostMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @SneakyThrows
+    @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
         configurationService.createConfiguration(new Configuration(path, content));
@@ -59,13 +69,24 @@ public class ConfigurationAdminResource {
 
     @PutMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
-    public ResponseEntity<Void> updateConfiguration(@RequestBody String content, HttpServletRequest request) {
-        configurationService.updateConfiguration(new Configuration(extractPath(request), content));
+    @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE')")
+    public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
+                                                    HttpServletRequest request,
+                                                    @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
+        Configuration configuration = new Configuration(extractPath(request), content);
+        try {
+            configurationService.updateConfiguration(configuration, oldConfigHash);
+        } catch (ConcurrentConfigModificationException e) {
+            log.warn("Error update configuration", e);
+            return ResponseEntity.status(CONFLICT).build();
+        }
         return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = CONFIG + "/**")
     @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         return getConfiguration(request.getParameterMap().containsKey("toJson"), path);
@@ -96,15 +117,22 @@ public class ConfigurationAdminResource {
 
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}/**")
     @Timed
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.DELETE')")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
         configurationService.deleteConfiguration(extractPath(request));
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(CONFIG + "/refresh")
+    @PostMapping(value = CONFIG + "/refresh", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
-    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
-        configurationService.refreshConfigurations();
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")
+    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request,
+                                                     @RequestParam(name = "path", required = false) String path) {
+        if (isBlank(path)) {
+            configurationService.refreshConfigurations();
+        } else {
+            configurationService.refreshConfigurations(path);
+        }
         return ResponseEntity.ok().build();
     }
 

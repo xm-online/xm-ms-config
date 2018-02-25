@@ -3,7 +3,11 @@ package com.icthh.xm.ms.configuration.config;
 import static java.util.UUID.randomUUID;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.icthh.xm.commons.request.XmRequestContextHolder;
+import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.springframework.context.annotation.Bean;
@@ -15,12 +19,16 @@ import java.io.IOException;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Configuration
-public class LocalJGitRespotioryConfiguration {
+public class LocalJGitRepositoryConfiguration {
 
     @Bean
     @Primary
     @SneakyThrows
-    public JGitRepository jGitRepository(ApplicationProperties applicationProperties, HazelcastInstance hazelcastInstance) {
+    public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
+                                                      HazelcastInstance hazelcastInstance,
+                                                      TenantContextHolder tenantContextHolder,
+                                                      XmAuthenticationContextHolder authenticationContextHolder,
+                                                      XmRequestContextHolder requestContextHolder) {
         File tmpDir = createTmpDir("work");
         tmpDir.mkdirs();
 
@@ -29,13 +37,19 @@ public class LocalJGitRespotioryConfiguration {
 
         final Git git = Git.init().setBare(false).setDirectory(tmpDir).call();
 
-        return new JGitRepository(gitProps, new ReentrantLock()) {
+        return new JGitRepository(gitProps,
+                                  new ReentrantLock(),
+                                  tenantContextHolder,
+                                  authenticationContextHolder,
+                                  requestContextHolder) {
             @Override
-            protected void initRepository(){};
+            protected void initRepository(){}
+
             @Override
-            protected void pull(){};
+            protected void pull(){}
+
             @Override
-            protected void commitAndPush(String commitMsg){};
+            protected void commitAndPush(String commitMsg){}
         };
     }
 
