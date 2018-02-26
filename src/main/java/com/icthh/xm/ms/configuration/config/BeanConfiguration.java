@@ -1,22 +1,33 @@
 package com.icthh.xm.ms.configuration.config;
 
 import com.hazelcast.core.HazelcastInstance;
+import com.icthh.xm.commons.request.XmRequestContextHolder;
+import com.icthh.xm.commons.request.spring.config.XmRequestContextConfiguration;
+import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import java.util.concurrent.locks.Lock;
 
 @Configuration
+@Import(XmRequestContextConfiguration.class)
 public class BeanConfiguration {
 
     public static final String TENANT_CONFIGURATION_LOCK = "tenant-configuration-lock";
 
     @Bean(destroyMethod = "destroy")
-    public JGitRepository jGitRepository(ApplicationProperties applicationProperties,
-                                         @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock) {
-        return new JGitRepository(applicationProperties.getGit(), lock);
+    public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
+                                                      @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
+                                                      TenantContextHolder tenantContextHolder,
+                                                      XmAuthenticationContextHolder authenticationContextHolder,
+                                                      XmRequestContextHolder requestContextHolder) {
+        return new JGitRepository(applicationProperties.getGit(), lock,
+                                  tenantContextHolder, authenticationContextHolder, requestContextHolder);
     }
 
     @Bean

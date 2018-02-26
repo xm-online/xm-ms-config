@@ -1,11 +1,14 @@
 package com.icthh.xm.ms.configuration.service;
 
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 
+import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.Configuration;
-import com.icthh.xm.ms.configuration.repository.HazelcastRepository;
-import com.icthh.xm.ms.configuration.repository.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -19,44 +22,57 @@ import java.util.Optional;
 @Service
 public class ConfigurationService {
 
-    private final HazelcastRepository hazelcastRepository;
+    private final DistributedConfigRepository distributedConfigRepository;
 
-    private final JGitRepository jGitRepository;
+    private final PersistenceConfigRepository persistenceConfigRepository;
 
-    public ConfigurationService(HazelcastRepository hazelcastRepository, JGitRepository jGitRepository) {
-        this.hazelcastRepository = hazelcastRepository;
-        this.jGitRepository = jGitRepository;
+    private final TenantContextHolder tenantContextHolder;
 
-        hazelcastRepository.saveAll(jGitRepository.findAll());
+    public ConfigurationService(DistributedConfigRepository distributedConfigRepository,
+                                PersistenceConfigRepository persistenceConfigRepository,
+                                TenantContextHolder tenantContextHolder) {
+        this.distributedConfigRepository = distributedConfigRepository;
+        this.persistenceConfigRepository = persistenceConfigRepository;
+        this.tenantContextHolder = tenantContextHolder;
+
+        refreshConfigurations();
     }
 
     public void createConfiguration(Configuration configuration) {
-        jGitRepository.save(configuration);
-        hazelcastRepository.save(configuration);
+        persistenceConfigRepository.save(configuration);
+        distributedConfigRepository.save(configuration);
     }
 
     public void updateConfiguration(Configuration configuration) {
-        jGitRepository.save(configuration);
-        hazelcastRepository.save(configuration);
+        updateConfiguration(configuration, null);
+    }
+
+    public void updateConfiguration(Configuration configuration, String oldConfigHash) {
+        persistenceConfigRepository.save(configuration, oldConfigHash);
+        distributedConfigRepository.save(configuration);
     }
 
     public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(hazelcastRepository.find(path));
+        return Optional.ofNullable(distributedConfigRepository.find(path));
     }
 
     public void deleteConfiguration(String path) {
-        jGitRepository.delete(path);
-        hazelcastRepository.delete(path);
+        persistenceConfigRepository.delete(path);
+        distributedConfigRepository.delete(path);
     }
 
     public void refreshConfigurations() {
-        hazelcastRepository.saveAll(jGitRepository.findAll());
+        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
+        List<String> oldKeys = distributedConfigRepository.getKeysList();
+        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+        oldKeys.forEach(distributedConfigRepository::delete);
+        distributedConfigRepository.saveAll(actualConfigs);
     }
 
     public void createConfigurations(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        jGitRepository.saveAll(configurations);
-        hazelcastRepository.saveAll(configurations);
+        persistenceConfigRepository.saveAll(configurations);
+        distributedConfigRepository.saveAll(configurations);
     }
 
     @SneakyThrows
@@ -64,4 +80,24 @@ public class ConfigurationService {
         return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8));
     }
 
+    public void refreshConfigurations(String path) {
+        Configuration configuration = persistenceConfigRepository.find(path);
+        distributedConfigRepository.save(configuration);
+    }
+
+    public void refreshTenantConfigurations() {
+        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
+        actualConfigs = actualConfigs.stream()
+                .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenantContextHolder)))
+                .collect(toList());
+
+        List<String> allOldKeys = distributedConfigRepository.getKeysList();
+        List<String> oldKeys = allOldKeys.stream()
+                .filter(path -> path.startsWith(getTenantPathPrefix(tenantContextHolder)))
+                .collect(toList());
+
+        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+        oldKeys.forEach(distributedConfigRepository::delete);
+        distributedConfigRepository.saveAll(actualConfigs);
+    }
 }

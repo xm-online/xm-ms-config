@@ -1,25 +1,45 @@
 package com.icthh.xm.ms.configuration.config;
 
-import com.icthh.xm.ms.configuration.config.tenant.TenantInterceptor;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.icthh.xm.commons.request.spring.XmRequestContextInterceptor;
+import com.icthh.xm.commons.web.spring.TenantInterceptor;
+import com.icthh.xm.commons.web.spring.XmLoggingInterceptor;
+import com.icthh.xm.commons.web.spring.config.XmMsWebConfiguration;
+import com.icthh.xm.commons.web.spring.config.XmWebMvcConfigurerAdapter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+
+import java.util.List;
 
 @Configuration
-public class WebMvcConfig extends WebMvcConfigurerAdapter {
+@Import({XmMsWebConfiguration.class, MsCfgXmRequestContextConfiguration.class})
+public class WebMvcConfig extends XmWebMvcConfigurerAdapter {
 
-    @Autowired
-    private TenantInterceptor tenantInterceptor;
+    private final ApplicationProperties properties;
+    private final XmRequestContextInterceptor xmRequestContextInterceptor;
 
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(tenantInterceptor);
+    public WebMvcConfig(TenantInterceptor tenantInterceptor,
+                        XmLoggingInterceptor xmLoggingInterceptor,
+                        ApplicationProperties properties,
+                        XmRequestContextInterceptor xmRequestContextInterceptor) {
+        super(tenantInterceptor, xmLoggingInterceptor);
+        this.properties = properties;
+        this.xmRequestContextInterceptor = xmRequestContextInterceptor;
     }
 
     @Override
-    public void configurePathMatch(PathMatchConfigurer configurer) {
-        configurer.setUseSuffixPatternMatch(false);
+    protected void xmAddInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(xmRequestContextInterceptor).addPathPatterns("/**");;
+    }
+
+    @Override
+    protected void xmConfigurePathMatch(PathMatchConfigurer configurer) {
+        // no custom configuration
+    }
+
+    @Override
+    protected List<String> getTenantIgnorePathPatterns() {
+        return properties.getTenantIgnoredPathList();
     }
 }

@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 
 import com.codahale.metrics.annotation.Timed;
+import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.service.TokenKeyService;
 
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,8 @@ public class TokenResource {
 
     @GetMapping("/token_key")
     @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    //TODO maybe need to add security annotation
     public ResponseEntity<String> getTokenKey() {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(tokenKeyService.getKey());
     }

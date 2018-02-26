@@ -12,7 +12,6 @@
 # Full reference is available at:
 # http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
 # ===================================================================
-
 spring:
     profiles:
         active: dev
@@ -30,6 +29,8 @@ spring:
                prefer-ip-address: true
             host: localhost
             port: 8500
+    kafka:
+        bootstrap-servers: localhost:9093
     mail:
         host: localhost
         port: 25
@@ -126,19 +127,19 @@ jhipster:
 
 application:
     git:
-        uri: 
-        login: 
-        password: 
+        uri:
+        login:
+        password:
         branch-name: dev
         max-wait-time-second: 30
     hazelcast:
-        hazelcast-config-url: 
-        interfaces: 
+        hazelcast-config-url: classpath:./config/hazelcast-consul.xml
+        # interfaces:
         consul-host: ${spring.cloud.consul.host}
         consul-port: ${spring.cloud.consul.port}
-        consul-service-name: 
+        consul-service-name: xm-tenant-config-hazelcast-cluster
         consul-healthy-only: true
         consul-service-tags: 'hazelcast'
         consul-discovery-delay-ms: 10000
-        group-name: 
-        group-pass: 
+        group-name: xm-tenant-config-hazelcast-cluster
+        group-pass:

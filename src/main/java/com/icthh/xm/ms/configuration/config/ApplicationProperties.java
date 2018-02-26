@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,8 +20,11 @@ import java.util.Map;
 public class ApplicationProperties {
 
     private GitProperties git;
+    private final Retry retry = new Retry();
 
-    private List<String> tenantIgnoredPathList;
+    private List<String> tenantIgnoredPathList = Collections.emptyList();
+    private boolean kafkaEnabled;
+    private String kafkaSystemQueue;
 
     private Map<String, String> hazelcast = new HashMap<>();
 
@@ -35,4 +39,12 @@ public class ApplicationProperties {
         private Integer maxWaitTimeSecond;
     }
 
+    @Getter
+    @Setter
+    private static class Retry {
+
+        private int maxAttempts;
+        private long delay;
+        private int multiplier;
+    }
 }

@@ -117,19 +117,19 @@ jhipster:
 
 application:
     git:
-        uri: 
-        login: 
-        password: 
-        branch-name: prod
+        uri:
+        login:
+        password:
+        branch-name: dev
         max-wait-time-second: 30
     hazelcast:
-        hazelcast-config-url: 
-        interfaces: 10.*.*.*
+        hazelcast-config-url: classpath:./config/hazelcast-consul.xml
+        # interfaces:
         consul-host: ${spring.cloud.consul.host}
         consul-port: ${spring.cloud.consul.port}
-        consul-service-name: 
+        consul-service-name: xm-tenant-config-hazelcast-cluster
         consul-healthy-only: true
         consul-service-tags: 'hazelcast'
         consul-discovery-delay-ms: 10000
-        group-name: 
-        group-pass: 
+        group-name: xm-tenant-config-hazelcast-cluster
+        group-pass:

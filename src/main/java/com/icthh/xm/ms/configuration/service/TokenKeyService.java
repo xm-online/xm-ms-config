@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
+import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.config.Constants;
 import com.icthh.xm.ms.configuration.domain.Configuration;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ public class TokenKeyService {
         this.configurationService = configurationService;
     }
 
+    @LoggingAspectConfig(resultDetails = false)
     public String getKey() {
         Optional<Configuration> config = configurationService.findConfiguration(Constants.CONFIG + Constants.PUBLIC_KEY_FILE);
         if (!config.isPresent()) {
