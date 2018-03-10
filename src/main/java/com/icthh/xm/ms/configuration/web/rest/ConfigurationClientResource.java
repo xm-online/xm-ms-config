@@ -19,8 +19,7 @@ import org.springframework.web.util.UrlPathHelper;
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
 
-import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
-import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
+import static com.icthh.xm.ms.configuration.config.Constants.*;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -91,11 +90,11 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = PROFILE + "/refresh", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
-    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request,
-                                                     @RequestParam(name = "path", required = false) String path) {
+    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
+        String path = extractUrlPath(request).substring(REFRESH.length());
         if (isBlank(path)) {
             configurationService.refreshTenantConfigurations();
         } else {
@@ -105,9 +104,14 @@ public class ConfigurationClientResource {
     }
 
     private String extractPath(HttpServletRequest request) {
-        String relativePath = urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length() + PROFILE.length());
+        String relativePath = extractUrlPath(request);
         return getAbsolutePath(relativePath);
     }
+
+    private String extractUrlPath(HttpServletRequest request) {
+        return urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length() + PROFILE.length());
+    }
+
 
     private String getAbsolutePath(String relativePath) {
         return getTenantPathPrefix(tenantContextHolder) + relativePath;
