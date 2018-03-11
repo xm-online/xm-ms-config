@@ -123,11 +123,11 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = CONFIG + "/refresh", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = CONFIG + REFRESH + "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")
-    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request,
-                                                     @RequestParam(name = "path", required = false) String path) {
+    public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
+        String path = extractPath(request).substring(CONFIG.length() + REFRESH.length());
         if (isBlank(path)) {
             configurationService.refreshConfigurations();
         } else {
