@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/xm-online/xm-ms-config.svg?branch=master)](https://travis-ci.org/xm-online/xm-ms-config)
+
 # configuration
 This application was generated using JHipster 4.6.2, you can find documentation and help at [https://jhipster.github.io/documentation-archive/v4.6.2](https://jhipster.github.io/documentation-archive/v4.6.2).
 
