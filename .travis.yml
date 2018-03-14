@@ -17,7 +17,7 @@ script:
   - export DOCKER_REPO=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/^xm-online\//xmonline\//g'); 
   - docker build -t $DOCKER_REPO:$TRAVIS_BRANCH -t $DOCKER_REPO:$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER  
     --label commit_id="$TRAVIS_COMMIT" --label commit_message="$TRAVIS_COMMIT_MESSAGE"
-    -f src/main/docker/Dockerfile1 .
+    -f src/main/docker/Dockerfile .
   - docker push $DOCKER_REPO:$TRAVIS_BRANCH
   - docker push $DOCKER_REPO:$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
   - if [ "$TRAVIS_BRANCH" == "master" ]; then 
