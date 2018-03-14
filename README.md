@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/xm-online/xm-ms-config.svg?branch=master)](https://travis-ci.org/xm-online/xm-ms-config)
+[![Build Status](https://travis-ci.org/xm-online/xm-ms-config.svg?branch=master)](https://travis-ci.org/xm-online/xm-ms-config) [![Quality Gate](https://sonarcloud.io/api/badges/gate?key=xm-online:xm-ms-config)](https://sonarcloud.io/dashboard/index/xm-online:xm-ms-config) [![Quality Gate](https://sonarcloud.io/api/badges/measure?key=xm-online:xm-ms-config&metric=lines)](https://sonarcloud.io/dashboard/index/xm-online:xm-ms-config) [![Quality Gate](https://sonarcloud.io/api/badges/measure?key=xm-online:xm-ms-config&metric=coverage)](https://sonarcloud.io/dashboard/index/xm-online:xm-ms-config)
 
 # configuration
 This application was generated using JHipster 4.6.2, you can find documentation and help at [https://jhipster.github.io/documentation-archive/v4.6.2](https://jhipster.github.io/documentation-archive/v4.6.2).
