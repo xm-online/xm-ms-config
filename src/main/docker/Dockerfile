@@ -1,4 +1,4 @@
-FROM docker-hub.jbs.com.ua/jbs/oracle-jre:8.131
+FROM jbsukraine/oracle-jre:8
 
 ENV SPRING_OUTPUT_ANSI_ENABLED=ALWAYS \
     JHIPSTER_SLEEP=0 \
