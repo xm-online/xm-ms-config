@@ -14,17 +14,18 @@ script:
   - ./gradlew --no-daemon --refresh-dependencies clean check test
   - ./gradlew -x test -Pprod --no-daemon bootRepackage
   -  docker login -u $DOCKER_USER -p $DOCKER_PASS
-  - export DOCKER_REPO=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/^xm-online\//xmonline\//g'); 
-  - docker build -t $DOCKER_REPO:$TRAVIS_BRANCH -t $DOCKER_REPO:$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER  
+  - export DOCKER_REPO=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/^xm-online\//xmonline\//g')
+  - export IMAGE_BRANCH=$(echo -n $TRAVIS_BRANCH | sed -e 's/\//-/g')
+  - docker build -t $DOCKER_REPO:$IMAGE_BRANCH -t $DOCKER_REPO:$IMAGE_BRANCH-$TRAVIS_BUILD_NUMBER  
     --label commit_id="$TRAVIS_COMMIT" --label commit_message="$TRAVIS_COMMIT_MESSAGE"
     -f src/main/docker/Dockerfile .
-  - docker push $DOCKER_REPO:$TRAVIS_BRANCH
-  - docker push $DOCKER_REPO:$TRAVIS_BRANCH-$TRAVIS_BUILD_NUMBER
-  - if [ "$TRAVIS_BRANCH" == "master" ]; then 
-    docker tag $DOCKER_REPO:$TRAVIS_BRANCH $DOCKER_REPO:latest; 
+  - docker push $DOCKER_REPO:$IMAGE_BRANCH
+  - docker push $DOCKER_REPO:$IMAGE_BRANCH-$TRAVIS_BUILD_NUMBER
+  - if [ "$IMAGE_BRANCH" == "master" ]; then 
+    docker tag $DOCKER_REPO:$IMAGE_BRANCH $DOCKER_REPO:latest; 
     docker push $DOCKER_REPO:latest; 
-    export SONAR_PK=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/\//:/g'); 
-    ./gradlew -x test --no-daemon sonarqube -Dsonar.projectKey="$SONAR_PK" -Dsonar.projectName="$SONAR_PK" -Dsonar.java.binaries="." -Dsonar.projectVersion="$TRAVIS_BRANCH"; fi
+    export SONAR_PK=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/\//:/g');
+    ./gradlew -x test --no-daemon sonarqube -Dsonar.projectKey="$SONAR_PK" -Dsonar.projectName="$SONAR_PK" -Dsonar.java.binaries="." -Dsonar.projectVersion="$IMAGE_BRANCH"; fi
 cache:
   directories:
   - ~/.gradle
