@@ -8,6 +8,7 @@ import com.hazelcast.core.IMap;
 import com.icthh.xm.ms.configuration.domain.Configuration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@ConditionalOnProperty(value = "application.config-distribution-mode", havingValue = "hazelcast")
 public class HazelcastRepository implements DistributedConfigRepository {
 
     private final HazelcastInstance hazelcast;

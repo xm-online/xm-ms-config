@@ -135,6 +135,7 @@ application:
     tenant-ignored-path-list: /api/token_key
     kafka-enabled: true
     kafka-system-queue: system_queue
+    config-distribution-mode: hazelcast
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds

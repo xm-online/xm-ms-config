@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.commons.util.InetUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +25,7 @@ import java.util.Properties;
 @AutoConfigureAfter(value = { MetricsConfiguration.class })
 @AutoConfigureBefore(value = { WebConfigurer.class})
 @RequiredArgsConstructor
+@ConditionalOnProperty(value = "application.config-distribution-mode", havingValue = "hazelcast")
 public class HazelcastConfiguration {
 
     private static final String HAZELCAST_CONFIG_URL_PROPERTY = "hazelcast-config-url";
