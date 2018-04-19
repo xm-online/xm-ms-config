@@ -42,10 +42,10 @@ import java.util.Optional;
 public class ConfigurationAdminResource {
 
     private final UrlPathHelper urlHelper = new UrlPathHelper();
-
-    private final ConfigurationService configurationService;
     private final ObjectMapper jsonMapper = new ObjectMapper();
     private final ObjectMapper ymlmapper = new ObjectMapper(new YAMLFactory());
+
+    private final ConfigurationService configurationService;
 
     @PostMapping(value =  CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed

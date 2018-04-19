@@ -2,11 +2,10 @@ package com.icthh.xm.ms.configuration.config;
 
 import static java.util.Collections.emptyList;
 
-import com.hazelcast.core.HazelcastInstance;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.repository.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.SneakyThrows;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +22,6 @@ public class TestConfiguration {
     @Primary
     @SneakyThrows
     public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
-                                                      HazelcastInstance hazelcastInstance,
                                                       TenantContextHolder tenantContextHolder,
                                                       XmAuthenticationContextHolder authenticationContextHolder,
                                                       XmRequestContextHolder requestContextHolder) {

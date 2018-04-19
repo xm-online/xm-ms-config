@@ -9,9 +9,11 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,22 +21,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
-public class ConfigurationService {
+public class ConfigurationService implements InitializingBean {
 
     private final DistributedConfigRepository distributedConfigRepository;
-
     private final PersistenceConfigRepository persistenceConfigRepository;
-
     private final TenantContextHolder tenantContextHolder;
 
-    public ConfigurationService(DistributedConfigRepository distributedConfigRepository,
-                                PersistenceConfigRepository persistenceConfigRepository,
-                                TenantContextHolder tenantContextHolder) {
-        this.distributedConfigRepository = distributedConfigRepository;
-        this.persistenceConfigRepository = persistenceConfigRepository;
-        this.tenantContextHolder = tenantContextHolder;
-
+    @Override
+    public void afterPropertiesSet() {
         refreshConfigurations();
     }
 
@@ -54,6 +50,10 @@ public class ConfigurationService {
 
     public Optional<Configuration> findConfiguration(String path) {
         return Optional.ofNullable(distributedConfigRepository.find(path));
+    }
+
+    public List<Configuration> getConfigurations() {
+        return persistenceConfigRepository.findAll();
     }
 
     public void deleteConfiguration(String path) {

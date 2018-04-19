@@ -95,16 +95,5 @@ application:
         login: null
         password: null
         max-wait-time-second: 30
-    hazelcast:
-        hazelcast-config-url: classpath:./config/hazelcast-local.xml
-        interfaces: 127.0.0.1
-        consul-host: ${spring.cloud.consul.host}
-        consul-port: ${spring.cloud.consul.port}
-        consul-service-name: test-xm-tenant-config-hazelcast-cluster
-        consul-healthy-only: true
-        consul-service-tags: 'hazelcast'
-        consul-discovery-delay-ms: 10000
-        group-name: test-xm-tenant-config-hazelcast-cluster
-        group-pass: test
     kafka-system-queue: system_queue
 
