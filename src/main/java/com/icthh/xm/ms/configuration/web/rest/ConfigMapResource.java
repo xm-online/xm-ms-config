@@ -32,7 +32,7 @@ public class ConfigMapResource {
     @GetMapping("/config_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, String>> getAllConfigurations(HttpServletRequest request) {
+    public ResponseEntity<Map<String, String>> getAllConfigurations() {
         return ResponseEntity.ok(configService.getConfig());
     }
 }
