@@ -1,13 +1,13 @@
 package com.icthh.xm.ms.configuration.repository;
 
-import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.commons.config.domain.Configuration;
 
 import java.util.List;
 import java.util.Map;
 
 public interface DistributedConfigRepository {
 
-    Map<String, String> getMap();
+    Map<String, Configuration> getMap();
 
     Configuration find(String path);
 

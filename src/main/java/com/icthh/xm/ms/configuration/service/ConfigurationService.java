@@ -3,10 +3,9 @@ package com.icthh.xm.ms.configuration.service;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.RequiredArgsConstructor;
@@ -77,7 +76,7 @@ public class ConfigurationService implements InitializingBean {
 
     @SneakyThrows
     private Configuration toConfiguration(MultipartFile file) {
-        return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8));
+        return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8), null);
     }
 
     public void refreshConfigurations(String path) {

@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.repository;
 
-import com.icthh.xm.ms.configuration.domain.Configuration;
-import lombok.SneakyThrows;
+import com.icthh.xm.commons.config.domain.Configuration;
 
 import java.util.List;
 

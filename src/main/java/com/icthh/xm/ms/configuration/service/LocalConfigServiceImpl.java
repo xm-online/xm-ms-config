@@ -1,15 +1,14 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.client.api.ConfigService;
-import com.icthh.xm.commons.config.client.repository.ConfigRepository;
-import com.icthh.xm.ms.configuration.repository.impl.InMemoryRepository;
+import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -17,9 +16,9 @@ import java.util.stream.Collectors;
 @Component
 public class LocalConfigServiceImpl implements ConfigService {
 
-    private final InMemoryRepository inMemoryRepository;
+    private final DistributedConfigRepository inMemoryRepository;
 
-    public Map<String, String> getConfig() {
+    public Map<String, Configuration> getConfig() {
         return inMemoryRepository.getMap();
     }
 }

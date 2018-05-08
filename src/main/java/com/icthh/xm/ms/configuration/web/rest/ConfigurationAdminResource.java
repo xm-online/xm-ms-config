@@ -11,9 +11,9 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +63,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content));
+        configurationService.createConfiguration(new Configuration(path, content, null));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -73,7 +73,7 @@ public class ConfigurationAdminResource {
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
-        Configuration configuration = new Configuration(extractPath(request), content);
+        Configuration configuration = new Configuration(extractPath(request), content, null);
         try {
             configurationService.updateConfiguration(configuration, oldConfigHash);
         } catch (ConcurrentConfigModificationException e) {

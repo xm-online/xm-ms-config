@@ -124,6 +124,7 @@ application:
     tenant-ignored-path-list: /api/token_key, /api/config_map
     kafka-enabled: true
     kafka-system-queue: system_queue
+    kafka-system-topic: system_topic
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds

@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
 
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.permission.config.PermissionProperties;
 import com.icthh.xm.commons.permission.domain.Permission;
@@ -13,7 +14,6 @@ import com.icthh.xm.commons.tenant.Tenant;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -185,7 +185,7 @@ public class PrivilegeService {
 
     private boolean updateConfig(String tenantKeyValue, String path, String content) {
         try {
-            configurationService.updateConfiguration(new Configuration(applyTenant(path, tenantKeyValue), content));
+            configurationService.updateConfiguration(new Configuration(applyTenant(path, tenantKeyValue), content, null));
             log.info("[{}] Config '{}' updated for tenant '{}'",
                      getRequestSourceTypeLogName(requestContextHolder),
                      path, StringUtils.defaultIfBlank(tenantKeyValue, NONE_TENANT));
@@ -200,7 +200,7 @@ public class PrivilegeService {
 
     private void createConfig(String path, String content) {
         try {
-            configurationService.createConfiguration(new Configuration(path, content));
+            configurationService.createConfiguration(new Configuration(path, content, null));
             log.info("[{}] Config created '{}'", getRequestSourceTypeLogName(requestContextHolder), path);
         } catch (Exception e) {
             log.error("[{}] Error creating configuration '{}'", getRequestSourceTypeLogName(requestContextHolder),

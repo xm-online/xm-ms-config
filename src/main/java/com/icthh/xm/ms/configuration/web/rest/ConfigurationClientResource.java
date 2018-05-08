@@ -1,9 +1,9 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class ConfigurationClientResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content));
+        configurationService.createConfiguration(new Configuration(path, content, null));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -55,7 +55,7 @@ public class ConfigurationClientResource {
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
-        Configuration configuration = new Configuration(extractPath(request), content);
+        Configuration configuration = new Configuration(extractPath(request), content, null);
         try {
             configurationService.updateConfiguration(configuration, oldConfigHash);
         } catch (ConcurrentConfigModificationException e) {

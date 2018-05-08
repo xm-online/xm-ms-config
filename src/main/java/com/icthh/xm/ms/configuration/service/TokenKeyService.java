@@ -1,8 +1,8 @@
 package com.icthh.xm.ms.configuration.service;
 
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.config.Constants;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

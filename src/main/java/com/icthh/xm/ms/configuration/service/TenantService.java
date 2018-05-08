@@ -6,9 +6,9 @@ import static java.util.Collections.emptySet;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +75,7 @@ public class TenantService {
     @SneakyThrows
     private void saveTenantList(Map<String, Set<TenantState>> tenantsList) {
         String tenantsListJson = om.writerWithDefaultPrettyPrinter().writeValueAsString(tenantsList);
-        configurationService.updateConfiguration(new Configuration(CONFIG_LIST_STORAGE, tenantsListJson));
+        configurationService.updateConfiguration(new Configuration(CONFIG_LIST_STORAGE, tenantsListJson, null));
     }
 
     @SneakyThrows
