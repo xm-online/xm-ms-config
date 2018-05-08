@@ -43,10 +43,10 @@ public class LocalJGitRepositoryConfiguration {
             protected void initRepository(){}
 
             @Override
-            protected void pull(){}
+            protected String pull(){ return "test"; }
 
             @Override
-            protected void commitAndPush(String commitMsg){}
+            protected String commitAndPush(String commitMsg){ return "test"; }
         };
     }
 
