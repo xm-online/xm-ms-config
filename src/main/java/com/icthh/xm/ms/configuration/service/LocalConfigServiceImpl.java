@@ -1,6 +1,8 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.client.api.ConfigService;
+import com.icthh.xm.commons.config.client.repository.ConfigurationListener;
+import com.icthh.xm.commons.config.client.repository.ConfigurationModel;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,11 +16,22 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Primary
 @Component
-public class LocalConfigServiceImpl implements ConfigService {
+public class LocalConfigServiceImpl implements ConfigService, ConfigurationModel {
 
     private final DistributedConfigRepository inMemoryRepository;
+    private ConfigurationListener configurationListener;
 
     public Map<String, Configuration> getConfig() {
         return inMemoryRepository.getMap();
+    }
+
+    @Override
+    public void setConfigurationListener(ConfigurationListener configurationListener) {
+        this.configurationListener = configurationListener;
+    }
+
+    @Override
+    public void updateConfiguration(Configuration configuration) {
+        log.debug("Update yourself is not implemented yet");
     }
 }

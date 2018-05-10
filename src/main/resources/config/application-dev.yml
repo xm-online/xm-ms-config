@@ -127,8 +127,4 @@ jhipster:
 
 application:
     git:
-        uri: http://xm2config@gitlab.jbs.com.ua/icthothouse/xm-ms-config-repository.git
-        login: xm2config
-        password: NTYAAABBBL8iuIWDo9U866B4Ts
-        branch-name: emonastyrev
         max-wait-time-second: 30
