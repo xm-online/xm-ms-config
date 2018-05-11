@@ -1,6 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
+import static com.icthh.xm.commons.config.client.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
@@ -19,6 +19,7 @@ import static org.eclipse.jgit.api.Git.cloneRepository;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 
+import com.icthh.xm.commons.config.client.utils.Task;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
@@ -28,8 +29,6 @@ import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
-import com.icthh.xm.ms.configuration.utils.ReturnableTask;
-import com.icthh.xm.ms.configuration.utils.Task;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
@@ -118,7 +117,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     @SneakyThrows
     public List<Configuration> findAll() {
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
             return files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList());
@@ -143,7 +142,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     @SneakyThrows
     public Configuration find(String path) {
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             String content = readFileToString(new File(getPathname(path)), UTF_8);
             return new Configuration(path, content, commit);
@@ -291,7 +290,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private <E extends Exception> String runWithPullCommit(String commitMsg, Task<E> task) {
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             pull();
             task.execute();
             return commitAndPush(commitMsg);
