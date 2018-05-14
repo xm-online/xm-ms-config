@@ -1,7 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.commons.config.client.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
+import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static java.util.Collections.emptySet;
 
 import com.fasterxml.jackson.databind.JavaType;
@@ -41,7 +41,7 @@ public class TenantService {
     }
 
     public void addTenant(String serviceName, String tenantKey) {
-        runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.putIfAbsent(serviceName, new HashSet<>());
@@ -52,7 +52,7 @@ public class TenantService {
     }
 
     public void updateTenant(String serviceName, TenantState tenant) {
-        runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.getOrDefault(serviceName, new HashSet<>()).remove(tenant);
@@ -63,7 +63,7 @@ public class TenantService {
     }
 
     public void deleteTenant(String serviceName, String tenantKey) {
-        runWithLock("Git repository", lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.getOrDefault(serviceName, new HashSet<>()).remove(new TenantState(tenantKey, "SUSPENDED"));
