@@ -10,7 +10,7 @@ import com.icthh.xm.commons.exceptions.spring.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.ConfigurationApp;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
-import com.icthh.xm.ms.configuration.repository.kafka.SystemTopicProducer;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 public class ConfigurationAdminResourceIntTest {
 
     @MockBean
-    private SystemTopicProducer systemTopicProducer;
+    private ConfigTopicProducer configTopicProducer;
 
     @Autowired
     private ConfigurationAdminResource configurationAdminResource;

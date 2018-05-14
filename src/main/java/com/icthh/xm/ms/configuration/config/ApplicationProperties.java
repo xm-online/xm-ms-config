@@ -25,7 +25,6 @@ public class ApplicationProperties {
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
-    private String kafkaSystemTopic;
 
     @Getter
     @Setter

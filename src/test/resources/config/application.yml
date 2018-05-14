@@ -88,6 +88,7 @@ jhipster:
 
 xm-config:
     enabled: false
+    kafka-config-topic: config_topic
 
 application:
     git:
@@ -96,5 +97,4 @@ application:
         password: null
         max-wait-time-second: 30
     kafka-system-queue: system_queue
-    kafka-system-topic: system_topic
 

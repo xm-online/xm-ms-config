@@ -5,9 +5,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.icthh.xm.commons.config.client.config.XmConfigProperties;
+import com.icthh.xm.commons.config.domain.ConfigEvent;
+import com.icthh.xm.commons.config.domain.ConfigurationEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
-import com.icthh.xm.commons.messaging.event.system.SystemEvent;
-import com.icthh.xm.commons.messaging.event.system.SystemEventType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -15,12 +16,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class SystemTopicProducer {
+public class ConfigTopicProducer {
 
     private final KafkaTemplate<String, String> template;
 
@@ -32,23 +34,15 @@ public class SystemTopicProducer {
     @Value("${spring.application.name}")
     private String appName;
 
-    @Value("${application.kafka-system-topic}")
+    @Value("${xm-config.kafka-config-topic}")
     private String topicName;
 
-    public void notifyConfigurationSaved(Object data) {
-        sendConfigurationEvent(SystemEventType.SAVE_CONFIGURATION, data);
-    }
-
-    public void notifyConfigurationDeleted(Object data) {
-        sendConfigurationEvent(SystemEventType.DELETE_CONFIGURATION, data);
-    }
-
-    private void sendConfigurationEvent(String eventType, Object data) {
-        SystemEvent event = buildSystemEvent(MdcUtils.getRid(), eventType, data);
+    public void notifyConfigurationChanged(List<ConfigurationEvent> configurations) {
+        ConfigEvent event = buildEvent(MdcUtils.getRid(), configurations);
         serializeEvent(event).ifPresent(this::send);
     }
 
-    private Optional<String> serializeEvent(SystemEvent event) {
+    private Optional<String> serializeEvent(Object event) {
         try {
             return Optional.ofNullable(mapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
@@ -58,12 +52,10 @@ public class SystemTopicProducer {
         return Optional.empty();
     }
 
-    private SystemEvent buildSystemEvent(String eventId, String eventType, Object data) {
-        SystemEvent event = new SystemEvent();
+    private ConfigEvent buildEvent(String eventId, List<ConfigurationEvent> configurations) {
+        ConfigEvent event = new ConfigEvent();
         event.setEventId(eventId);
-        event.setEventType(eventType);
-        event.setMessageSource(appName);
-        event.setData(data);
+        event.setConfigurations(configurations);
 
         return event;
     }

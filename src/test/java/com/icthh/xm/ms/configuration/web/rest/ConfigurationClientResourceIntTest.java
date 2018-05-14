@@ -12,7 +12,7 @@ import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.ConfigurationApp;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
-import com.icthh.xm.ms.configuration.repository.kafka.SystemTopicProducer;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class ConfigurationClientResourceIntTest {
     public static final String TENANT_NAME = "test75";
 
     @MockBean
-    private SystemTopicProducer systemTopicProducer;
+    private ConfigTopicProducer configTopicProducer;
 
     @Autowired
     private ConfigurationClientResource configurationClientResource;

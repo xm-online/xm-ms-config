@@ -1,9 +1,11 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static java.util.Collections.singletonList;
+
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.ConfigurationEvent;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
-import com.icthh.xm.ms.configuration.repository.kafka.SystemTopicProducer;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -26,7 +28,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
     public static final String LOG_CONFIG_EMPTY = "<CONFIG_EMPTY>";
 
     private final ConcurrentMap<String, Configuration> storage = new ConcurrentHashMap<>();
-    private final SystemTopicProducer systemTopicProducer;
+    private final ConfigTopicProducer configTopicProducer;
 
     @Override
     public Map<String, Configuration> getMap() {
@@ -43,8 +45,8 @@ public class InMemoryRepository implements DistributedConfigRepository {
     public void save(Configuration configuration) {
         log.info("Save configuration to memory with path {}", configuration.getPath());
         getMap().put(configuration.getPath(), configuration);
-        systemTopicProducer.notifyConfigurationSaved(
-            new ConfigurationEvent(configuration.getPath(), configuration.getCommit()));
+        configTopicProducer.notifyConfigurationChanged(singletonList(
+            new ConfigurationEvent(configuration.getPath(), configuration.getCommit())));
     }
 
     @Override
@@ -54,15 +56,16 @@ public class InMemoryRepository implements DistributedConfigRepository {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
         getMap().putAll(map);
-        configurations.forEach(configuration -> systemTopicProducer.notifyConfigurationSaved(
-            new ConfigurationEvent(configuration.getPath(), configuration.getCommit())));
+        configTopicProducer.notifyConfigurationChanged(configurations.stream()
+            .map(configuration -> new ConfigurationEvent(configuration.getPath(), configuration.getCommit()))
+            .collect(Collectors.toList()));
     }
 
     @Override
     public void delete(String path) {
         log.info("Delete configuration from memory by path {}", path);
         getMap().remove(path);
-        systemTopicProducer.notifyConfigurationDeleted(new ConfigurationEvent(path, null));
+        configTopicProducer.notifyConfigurationChanged(singletonList(new ConfigurationEvent(path, null)));
     }
 
     @Override

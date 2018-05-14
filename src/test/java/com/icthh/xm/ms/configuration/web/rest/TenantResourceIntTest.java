@@ -14,7 +14,7 @@ import com.icthh.xm.ms.configuration.ConfigurationApp;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
 import com.icthh.xm.ms.configuration.domain.TenantState;
-import com.icthh.xm.ms.configuration.repository.kafka.SystemTopicProducer;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +36,7 @@ import java.util.Set;
 public class TenantResourceIntTest {
 
     @MockBean
-    private SystemTopicProducer systemTopicProducer;
+    private ConfigTopicProducer configTopicProducer;
 
     @Autowired
     private TenantResource tenantResource;
