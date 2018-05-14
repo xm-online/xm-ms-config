@@ -6,6 +6,7 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequest
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
 import static java.io.File.separator;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -28,25 +29,34 @@ import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
-import com.icthh.xm.ms.configuration.utils.ReturnableTask;
 import com.icthh.xm.ms.configuration.utils.Task;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
+import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
+import org.springframework.util.StopWatch;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -254,7 +264,11 @@ public class JGitRepository implements PersistenceConfigRepository {
                 git.clean().setForce(true);
                 git.checkout().setName(branchName).setForce(true).call();
                 git.pull().setCredentialsProvider(createCredentialsProvider()).call();
-                return Objects.toString(db.findRef(branchName).getObjectId().getName());
+                Iterable<RevCommit> refs = git.log().call();
+                RevCommit lastCommit = StreamSupport.stream(refs.spliterator(), false)
+                    .max(comparing(RevCommit::getCommitTime))
+                    .get();
+                return lastCommit.getName();
             } catch (RefNotFoundException e) {
                 log.info("Branch {} not found in local repository", branchName);
                 git.fetch().setCredentialsProvider(createCredentialsProvider()).call();
@@ -265,7 +279,11 @@ public class JGitRepository implements PersistenceConfigRepository {
                     .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName)
                     .call();
                 git.pull().setCredentialsProvider(createCredentialsProvider()).call();
-                return Objects.toString(db.findRef(branchName).getObjectId().getName());
+                Iterable<RevCommit> refs = git.log().call();
+                RevCommit lastCommit = StreamSupport.stream(refs.spliterator(), false)
+                    .max(comparing(RevCommit::getCommitTime))
+                    .get();
+                return lastCommit.getName();
             }
         }
     }
@@ -276,11 +294,10 @@ public class JGitRepository implements PersistenceConfigRepository {
             Repository db = createRepository();
             Git git = Git.wrap(db);
         ) {
-            String branchName = gitProperties.getBranchName();
             git.add().addFilepattern(".").call();
-            git.commit().setAll(true).setMessage(commitMsg).call();
+            RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
             git.push().setCredentialsProvider(createCredentialsProvider()).call();
-            return Objects.toString(db.findRef(branchName).getObjectId().getName());
+            return commit.getName();
         }
     }
 

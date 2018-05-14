@@ -1,5 +1,12 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
+import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
+import static com.icthh.xm.ms.configuration.config.Constants.REFRESH;
+import static org.mockito.Matchers.eq;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.SneakyThrows;
 import org.junit.Test;
@@ -8,15 +15,9 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-
-import static com.icthh.xm.ms.configuration.config.Constants.*;
-import static org.mockito.Matchers.eq;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
 @WebMvcTest(controllers = ConfigurationAdminResource.class)
@@ -49,5 +50,4 @@ public class ConfigurationAdminResourceMvcTest {
         Mockito.verify(configurationService).refreshConfigurations();
         Mockito.verifyNoMoreInteractions(configurationService);
     }
-
 }

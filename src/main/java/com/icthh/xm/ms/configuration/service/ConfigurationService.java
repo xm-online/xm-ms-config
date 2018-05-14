@@ -24,7 +24,7 @@ import java.util.Optional;
 @Service
 public class ConfigurationService implements InitializingBean {
 
-    private final DistributedConfigRepository distributedConfigRepository;
+    private final DistributedConfigRepository inMemoryRepository;
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final TenantContextHolder tenantContextHolder;
 
@@ -35,7 +35,7 @@ public class ConfigurationService implements InitializingBean {
 
     public void createConfiguration(Configuration configuration) {
         persistenceConfigRepository.save(configuration);
-        distributedConfigRepository.save(configuration);
+        inMemoryRepository.save(configuration);
     }
 
     public void updateConfiguration(Configuration configuration) {
@@ -44,11 +44,11 @@ public class ConfigurationService implements InitializingBean {
 
     public void updateConfiguration(Configuration configuration, String oldConfigHash) {
         persistenceConfigRepository.save(configuration, oldConfigHash);
-        distributedConfigRepository.save(configuration);
+        inMemoryRepository.save(configuration);
     }
 
     public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(distributedConfigRepository.find(path));
+        return Optional.ofNullable(inMemoryRepository.find(path));
     }
 
     public List<Configuration> getConfigurations() {
@@ -57,21 +57,21 @@ public class ConfigurationService implements InitializingBean {
 
     public void deleteConfiguration(String path) {
         persistenceConfigRepository.delete(path);
-        distributedConfigRepository.delete(path);
+        inMemoryRepository.delete(path);
     }
 
     public void refreshConfigurations() {
         List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        List<String> oldKeys = distributedConfigRepository.getKeysList();
+        List<String> oldKeys = inMemoryRepository.getKeysList();
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(actualConfigs);
+        oldKeys.forEach(inMemoryRepository::delete);
+        inMemoryRepository.saveAll(actualConfigs);
     }
 
     public void createConfigurations(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
         persistenceConfigRepository.saveAll(configurations);
-        distributedConfigRepository.saveAll(configurations);
+        inMemoryRepository.saveAll(configurations);
     }
 
     @SneakyThrows
@@ -81,7 +81,7 @@ public class ConfigurationService implements InitializingBean {
 
     public void refreshConfigurations(String path) {
         Configuration configuration = persistenceConfigRepository.find(path);
-        distributedConfigRepository.save(configuration);
+        inMemoryRepository.save(configuration);
     }
 
     public void refreshTenantConfigurations() {
@@ -90,13 +90,13 @@ public class ConfigurationService implements InitializingBean {
                 .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenantContextHolder)))
                 .collect(toList());
 
-        List<String> allOldKeys = distributedConfigRepository.getKeysList();
+        List<String> allOldKeys = inMemoryRepository.getKeysList();
         List<String> oldKeys = allOldKeys.stream()
                 .filter(path -> path.startsWith(getTenantPathPrefix(tenantContextHolder)))
                 .collect(toList());
 
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(actualConfigs);
+        oldKeys.forEach(inMemoryRepository::delete);
+        inMemoryRepository.saveAll(actualConfigs);
     }
 }
