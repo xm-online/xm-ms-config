@@ -19,7 +19,6 @@ import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -63,7 +62,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content, null));
+        configurationService.updateConfiguration(new Configuration(path, content, null));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -129,9 +128,9 @@ public class ConfigurationAdminResource {
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
         String path = extractPath(request).substring(CONFIG.length() + REFRESH.length());
         if (isBlank(path)) {
-            configurationService.refreshConfigurations();
+            configurationService.refreshConfiguration();
         } else {
-            configurationService.refreshConfigurations(path);
+            configurationService.refreshConfiguration(path);
         }
         return ResponseEntity.ok().build();
     }

@@ -10,7 +10,7 @@ public interface PersistenceConfigRepository {
 
     Configuration find(String path);
 
-    void saveAll(List<Configuration> configurations);
+    String saveAll(List<Configuration> configurations);
 
     void save(Configuration configuration);
 

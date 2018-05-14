@@ -1,13 +1,12 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
+import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -24,79 +23,53 @@ import java.util.Optional;
 @Service
 public class ConfigurationService implements InitializingBean {
 
-    private final DistributedConfigRepository inMemoryRepository;
-    private final PersistenceConfigRepository persistenceConfigRepository;
+    private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
 
     @Override
     public void afterPropertiesSet() {
-        refreshConfigurations();
-    }
-
-    public void createConfiguration(Configuration configuration) {
-        persistenceConfigRepository.save(configuration);
-        inMemoryRepository.save(configuration);
+        refreshConfiguration();
     }
 
     public void updateConfiguration(Configuration configuration) {
-        updateConfiguration(configuration, null);
+        repositoryProxy.save(configuration, null);
     }
 
     public void updateConfiguration(Configuration configuration, String oldConfigHash) {
-        persistenceConfigRepository.save(configuration, oldConfigHash);
-        inMemoryRepository.save(configuration);
+        repositoryProxy.save(configuration, oldConfigHash);
     }
 
     public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(inMemoryRepository.find(path));
+        return Optional.ofNullable(repositoryProxy.find(path));
     }
 
     public List<Configuration> getConfigurations() {
-        return persistenceConfigRepository.findAll();
+        return repositoryProxy.findAll();
     }
 
     public void deleteConfiguration(String path) {
-        persistenceConfigRepository.delete(path);
-        inMemoryRepository.delete(path);
+        repositoryProxy.delete(path);
     }
 
-    public void refreshConfigurations() {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        List<String> oldKeys = inMemoryRepository.getKeysList();
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(inMemoryRepository::delete);
-        inMemoryRepository.saveAll(actualConfigs);
+    public void refreshConfiguration() {
+        repositoryProxy.refreshAll();
     }
 
     public void createConfigurations(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        persistenceConfigRepository.saveAll(configurations);
-        inMemoryRepository.saveAll(configurations);
+        repositoryProxy.saveAll(configurations);
+    }
+
+    public void refreshConfiguration(String path) {
+        repositoryProxy.refreshPath(path);
+    }
+
+    public void refreshTenantConfigurations() {
+        repositoryProxy.refreshTenant(getRequiredTenantKeyValue(tenantContextHolder));
     }
 
     @SneakyThrows
     private Configuration toConfiguration(MultipartFile file) {
         return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8), null);
-    }
-
-    public void refreshConfigurations(String path) {
-        Configuration configuration = persistenceConfigRepository.find(path);
-        inMemoryRepository.save(configuration);
-    }
-
-    public void refreshTenantConfigurations() {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        actualConfigs = actualConfigs.stream()
-                .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenantContextHolder)))
-                .collect(toList());
-
-        List<String> allOldKeys = inMemoryRepository.getKeysList();
-        List<String> oldKeys = allOldKeys.stream()
-                .filter(path -> path.startsWith(getTenantPathPrefix(tenantContextHolder)))
-                .collect(toList());
-
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(inMemoryRepository::delete);
-        inMemoryRepository.saveAll(actualConfigs);
     }
 }

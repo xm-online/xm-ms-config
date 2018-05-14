@@ -45,7 +45,7 @@ public class ConfigurationClientResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content, null));
+        configurationService.updateConfiguration(new Configuration(path, content, null));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -90,7 +90,7 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = PROFILE + "/refreshPath/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
@@ -98,7 +98,7 @@ public class ConfigurationClientResource {
         if (isBlank(path)) {
             configurationService.refreshTenantConfigurations();
         } else {
-            configurationService.refreshConfigurations(getAbsolutePath(path));
+            configurationService.refreshConfiguration(getAbsolutePath(path));
         }
         return ResponseEntity.ok().build();
     }

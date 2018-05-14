@@ -37,7 +37,7 @@ public class ConfigurationAdminResourceMvcTest {
         mockMvc.perform(post(API_PREFIX + CONFIG + REFRESH + testPath))
                 .andExpect(status().is2xxSuccessful());
 
-        Mockito.verify(configurationService).refreshConfigurations(eq(testPath));
+        Mockito.verify(configurationService).refreshConfiguration(eq(testPath));
         Mockito.verifyNoMoreInteractions(configurationService);
     }
 
@@ -47,7 +47,7 @@ public class ConfigurationAdminResourceMvcTest {
         mockMvc.perform(post(API_PREFIX + CONFIG + REFRESH))
                 .andExpect(status().is2xxSuccessful());
 
-        Mockito.verify(configurationService).refreshConfigurations();
+        Mockito.verify(configurationService).refreshConfiguration();
         Mockito.verifyNoMoreInteractions(configurationService);
     }
 }

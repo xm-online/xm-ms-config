@@ -161,7 +161,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
-    public void saveAll(List<Configuration> configurations) {
+    public String saveAll(List<Configuration> configurations) {
         List<String> paths = configurations.stream().map(Configuration::getPath).collect(toList());
 
         log.info("[{}] Save configurations to git by paths {}",
@@ -169,6 +169,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         String commit = runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
                           () -> configurations.forEach(this::writeConfiguration));
         configurations.forEach(configuration -> configuration.setCommit(commit));
+        return commit;
     }
 
     @Override

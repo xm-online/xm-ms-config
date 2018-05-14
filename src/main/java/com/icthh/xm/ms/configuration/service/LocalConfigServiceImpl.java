@@ -33,10 +33,10 @@ public class LocalConfigServiceImpl implements ConfigService {
     }
 
     @Override
-    public void updateConfigurations(Collection<Configuration> configurations) {
+    public void updateConfigurations(String commit, Collection<String> paths) {
         Map<String, Configuration> configurationsMap = inMemoryRepository.getMap();
-        configurations.forEach(configuration -> notifyUpdated(configurationsMap
-            .getOrDefault(configuration.getPath(), new Configuration(configuration.getPath(), null, null))));
+        paths.forEach(path -> notifyUpdated(configurationsMap
+            .getOrDefault(path, new Configuration(path, null, null))));
     }
 
     private void notifyUpdated(Configuration configuration) {

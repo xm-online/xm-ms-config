@@ -2,20 +2,15 @@ package com.icthh.xm.ms.configuration.repository;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 
-import java.util.List;
 import java.util.Map;
 
-public interface DistributedConfigRepository {
+public interface DistributedConfigRepository extends PersistenceConfigRepository {
 
     Map<String, Configuration> getMap();
 
-    Configuration find(String path);
+    void refreshAll();
 
-    void save(Configuration configuration);
+    void refreshPath(String path);
 
-    void saveAll(List<Configuration> configurations);
-
-    void delete(String path);
-
-    List<String> getKeysList();
+    void refreshTenant(String tenant);
 }

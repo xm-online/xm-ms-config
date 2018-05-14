@@ -200,7 +200,7 @@ public class PrivilegeService {
 
     private void createConfig(String path, String content) {
         try {
-            configurationService.createConfiguration(new Configuration(path, content, null));
+            configurationService.updateConfiguration(new Configuration(path, content, null));
             log.info("[{}] Config created '{}'", getRequestSourceTypeLogName(requestContextHolder), path);
         } catch (Exception e) {
             log.error("[{}] Error creating configuration '{}'", getRequestSourceTypeLogName(requestContextHolder),

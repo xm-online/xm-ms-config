@@ -5,9 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.config.domain.ConfigEvent;
-import com.icthh.xm.commons.config.domain.ConfigurationEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +35,8 @@ public class ConfigTopicProducer {
     @Value("${xm-config.kafka-config-topic}")
     private String topicName;
 
-    public void notifyConfigurationChanged(List<ConfigurationEvent> configurations) {
-        ConfigEvent event = buildEvent(MdcUtils.getRid(), configurations);
+    public void notifyConfigurationChanged(String commit, List<String> paths) {
+        ConfigEvent event = buildEvent(MdcUtils.getRid(), commit, paths);
         serializeEvent(event).ifPresent(this::send);
     }
 
@@ -52,10 +50,11 @@ public class ConfigTopicProducer {
         return Optional.empty();
     }
 
-    private ConfigEvent buildEvent(String eventId, List<ConfigurationEvent> configurations) {
+    private ConfigEvent buildEvent(String eventId, String commit, List<String> paths) {
         ConfigEvent event = new ConfigEvent();
         event.setEventId(eventId);
-        event.setConfigurations(configurations);
+        event.setCommit(commit);
+        event.setPaths(paths);
 
         return event;
     }
