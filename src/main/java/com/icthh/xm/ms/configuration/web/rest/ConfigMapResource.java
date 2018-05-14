@@ -27,6 +27,6 @@ public class ConfigMapResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations() {
-        return ResponseEntity.ok(configService.getConfig());
+        return ResponseEntity.ok(configService.getConfigurationMap());
     }
 }

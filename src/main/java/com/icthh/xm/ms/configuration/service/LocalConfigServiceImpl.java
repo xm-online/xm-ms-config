@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.client.api.ConfigService;
-import com.icthh.xm.commons.config.client.repository.ConfigurationModel;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,18 +10,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 @Slf4j
 @RequiredArgsConstructor
 @Primary
 @Component
-public class LocalConfigServiceImpl implements ConfigService, ConfigurationModel {
+public class LocalConfigServiceImpl implements ConfigService {
 
     private final DistributedConfigRepository inMemoryRepository;
     private Consumer<Configuration> configurationListener;
 
-    public Map<String, Configuration> getConfig() {
+    @Override
+    public Map<String, Configuration> getConfigurationMap() {
         return inMemoryRepository.getMap();
     }
 
@@ -32,7 +33,15 @@ public class LocalConfigServiceImpl implements ConfigService, ConfigurationModel
     }
 
     @Override
-    public void updateConfiguration(Collection<Configuration> configurations) {
-        log.debug("Update yourself is not implemented yet");
+    public void updateConfigurations(Collection<Configuration> configurations) {
+        Map<String, Configuration> configurationsMap = inMemoryRepository.getMap();
+        configurations.forEach(configuration -> notifyUpdated(configurationsMap
+            .getOrDefault(configuration.getPath(), new Configuration(configuration.getPath(), null, null))));
+    }
+
+    private void notifyUpdated(Configuration configuration) {
+        log.debug("Notify configuration changed [{}]", configuration.getPath());
+        Optional.ofNullable(configurationListener)
+            .ifPresent(configurationListener -> configurationListener.accept(configuration));
     }
 }
