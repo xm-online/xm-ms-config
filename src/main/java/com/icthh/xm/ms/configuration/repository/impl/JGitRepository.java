@@ -164,12 +164,12 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
-    public void save(Configuration configuration) {
-        save(configuration, null);
+    public String save(Configuration configuration) {
+        return save(configuration, null);
     }
 
     @Override
-    public void save(Configuration configuration, String oldConfigHash) {
+    public String save(Configuration configuration, String oldConfigHash) {
         log.info("[src: {}] Save configuration to git with path {}", getRequestSourceTypeLogName(requestContextHolder),
                  configuration.getPath());
         String commit = runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
@@ -177,6 +177,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             writeConfiguration(configuration);
         });
         configuration.setCommit(commit);
+        return commit;
     }
 
     @SneakyThrows
@@ -195,10 +196,24 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
-    public void delete(String path) {
+    public String deleteAll(List<String> paths) {
+        log.info("[{}] Delete configurations from git by paths {}",
+            getRequestSourceTypeLogName(requestContextHolder), paths);
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, paths.size()), () -> {
+            paths.forEach(path -> {
+                File file = new File(rootDirectory.getAbsolutePath() + path);
+                if (file.exists()) {
+                    file.delete();
+                }
+            });
+        });
+    }
+
+    @Override
+    public String delete(String path) {
         log.info("[{}] Delete configuration from git by path {}",
                  getRequestSourceTypeLogName(requestContextHolder), path);
-        runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> {
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> {
             File file = new File(rootDirectory.getAbsolutePath() + path);
             if (file.exists()) {
                 file.delete();
@@ -206,7 +221,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         });
     }
 
-    private String getCommitMsg(String template, String path) {
+    private String getCommitMsg(String template, Object path) {
         String operationSourceMsg;
         if (isRequestSourceNameExist(requestContextHolder)) {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC_AND_APP,

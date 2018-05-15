@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.repository.impl;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
@@ -10,7 +11,6 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -54,16 +54,26 @@ public class InMemoryRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public void save(Configuration configuration) {
-        save(configuration, null);
+    public String save(Configuration configuration) {
+        return save(configuration, null);
     }
 
     @Override
-    public void save(Configuration configuration, String oldConfigHash) {
-        persistenceConfigRepository.save(configuration, oldConfigHash);
+    public String save(Configuration configuration, String oldConfigHash) {
+        String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
 
         getMap(null).put(configuration.getPath(), configuration);
         configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
+        return commit;
+    }
+
+    @Override
+    public String deleteAll(List<String> paths) {
+        String commit = persistenceConfigRepository.deleteAll(paths);
+
+        paths.forEach(path -> getMap(null).remove(path));
+        configTopicProducer.notifyConfigurationChanged(null, paths);
+        return commit;
     }
 
     @Override
@@ -79,11 +89,12 @@ public class InMemoryRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public void delete(String path) {
-        persistenceConfigRepository.delete(path);
+    public String delete(String path) {
+        String commit = persistenceConfigRepository.delete(path);
 
         getMap(null).remove(path);
         configTopicProducer.notifyConfigurationChanged(null, singletonList(path));
+        return commit;
     }
 
     @Override
@@ -91,7 +102,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
         List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
         Set<String> oldKeys = getMap(null).keySet();
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(this::delete);
+        deleteAll(new ArrayList<>(oldKeys));
         saveAll(actualConfigs);
     }
 
@@ -108,19 +119,13 @@ public class InMemoryRepository implements DistributedConfigRepository {
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
 
-        Set<String> allOldKeys = getMap(null).keySet();
-        List<String> oldKeys = allOldKeys.stream()
+        Set<String> oldKeys = getMap(null).keySet()
+            .stream()
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
-            .collect(toList());
+            .collect(toSet());
 
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(this::delete);
+        deleteAll(new ArrayList<>(oldKeys));
         saveAll(actualConfigs);
     }
-
-    private String getValueHash(final String configContent) {
-        return StringUtils.isEmpty(configContent) ? LOG_CONFIG_EMPTY :
-            DigestUtils.md5Hex(configContent);
-    }
-
 }

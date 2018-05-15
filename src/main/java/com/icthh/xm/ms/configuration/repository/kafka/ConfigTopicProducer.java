@@ -14,8 +14,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -54,7 +57,7 @@ public class ConfigTopicProducer {
         ConfigEvent event = new ConfigEvent();
         event.setEventId(eventId);
         event.setCommit(commit);
-        event.setPaths(paths);
+        event.setPaths(new HashSet<>(paths));
 
         return event;
     }
