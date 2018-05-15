@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -21,23 +22,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @RequiredArgsConstructor
 @Component
 public class InMemoryRepository implements DistributedConfigRepository {
 
-    public static final String LOG_CONFIG_EMPTY = "<CONFIG_EMPTY>";
-
+    private final AtomicReference<String> currentCommit = new AtomicReference<>();
     private final ConcurrentMap<String, Configuration> storage = new ConcurrentHashMap<>();
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final ConfigTopicProducer configTopicProducer;
 
     @Override
     public Map<String, Configuration> getMap(String commit) {
-        if (StringUtils.isEmpty(commit)) {
+        if (StringUtils.isEmpty(commit)
+            || (currentCommit.get() != null && commit.equals(currentCommit.get()))) {
             return storage;
         } else {
+            refreshAll();
             return storage;
         }
     }
@@ -63,16 +66,8 @@ public class InMemoryRepository implements DistributedConfigRepository {
         String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
 
         getMap(null).put(configuration.getPath(), configuration);
+        currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
-        return commit;
-    }
-
-    @Override
-    public String deleteAll(List<String> paths) {
-        String commit = persistenceConfigRepository.deleteAll(paths);
-
-        paths.forEach(path -> getMap(null).remove(path));
-        configTopicProducer.notifyConfigurationChanged(null, paths);
         return commit;
     }
 
@@ -83,8 +78,19 @@ public class InMemoryRepository implements DistributedConfigRepository {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
         getMap(null).putAll(map);
+        currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
+        return commit;
+    }
+
+    @Override
+    public String deleteAll(List<String> paths) {
+        String commit = persistenceConfigRepository.deleteAll(paths);
+
+        paths.forEach(path -> getMap(null).remove(path));
+        currentCommit.set(commit);
+        configTopicProducer.notifyConfigurationChanged(null, paths);
         return commit;
     }
 
@@ -93,6 +99,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
         String commit = persistenceConfigRepository.delete(path);
 
         getMap(null).remove(path);
+        currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(null, singletonList(path));
         return commit;
     }
