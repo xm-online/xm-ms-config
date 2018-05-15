@@ -32,7 +32,7 @@ public class ConfigurationService implements InitializingBean {
     }
 
     public void updateConfiguration(Configuration configuration) {
-        repositoryProxy.save(configuration, null);
+        updateConfiguration(configuration, null);
     }
 
     public void updateConfiguration(Configuration configuration, String oldConfigHash) {

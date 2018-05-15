@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -26,7 +27,8 @@ public class ConfigMapResource {
     @GetMapping("/config_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, Configuration>> getAllConfigurations() {
-        return ResponseEntity.ok(configService.getConfigurationMap());
+    public ResponseEntity<Map<String, Configuration>> getAllConfigurations(
+        @RequestParam(name = "commit", required = false) String commit) {
+        return ResponseEntity.ok(configService.getConfigurationMap(commit));
     }
 }

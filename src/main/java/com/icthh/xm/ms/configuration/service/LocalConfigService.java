@@ -17,14 +17,14 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 @Primary
 @Component
-public class LocalConfigServiceImpl implements ConfigService {
+public class LocalConfigService implements ConfigService {
 
     private final DistributedConfigRepository inMemoryRepository;
     private Consumer<Configuration> configurationListener;
 
     @Override
-    public Map<String, Configuration> getConfigurationMap() {
-        return inMemoryRepository.getMap();
+    public Map<String, Configuration> getConfigurationMap(String commit) {
+        return inMemoryRepository.getMap(commit);
     }
 
     @Override
@@ -34,7 +34,7 @@ public class LocalConfigServiceImpl implements ConfigService {
 
     @Override
     public void updateConfigurations(String commit, Collection<String> paths) {
-        Map<String, Configuration> configurationsMap = inMemoryRepository.getMap();
+        Map<String, Configuration> configurationsMap = inMemoryRepository.getMap(null);
         paths.forEach(path -> notifyUpdated(configurationsMap
             .getOrDefault(path, new Configuration(path, null, null))));
     }

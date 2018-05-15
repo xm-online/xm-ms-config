@@ -11,7 +11,6 @@ import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.configuration.event.ConfigurationEvent;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -36,8 +34,12 @@ public class InMemoryRepository implements DistributedConfigRepository {
     private final ConfigTopicProducer configTopicProducer;
 
     @Override
-    public Map<String, Configuration> getMap() {
-        return storage;
+    public Map<String, Configuration> getMap(String commit) {
+        if (StringUtils.isEmpty(commit)) {
+            return storage;
+        } else {
+            return storage;
+        }
     }
 
     @Override
@@ -48,7 +50,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
     @Override
     public Configuration find(String path) {
         log.debug("Get configuration from memory by path {}", path);
-        return getMap().get(path);
+        return getMap(null).get(path);
     }
 
     @Override
@@ -60,7 +62,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
     public void save(Configuration configuration, String oldConfigHash) {
         persistenceConfigRepository.save(configuration, oldConfigHash);
 
-        getMap().put(configuration.getPath(), configuration);
+        getMap(null).put(configuration.getPath(), configuration);
         configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
     }
 
@@ -70,7 +72,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
 
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
-        getMap().putAll(map);
+        getMap(null).putAll(map);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
         return commit;
@@ -80,14 +82,14 @@ public class InMemoryRepository implements DistributedConfigRepository {
     public void delete(String path) {
         persistenceConfigRepository.delete(path);
 
-        getMap().remove(path);
+        getMap(null).remove(path);
         configTopicProducer.notifyConfigurationChanged(null, singletonList(path));
     }
 
     @Override
     public void refreshAll() {
         List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        Set<String> oldKeys = getMap().keySet();
+        Set<String> oldKeys = getMap(null).keySet();
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(this::delete);
         saveAll(actualConfigs);
@@ -106,7 +108,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
 
-        Set<String> allOldKeys = getMap().keySet();
+        Set<String> allOldKeys = getMap(null).keySet();
         List<String> oldKeys = allOldKeys.stream()
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());

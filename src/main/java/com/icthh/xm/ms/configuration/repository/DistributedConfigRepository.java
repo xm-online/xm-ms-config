@@ -6,7 +6,7 @@ import java.util.Map;
 
 public interface DistributedConfigRepository extends PersistenceConfigRepository {
 
-    Map<String, Configuration> getMap();
+    Map<String, Configuration> getMap(String commit);
 
     void refreshAll();
 

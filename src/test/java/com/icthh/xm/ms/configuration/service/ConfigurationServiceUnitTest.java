@@ -74,7 +74,7 @@ public class ConfigurationServiceUnitTest {
     @Test
     public void getConfigurations() {
         Configuration configuration = new Configuration("path", "content", "commit");
-        inMemoryRepository.getMap().put(configuration.getPath(), configuration);
+        inMemoryRepository.getMap(null).put(configuration.getPath(), configuration);
 
         List<Configuration> result = configurationService.getConfigurations();
 
