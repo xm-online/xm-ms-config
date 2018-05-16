@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.config.domain.ConfigEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import lombok.RequiredArgsConstructor;
@@ -25,14 +26,12 @@ import java.util.Optional;
 public class ConfigTopicProducer {
 
     private final KafkaTemplate<String, String> template;
+    private final XmConfigProperties configProperties;
 
     private final ObjectMapper mapper = new ObjectMapper()
         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
         .registerModule(new JavaTimeModule());
-
-    @Value("${spring.application.name}")
-    private String appName;
 
     @Value("${xm-config.kafka-config-topic}")
     private String topicName;
@@ -65,8 +64,8 @@ public class ConfigTopicProducer {
 
     private void send(String content) {
         if (StringUtils.isNotBlank(content)) {
-            log.info("Sending system event to kafka-topic = '{}', data = '{}'", topicName, content);
-            template.send(topicName, content);
+            log.info("Sending system event to kafka-topic = '{}', data = '{}'", configProperties.getKafkaConfigTopic(), content);
+            template.send(configProperties.getKafkaConfigTopic(), content);
         }
     }
 }
