@@ -89,6 +89,7 @@ test {
     systemProperty "spring.profiles.active", "test"
     mkdir("src/test/features")
     include '**/*UnitTest*'
+    include '**/*MvcTest*'
     include '**/*IntTest*'
 
     // uncomment if the tests reports are not generated

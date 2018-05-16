@@ -37,6 +37,12 @@ public class ProxyRepository implements DistributedConfigRepository {
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final ConfigTopicProducer configTopicProducer;
 
+    /**
+     * Get internal map config. If commit is not specified, or commit is the same as inmemory,
+     * or commit is older than inmemory - return from storage, else reload from git
+     * @param commit required commit
+     * @return config map
+     */
     @Override
     public Map<String, Configuration> getMap(String commit) {
         if (StringUtils.isEmpty(commit)
@@ -47,7 +53,7 @@ public class ProxyRepository implements DistributedConfigRepository {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
             Set<String> oldKeys = storage.keySet();
-            refreshStorage(configurationList, actualConfigs, oldKeys);
+            refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
             return storage;
         }
     }
@@ -80,6 +86,7 @@ public class ProxyRepository implements DistributedConfigRepository {
         storage.put(configuration.getPath(), configuration);
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
+
         return commit;
     }
 
@@ -93,6 +100,7 @@ public class ProxyRepository implements DistributedConfigRepository {
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
+
         return commit;
     }
 
@@ -103,6 +111,7 @@ public class ProxyRepository implements DistributedConfigRepository {
         storage.remove(path);
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, singletonList(path));
+
         return commit;
     }
 
@@ -110,9 +119,10 @@ public class ProxyRepository implements DistributedConfigRepository {
     public String deleteAll(List<String> paths) {
         String commit = persistenceConfigRepository.deleteAll(paths);
 
-        paths.forEach(path -> storage.remove(path));
+        paths.forEach(storage::remove);
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, paths);
+
         return commit;
     }
 
@@ -121,7 +131,9 @@ public class ProxyRepository implements DistributedConfigRepository {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.keySet();
-        updateAll(configurationList, actualConfigs, oldKeys);
+
+        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+        notifyChanged(actualConfigs, oldKeys);
     }
 
     @Override
@@ -129,7 +141,7 @@ public class ProxyRepository implements DistributedConfigRepository {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.keySet();
-        refreshStorage(configurationList, actualConfigs, oldKeys);
+        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
     }
 
     @Override
@@ -153,23 +165,22 @@ public class ProxyRepository implements DistributedConfigRepository {
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
             .collect(toSet());
 
-        updateAll(configurationList, actualConfigs, oldKeys);
+        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+        notifyChanged(actualConfigs, oldKeys);
     }
 
-    private void updateAll(ConfigurationList configurationList, List<Configuration> actualConfigs, Set<String> oldKeys) {
-        refreshStorage(configurationList, actualConfigs, oldKeys);
-
-        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
-        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
-        configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
-    }
-
-    private void refreshStorage(ConfigurationList configurationList, List<Configuration> actualConfigs, Set<String> oldKeys) {
+    private void refreshStorage(String commit, List<Configuration> actualConfigs, Set<String> oldKeys) {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(path -> storage.remove(path));
+        oldKeys.forEach(storage::remove);
         Map<String, Configuration> map = new HashMap<>();
         actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
         storage.putAll(map);
-        currentCommit.set(configurationList.getCommit());
+        currentCommit.set(commit);
+    }
+
+    private void notifyChanged(List<Configuration> actualConfigs, Set<String> oldKeys) {
+        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
+        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
+        configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
     }
 }
