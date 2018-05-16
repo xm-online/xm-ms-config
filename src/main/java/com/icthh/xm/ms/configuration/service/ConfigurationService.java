@@ -28,7 +28,7 @@ public class ConfigurationService implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() {
-        refreshConfiguration();
+        repositoryProxy.refreshInternal();
     }
 
     public void createConfigurations(List<MultipartFile> files) {

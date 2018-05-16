@@ -90,7 +90,7 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = PROFILE + "/refreshPath/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {

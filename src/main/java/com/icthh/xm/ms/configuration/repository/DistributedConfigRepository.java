@@ -8,6 +8,8 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
 
     Map<String, Configuration> getMap(String commit);
 
+    void refreshInternal();
+
     void refreshAll();
 
     void refreshPath(String path);

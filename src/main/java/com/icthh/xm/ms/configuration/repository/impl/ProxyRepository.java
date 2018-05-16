@@ -118,6 +118,14 @@ public class ProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
+    public void refreshInternal() {
+        ConfigurationList configurationList = persistenceConfigRepository.findAll();
+        List<Configuration> actualConfigs = configurationList.getData();
+        Set<String> oldKeys = storage.keySet();
+        refreshStorage(configurationList, actualConfigs, oldKeys);
+    }
+
+    @Override
     public void refreshPath(String path) {
         ConfigurationItem configurationItem = persistenceConfigRepository.find(path);
         Configuration configuration = configurationItem.getData();
