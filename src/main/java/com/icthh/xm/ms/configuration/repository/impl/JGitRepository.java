@@ -27,6 +27,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
+import com.icthh.xm.ms.configuration.domain.Configurations;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
@@ -118,11 +119,11 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @Override
     @SneakyThrows
-    public List<Configuration> findAll() {
+    public Configurations findAll() {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
-            return files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList());
+            return new Configurations(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList()));
         });
     }
 

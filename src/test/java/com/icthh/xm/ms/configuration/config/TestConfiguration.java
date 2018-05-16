@@ -5,6 +5,7 @@ import static java.util.Collections.emptyList;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.domain.Configurations;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -40,8 +41,8 @@ public class TestConfiguration {
             protected String commitAndPush(String commitMsg){ return "test";}
 
             @Override
-            public List<com.icthh.xm.commons.config.domain.Configuration> findAll(){
-                return emptyList();
+            public Configurations findAll(){
+                return new Configurations("test", emptyList());
             }
         };
     }

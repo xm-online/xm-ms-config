@@ -9,16 +9,15 @@ import com.icthh.xm.commons.config.domain.ConfigEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -39,8 +38,10 @@ public class ConfigTopicProducer {
     private String topicName;
 
     public void notifyConfigurationChanged(String commit, List<String> paths) {
-        ConfigEvent event = buildEvent(MdcUtils.getRid(), commit, paths);
-        serializeEvent(event).ifPresent(this::send);
+        if (CollectionUtils.isNotEmpty(paths)) {
+            ConfigEvent event = buildEvent(MdcUtils.getRid(), commit, paths);
+            serializeEvent(event).ifPresent(this::send);
+        }
     }
 
     private Optional<String> serializeEvent(Object event) {

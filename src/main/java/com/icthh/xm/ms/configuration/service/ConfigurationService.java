@@ -31,6 +31,11 @@ public class ConfigurationService implements InitializingBean {
         refreshConfiguration();
     }
 
+    public void createConfigurations(List<MultipartFile> files) {
+        List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
+        repositoryProxy.saveAll(configurations);
+    }
+
     public void updateConfiguration(Configuration configuration) {
         updateConfiguration(configuration, null);
     }
@@ -44,7 +49,7 @@ public class ConfigurationService implements InitializingBean {
     }
 
     public List<Configuration> getConfigurations() {
-        return repositoryProxy.findAll();
+        return repositoryProxy.findAll().getData();
     }
 
     public void deleteConfiguration(String path) {
@@ -53,11 +58,6 @@ public class ConfigurationService implements InitializingBean {
 
     public void refreshConfiguration() {
         repositoryProxy.refreshAll();
-    }
-
-    public void createConfigurations(List<MultipartFile> files) {
-        List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        repositoryProxy.saveAll(configurations);
     }
 
     public void refreshConfiguration(String path) {

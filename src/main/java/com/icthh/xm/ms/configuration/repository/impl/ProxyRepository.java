@@ -6,7 +6,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.domain.Configurations;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class InMemoryRepository implements DistributedConfigRepository {
+public class ProxyRepository implements DistributedConfigRepository {
 
     private final AtomicReference<String> currentCommit = new AtomicReference<>();
     private final ConcurrentMap<String, Configuration> storage = new ConcurrentHashMap<>();
@@ -40,20 +41,28 @@ public class InMemoryRepository implements DistributedConfigRepository {
             || (currentCommit.get() != null && commit.equals(currentCommit.get()))) {
             return storage;
         } else {
-            refreshAll();
+            Configurations configurations = persistenceConfigRepository.findAll();
+            List<Configuration> actualConfigs = configurations.getData();
+            Set<String> oldKeys = storage.keySet();
+            actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+            oldKeys.forEach(path -> storage.remove(path));
+            Map<String, Configuration> map = new HashMap<>();
+            actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
+            storage.putAll(map);
+            currentCommit.set(configurations.getCommit());
             return storage;
         }
     }
 
     @Override
-    public List<Configuration> findAll() {
-        return new ArrayList<>(storage.values());
+    public Configurations findAll() {
+        return new Configurations(currentCommit.get(), new ArrayList<>(storage.values()));
     }
 
     @Override
     public Configuration find(String path) {
         log.debug("Get configuration from memory by path {}", path);
-        return getMap(null).get(path);
+        return storage.get(path);
     }
 
     @Override
@@ -65,9 +74,9 @@ public class InMemoryRepository implements DistributedConfigRepository {
     public String save(Configuration configuration, String oldConfigHash) {
         String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
 
-        getMap(null).put(configuration.getPath(), configuration);
+        storage.put(configuration.getPath(), configuration);
         currentCommit.set(commit);
-        configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
+        configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
         return commit;
     }
 
@@ -77,7 +86,7 @@ public class InMemoryRepository implements DistributedConfigRepository {
 
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
-        getMap(null).putAll(map);
+        storage.putAll(map);
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
@@ -85,54 +94,66 @@ public class InMemoryRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public String deleteAll(List<String> paths) {
-        String commit = persistenceConfigRepository.deleteAll(paths);
-
-        paths.forEach(path -> getMap(null).remove(path));
-        currentCommit.set(commit);
-        configTopicProducer.notifyConfigurationChanged(null, paths);
-        return commit;
-    }
-
-    @Override
     public String delete(String path) {
         String commit = persistenceConfigRepository.delete(path);
 
-        getMap(null).remove(path);
+        storage.remove(path);
         currentCommit.set(commit);
         configTopicProducer.notifyConfigurationChanged(null, singletonList(path));
         return commit;
     }
 
     @Override
+    public String deleteAll(List<String> paths) {
+        String commit = persistenceConfigRepository.deleteAll(paths);
+
+        paths.forEach(path -> storage.remove(path));
+        currentCommit.set(commit);
+        configTopicProducer.notifyConfigurationChanged(null, paths);
+        return commit;
+    }
+
+    @Override
     public void refreshAll() {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        Set<String> oldKeys = getMap(null).keySet();
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        deleteAll(new ArrayList<>(oldKeys));
-        saveAll(actualConfigs);
+        Configurations configurations = persistenceConfigRepository.findAll();
+        List<Configuration> actualConfigs = configurations.getData();
+        Set<String> oldKeys = storage.keySet();
+        updateAll(configurations, actualConfigs, oldKeys);
     }
 
     @Override
     public void refreshPath(String path) {
         Configuration configuration = persistenceConfigRepository.find(path);
-        save(configuration);
+        storage.put(configuration.getPath(), configuration);
+        configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
     }
 
     @Override
     public void refreshTenant(String tenant) {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
+        Configurations configurations = persistenceConfigRepository.findAll();
+        List<Configuration> actualConfigs = configurations.getData();
         actualConfigs = actualConfigs.stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
 
-        Set<String> oldKeys = getMap(null).keySet()
+        Set<String> oldKeys = storage.keySet()
             .stream()
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
             .collect(toSet());
 
+        updateAll(configurations, actualConfigs, oldKeys);
+    }
+
+    private void updateAll(Configurations configurations, List<Configuration> actualConfigs, Set<String> oldKeys) {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        deleteAll(new ArrayList<>(oldKeys));
-        saveAll(actualConfigs);
+        oldKeys.forEach(path -> storage.remove(path));
+        Map<String, Configuration> map = new HashMap<>();
+        actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
+        storage.putAll(map);
+        currentCommit.set(configurations.getCommit());
+
+        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
+        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
+        configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
     }
 }
