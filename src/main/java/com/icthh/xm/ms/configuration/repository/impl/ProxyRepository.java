@@ -44,12 +44,7 @@ public class ProxyRepository implements DistributedConfigRepository {
             Configurations configurations = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurations.getData();
             Set<String> oldKeys = storage.keySet();
-            actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-            oldKeys.forEach(path -> storage.remove(path));
-            Map<String, Configuration> map = new HashMap<>();
-            actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
-            storage.putAll(map);
-            currentCommit.set(configurations.getCommit());
+            refreshStorage(configurations, actualConfigs, oldKeys);
             return storage;
         }
     }
@@ -145,15 +140,19 @@ public class ProxyRepository implements DistributedConfigRepository {
     }
 
     private void updateAll(Configurations configurations, List<Configuration> actualConfigs, Set<String> oldKeys) {
+        refreshStorage(configurations, actualConfigs, oldKeys);
+
+        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
+        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
+        configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
+    }
+
+    private void refreshStorage(Configurations configurations, List<Configuration> actualConfigs, Set<String> oldKeys) {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(path -> storage.remove(path));
         Map<String, Configuration> map = new HashMap<>();
         actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
         storage.putAll(map);
         currentCommit.set(configurations.getCommit());
-
-        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
-        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
-        configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
     }
 }
