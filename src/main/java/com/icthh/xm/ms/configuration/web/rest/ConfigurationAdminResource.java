@@ -62,7 +62,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.updateConfiguration(new Configuration(path, content, null));
+        configurationService.updateConfiguration(new Configuration(path, content));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -72,7 +72,7 @@ public class ConfigurationAdminResource {
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
-        Configuration configuration = new Configuration(extractPath(request), content, null);
+        Configuration configuration = new Configuration(extractPath(request), content);
         try {
             configurationService.updateConfiguration(configuration, oldConfigHash);
         } catch (ConcurrentConfigModificationException e) {

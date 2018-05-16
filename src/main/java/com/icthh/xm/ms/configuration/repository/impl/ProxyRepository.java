@@ -6,7 +6,8 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.Configurations;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -41,23 +42,23 @@ public class ProxyRepository implements DistributedConfigRepository {
             || (currentCommit.get() != null && commit.equals(currentCommit.get()))) {
             return storage;
         } else {
-            Configurations configurations = persistenceConfigRepository.findAll();
-            List<Configuration> actualConfigs = configurations.getData();
+            ConfigurationList configurationList = persistenceConfigRepository.findAll();
+            List<Configuration> actualConfigs = configurationList.getData();
             Set<String> oldKeys = storage.keySet();
-            refreshStorage(configurations, actualConfigs, oldKeys);
+            refreshStorage(configurationList, actualConfigs, oldKeys);
             return storage;
         }
     }
 
     @Override
-    public Configurations findAll() {
-        return new Configurations(currentCommit.get(), new ArrayList<>(storage.values()));
+    public ConfigurationList findAll() {
+        return new ConfigurationList(currentCommit.get(), new ArrayList<>(storage.values()));
     }
 
     @Override
-    public Configuration find(String path) {
+    public ConfigurationItem find(String path) {
         log.debug("Get configuration from memory by path {}", path);
-        return storage.get(path);
+        return new ConfigurationItem(currentCommit.get(), storage.get(path));
     }
 
     @Override
@@ -94,7 +95,7 @@ public class ProxyRepository implements DistributedConfigRepository {
 
         storage.remove(path);
         currentCommit.set(commit);
-        configTopicProducer.notifyConfigurationChanged(null, singletonList(path));
+        configTopicProducer.notifyConfigurationChanged(commit, singletonList(path));
         return commit;
     }
 
@@ -104,29 +105,30 @@ public class ProxyRepository implements DistributedConfigRepository {
 
         paths.forEach(path -> storage.remove(path));
         currentCommit.set(commit);
-        configTopicProducer.notifyConfigurationChanged(null, paths);
+        configTopicProducer.notifyConfigurationChanged(commit, paths);
         return commit;
     }
 
     @Override
     public void refreshAll() {
-        Configurations configurations = persistenceConfigRepository.findAll();
-        List<Configuration> actualConfigs = configurations.getData();
+        ConfigurationList configurationList = persistenceConfigRepository.findAll();
+        List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.keySet();
-        updateAll(configurations, actualConfigs, oldKeys);
+        updateAll(configurationList, actualConfigs, oldKeys);
     }
 
     @Override
     public void refreshPath(String path) {
-        Configuration configuration = persistenceConfigRepository.find(path);
+        ConfigurationItem configurationItem = persistenceConfigRepository.find(path);
+        Configuration configuration = configurationItem.getData();
         storage.put(configuration.getPath(), configuration);
-        configTopicProducer.notifyConfigurationChanged(configuration.getCommit(), singletonList(configuration.getPath()));
+        configTopicProducer.notifyConfigurationChanged(configurationItem.getCommit(), singletonList(configuration.getPath()));
     }
 
     @Override
     public void refreshTenant(String tenant) {
-        Configurations configurations = persistenceConfigRepository.findAll();
-        List<Configuration> actualConfigs = configurations.getData();
+        ConfigurationList configurationList = persistenceConfigRepository.findAll();
+        List<Configuration> actualConfigs = configurationList.getData();
         actualConfigs = actualConfigs.stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
@@ -136,23 +138,23 @@ public class ProxyRepository implements DistributedConfigRepository {
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
             .collect(toSet());
 
-        updateAll(configurations, actualConfigs, oldKeys);
+        updateAll(configurationList, actualConfigs, oldKeys);
     }
 
-    private void updateAll(Configurations configurations, List<Configuration> actualConfigs, Set<String> oldKeys) {
-        refreshStorage(configurations, actualConfigs, oldKeys);
+    private void updateAll(ConfigurationList configurationList, List<Configuration> actualConfigs, Set<String> oldKeys) {
+        refreshStorage(configurationList, actualConfigs, oldKeys);
 
         Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
         updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
         configTopicProducer.notifyConfigurationChanged(currentCommit.get(), new ArrayList<>(updated));
     }
 
-    private void refreshStorage(Configurations configurations, List<Configuration> actualConfigs, Set<String> oldKeys) {
+    private void refreshStorage(ConfigurationList configurationList, List<Configuration> actualConfigs, Set<String> oldKeys) {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(path -> storage.remove(path));
         Map<String, Configuration> map = new HashMap<>();
         actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
         storage.putAll(map);
-        currentCommit.set(configurations.getCommit());
+        currentCommit.set(configurationList.getCommit());
     }
 }

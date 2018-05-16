@@ -8,7 +8,7 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class Configurations {
+public class ConfigurationList {
 
     private final String commit;
     private final List<Configuration> data;

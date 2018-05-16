@@ -185,7 +185,7 @@ public class PrivilegeService {
 
     private boolean updateConfig(String tenantKeyValue, String path, String content) {
         try {
-            configurationService.updateConfiguration(new Configuration(applyTenant(path, tenantKeyValue), content, null));
+            configurationService.updateConfiguration(new Configuration(applyTenant(path, tenantKeyValue), content));
             log.info("[{}] Config '{}' updated for tenant '{}'",
                      getRequestSourceTypeLogName(requestContextHolder),
                      path, StringUtils.defaultIfBlank(tenantKeyValue, NONE_TENANT));
@@ -200,7 +200,7 @@ public class PrivilegeService {
 
     private void createConfig(String path, String content) {
         try {
-            configurationService.updateConfiguration(new Configuration(path, content, null));
+            configurationService.updateConfiguration(new Configuration(path, content));
             log.info("[{}] Config created '{}'", getRequestSourceTypeLogName(requestContextHolder), path);
         } catch (Exception e) {
             log.error("[{}] Error creating configuration '{}'", getRequestSourceTypeLogName(requestContextHolder),

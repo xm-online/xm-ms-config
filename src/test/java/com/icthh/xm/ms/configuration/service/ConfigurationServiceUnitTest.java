@@ -12,7 +12,8 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.ms.configuration.domain.Configurations;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.ProxyRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -24,7 +25,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,7 +52,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void createConfigurations() {
-        when(persistenceConfigRepository.saveAll(singletonList(new Configuration("path", "content", null)))).thenReturn("commit");
+        when(persistenceConfigRepository.saveAll(singletonList(new Configuration("path", "content")))).thenReturn("commit");
         configurationService.createConfigurations(singletonList(new MockMultipartFile("test", "path", "contentType", "content".getBytes())));
 
         verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
@@ -61,7 +61,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void updateConfiguration() {
-        Configuration configuration = new Configuration("path", "content", "commit");
+        Configuration configuration = new Configuration("path", "content");
         when(persistenceConfigRepository.save(configuration, null)).thenReturn("commit");
 
         configurationService.updateConfiguration(configuration);
@@ -72,7 +72,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void updateConfigurationWithHash() {
-        Configuration configuration = new Configuration("path", "content", "commit");
+        Configuration configuration = new Configuration("path", "content");
         when(persistenceConfigRepository.save(configuration, "hash")).thenReturn("commit");
 
         configurationService.updateConfiguration(configuration, "hash");
@@ -90,7 +90,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void getConfigurations() {
-        Configuration configuration = new Configuration("path", "content", "commit");
+        Configuration configuration = new Configuration("path", "content");
         proxyRepository.getMap(null).put(configuration.getPath(), configuration);
 
         List<Configuration> result = configurationService.getConfigurations();
@@ -110,7 +110,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void refreshConfigurations() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new Configurations("commit", singletonList(new Configuration("path", "content", "commit"))));
+        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("path", "content"))));
         configurationService.refreshConfiguration();
 
         verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
@@ -119,7 +119,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void refreshConfiguration() {
-        when(persistenceConfigRepository.find("path")).thenReturn(new Configuration("path", "content", "commit"));
+        when(persistenceConfigRepository.find("path")).thenReturn(new ConfigurationItem("commit", new Configuration("path", "content")));
         configurationService.refreshConfiguration("path");
 
         verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
@@ -128,7 +128,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void refreshTenantConfigurations() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new Configurations("commit", singletonList(new Configuration("path", "content", "commit"))));
+        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("path", "content"))));
 
         configurationService.refreshTenantConfigurations();
 
@@ -139,7 +139,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void refreshTenantConfigurationsWithPath() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new Configurations("commit", singletonList(new Configuration("/config/tenants/tenant/path", "content", "commit"))));
+        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("/config/tenants/tenant/path", "content"))));
 
         configurationService.refreshTenantConfigurations();
 

@@ -27,7 +27,8 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
-import com.icthh.xm.ms.configuration.domain.Configurations;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
@@ -119,11 +120,11 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @Override
     @SneakyThrows
-    public Configurations findAll() {
+    public ConfigurationList findAll() {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
-            return new Configurations(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList()));
+            return new ConfigurationList(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList()));
         });
     }
 
@@ -139,16 +140,16 @@ public class JGitRepository implements PersistenceConfigRepository {
     private Configuration fileToConfiguration(File file, String commit) {
         String path = getRelativePath(file);
         String content = readFileToString(file, UTF_8);
-        return new Configuration(path, content, commit);
+        return new Configuration(path, content);
     }
 
     @Override
     @SneakyThrows
-    public Configuration find(String path) {
+    public ConfigurationItem find(String path) {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             String content = readFileToString(new File(getPathname(path)), UTF_8);
-            return new Configuration(path, content, commit);
+            return new ConfigurationItem(commit, new Configuration(path, content));
         });
     }
 
@@ -158,10 +159,8 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         log.info("[{}] Save configurations to git by paths {}",
                  getRequestSourceTypeLogName(requestContextHolder), paths);
-        String commit = runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
                           () -> configurations.forEach(this::writeConfiguration));
-        configurations.forEach(configuration -> configuration.setCommit(commit));
-        return commit;
     }
 
     @Override
@@ -177,7 +176,6 @@ public class JGitRepository implements PersistenceConfigRepository {
             assertConfigHash(configuration, oldConfigHash);
             writeConfiguration(configuration);
         });
-        configuration.setCommit(commit);
         return commit;
     }
 

@@ -75,7 +75,7 @@ public class TenantService {
     @SneakyThrows
     private void saveTenantList(Map<String, Set<TenantState>> tenantsList) {
         String tenantsListJson = om.writerWithDefaultPrettyPrinter().writeValueAsString(tenantsList);
-        configurationService.updateConfiguration(new Configuration(CONFIG_LIST_STORAGE, tenantsListJson, null));
+        configurationService.updateConfiguration(new Configuration(CONFIG_LIST_STORAGE, tenantsListJson));
     }
 
     @SneakyThrows

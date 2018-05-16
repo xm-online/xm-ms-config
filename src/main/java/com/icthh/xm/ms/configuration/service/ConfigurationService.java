@@ -45,7 +45,7 @@ public class ConfigurationService implements InitializingBean {
     }
 
     public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(repositoryProxy.find(path));
+        return Optional.ofNullable(repositoryProxy.find(path).getData());
     }
 
     public List<Configuration> getConfigurations() {
@@ -70,6 +70,6 @@ public class ConfigurationService implements InitializingBean {
 
     @SneakyThrows
     private Configuration toConfiguration(MultipartFile file) {
-        return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8), null);
+        return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8));
     }
 }
