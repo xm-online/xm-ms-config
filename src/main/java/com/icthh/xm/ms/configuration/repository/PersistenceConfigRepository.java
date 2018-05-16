@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface PersistenceConfigRepository {
 
+    boolean hasVersion(String version);
+
     ConfigurationList findAll();
 
     ConfigurationItem find(String path);

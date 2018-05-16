@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
@@ -116,6 +117,32 @@ public class JGitRepository implements PersistenceConfigRepository {
             .setDirectory(repositoryFolder)
             .setCredentialsProvider(createCredentialsProvider())
             .call().close();
+    }
+
+    @Override
+    @SneakyThrows
+    public boolean hasVersion(String version) {
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+            try (
+                Repository db = createRepository();
+                Git git = Git.wrap(db);
+            ) {
+                String branchName = gitProperties.getBranchName();
+                try {
+                    git.clean().setForce(true);
+                    git.checkout().setName(branchName).setForce(true).call();
+                    Iterable<RevCommit> refs = git.log().call();
+                    Optional<RevCommit> targetCommit = StreamSupport.stream(refs.spliterator(), false)
+                        .filter(revCommit -> revCommit.getName().equals(version))
+                        .findFirst();
+                    log.info("Commit {} found in local repository", targetCommit);
+                    return targetCommit.isPresent() ? true : false;
+                } catch (RefNotFoundException e) {
+                    log.info("Branch {} not found in local repository", branchName);
+                    return false;
+                }
+            }
+        });
     }
 
     @Override

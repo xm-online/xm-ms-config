@@ -13,6 +13,7 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -39,7 +40,8 @@ public class ProxyRepository implements DistributedConfigRepository {
     @Override
     public Map<String, Configuration> getMap(String commit) {
         if (StringUtils.isEmpty(commit)
-            || (currentCommit.get() != null && commit.equals(currentCommit.get()))) {
+            || (currentCommit.get() != null && commit.equals(currentCommit.get()))
+            || persistenceConfigRepository.hasVersion(commit)) {
             return storage;
         } else {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
@@ -48,6 +50,11 @@ public class ProxyRepository implements DistributedConfigRepository {
             refreshStorage(configurationList, actualConfigs, oldKeys);
             return storage;
         }
+    }
+
+    @Override
+    public boolean hasVersion(String version) {
+        throw new NotImplementedException("hasVersion() not implemented for ProxyRepository");
     }
 
     @Override
