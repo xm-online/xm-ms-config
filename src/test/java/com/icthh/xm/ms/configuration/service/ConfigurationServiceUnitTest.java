@@ -1,11 +1,8 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -14,9 +11,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.ProxyRepository;
-import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,15 +26,12 @@ import java.util.Optional;
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigurationServiceUnitTest {
 
-    private ConfigurationService configurationService;
     @InjectMocks
+    private ConfigurationService configurationService;
+    @Mock
     private ProxyRepository proxyRepository;
     @Mock
-    private PersistenceConfigRepository persistenceConfigRepository;
-    @Mock
     private TenantContextHolder tenantContextHolder;
-    @Mock
-    private ConfigTopicProducer configTopicProducer;
     @Mock
     private TenantContext tenantContext;
 
@@ -47,104 +39,79 @@ public class ConfigurationServiceUnitTest {
     public void before() {
         when(tenantContext.getTenantKey()).thenReturn(Optional.of(TenantKey.valueOf("tenant")));
         when(tenantContextHolder.getContext()).thenReturn(tenantContext);
-        configurationService = new ConfigurationService(proxyRepository, tenantContextHolder);
     }
 
     @Test
     public void createConfigurations() {
-        when(persistenceConfigRepository.saveAll(singletonList(new Configuration("path", "content")))).thenReturn("commit");
-        configurationService.createConfigurations(singletonList(new MockMultipartFile("test", "path", "contentType", "content".getBytes())));
+        configurationService.createConfigurations(
+            singletonList(new MockMultipartFile("test", "path", "contentType", "content".getBytes())));
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).saveAll(singletonList(new Configuration("path", "content")));
     }
 
     @Test
     public void updateConfiguration() {
         Configuration configuration = new Configuration("path", "content");
-        when(persistenceConfigRepository.save(configuration, null)).thenReturn("commit");
 
         configurationService.updateConfiguration(configuration);
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).save(configuration, null);
     }
 
     @Test
     public void updateConfigurationWithHash() {
         Configuration configuration = new Configuration("path", "content");
-        when(persistenceConfigRepository.save(configuration, "hash")).thenReturn("commit");
 
         configurationService.updateConfiguration(configuration, "hash");
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).save(configuration, "hash");
     }
 
     @Test
     public void findConfiguration() {
-        configurationService.findConfiguration("path");
+        Configuration configuration = new Configuration("path", "content");
+        when(proxyRepository.find("path")).thenReturn(new ConfigurationItem("commit", configuration));
 
-        verifyZeroInteractions(persistenceConfigRepository, configTopicProducer);
+        Optional<Configuration> result = configurationService.findConfiguration("path");
+
+        assertThat(result.get()).isEqualTo(configuration);
     }
 
     @Test
     public void getConfigurations() {
         Configuration configuration = new Configuration("path", "content");
-        proxyRepository.getMap(null).put(configuration.getPath(), configuration);
+        when(proxyRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(configuration)));
 
         List<Configuration> result = configurationService.getConfigurations();
 
         assertThat(result).containsExactly(configuration);
-        verifyZeroInteractions(persistenceConfigRepository, configTopicProducer);
     }
 
     @Test
     public void deleteConfiguration() {
         configurationService.deleteConfiguration("path");
 
-        verify(persistenceConfigRepository).delete("path");
-        verify(configTopicProducer).notifyConfigurationChanged(null, singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).delete("path");
     }
 
     @Test
     public void refreshConfigurations() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("path", "content"))));
         configurationService.refreshConfiguration();
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).refreshAll();
     }
 
     @Test
     public void refreshConfiguration() {
-        when(persistenceConfigRepository.find("path")).thenReturn(new ConfigurationItem("commit", new Configuration("path", "content")));
         configurationService.refreshConfiguration("path");
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).refreshPath("path");
     }
 
     @Test
     public void refreshTenantConfigurations() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("path", "content"))));
-
         configurationService.refreshTenantConfigurations();
 
-        verify(persistenceConfigRepository).findAll();
-        verify(configTopicProducer).notifyConfigurationChanged("commit", emptyList());
-        verifyNoMoreInteractions(configTopicProducer);
-    }
-
-    @Test
-    public void refreshTenantConfigurationsWithPath() {
-        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(new Configuration("/config/tenants/tenant/path", "content"))));
-
-        configurationService.refreshTenantConfigurations();
-
-        verify(persistenceConfigRepository).findAll();
-        verify(configTopicProducer).notifyConfigurationChanged("commit", singletonList("/config/tenants/tenant/path"));
-        verifyNoMoreInteractions(configTopicProducer);
+        verify(proxyRepository).refreshTenant("tenant");
     }
 }
