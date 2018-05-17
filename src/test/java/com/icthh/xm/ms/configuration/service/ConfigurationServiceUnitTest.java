@@ -11,7 +11,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.impl.ProxyRepository;
+import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +29,7 @@ public class ConfigurationServiceUnitTest {
     @InjectMocks
     private ConfigurationService configurationService;
     @Mock
-    private ProxyRepository proxyRepository;
+    private ConfigProxyRepository configProxyRepository;
     @Mock
     private TenantContextHolder tenantContextHolder;
     @Mock
@@ -46,7 +46,7 @@ public class ConfigurationServiceUnitTest {
         configurationService.createConfigurations(
             singletonList(new MockMultipartFile("test", "path", "contentType", "content".getBytes())));
 
-        verify(proxyRepository).saveAll(singletonList(new Configuration("path", "content")));
+        verify(configProxyRepository).saveAll(singletonList(new Configuration("path", "content")));
     }
 
     @Test
@@ -55,7 +55,7 @@ public class ConfigurationServiceUnitTest {
 
         configurationService.updateConfiguration(configuration);
 
-        verify(proxyRepository).save(configuration, null);
+        verify(configProxyRepository).save(configuration, null);
     }
 
     @Test
@@ -64,13 +64,13 @@ public class ConfigurationServiceUnitTest {
 
         configurationService.updateConfiguration(configuration, "hash");
 
-        verify(proxyRepository).save(configuration, "hash");
+        verify(configProxyRepository).save(configuration, "hash");
     }
 
     @Test
     public void findConfiguration() {
         Configuration configuration = new Configuration("path", "content");
-        when(proxyRepository.find("path")).thenReturn(new ConfigurationItem("commit", configuration));
+        when(configProxyRepository.find("path")).thenReturn(new ConfigurationItem("commit", configuration));
 
         Optional<Configuration> result = configurationService.findConfiguration("path");
 
@@ -80,7 +80,7 @@ public class ConfigurationServiceUnitTest {
     @Test
     public void getConfigurations() {
         Configuration configuration = new Configuration("path", "content");
-        when(proxyRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(configuration)));
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(configuration)));
 
         List<Configuration> result = configurationService.getConfigurations();
 
@@ -91,27 +91,27 @@ public class ConfigurationServiceUnitTest {
     public void deleteConfiguration() {
         configurationService.deleteConfiguration("path");
 
-        verify(proxyRepository).delete("path");
+        verify(configProxyRepository).delete("path");
     }
 
     @Test
     public void refreshConfigurations() {
         configurationService.refreshConfiguration();
 
-        verify(proxyRepository).refreshAll();
+        verify(configProxyRepository).refreshAll();
     }
 
     @Test
     public void refreshConfiguration() {
         configurationService.refreshConfiguration("path");
 
-        verify(proxyRepository).refreshPath("path");
+        verify(configProxyRepository).refreshPath("path");
     }
 
     @Test
     public void refreshTenantConfigurations() {
         configurationService.refreshTenantConfigurations();
 
-        verify(proxyRepository).refreshTenant("tenant");
+        verify(configProxyRepository).refreshTenant("tenant");
     }
 }

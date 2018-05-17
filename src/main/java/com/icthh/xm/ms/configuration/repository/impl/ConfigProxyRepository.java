@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class ProxyRepository implements DistributedConfigRepository {
+public class ConfigProxyRepository implements DistributedConfigRepository {
     @Getter(AccessLevel.PACKAGE)
     private final AtomicReference<String> version = new AtomicReference<>();
     @Getter(AccessLevel.PACKAGE)
@@ -63,7 +63,7 @@ public class ProxyRepository implements DistributedConfigRepository {
 
     @Override
     public boolean hasVersion(String version) {
-        throw new NotImplementedException("hasVersion() not implemented for ProxyRepository");
+        throw new NotImplementedException("hasVersion() not implemented for ConfigProxyRepository");
     }
 
     @Override
