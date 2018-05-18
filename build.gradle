@@ -262,6 +262,9 @@ dependencies {
     testCompile "org.hamcrest:hamcrest-library"
     testCompile "io.gatling.highcharts:gatling-charts-highcharts:${gatling_version}"
     testCompile "com.h2database:h2"
+
+    testCompile 'com.github.stefanbirkner:system-rules:1.17.2'
+
     optional ("org.springframework.boot:spring-boot-configuration-processor:${spring_boot_version}") {
         exclude group: 'com.vaadin.external.google', module: 'android-json'
     }

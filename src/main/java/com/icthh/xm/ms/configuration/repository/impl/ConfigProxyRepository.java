@@ -11,6 +11,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private final ConcurrentMap<String, Configuration> storage = new ConcurrentHashMap<>();
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final ConfigTopicProducer configTopicProducer;
+    private final List<ConfigurationProcessor> configurationProcessors;
 
     /**
      * Get internal map config. If commit is not specified, or commit is the same as inmemory,
@@ -88,7 +90,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public String save(Configuration configuration, String oldConfigHash) {
         String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
 
-        storage.put(configuration.getPath(), configuration);
+        storage.put(configuration.getPath(), process(configuration));
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
 
@@ -100,7 +102,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         String commit = persistenceConfigRepository.saveAll(configurations);
 
         Map<String, Configuration> map = new HashMap<>();
-        configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
+        configurations.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
         storage.putAll(map);
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
@@ -153,7 +155,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void refreshPath(String path) {
         ConfigurationItem configurationItem = persistenceConfigRepository.find(path);
         Configuration configuration = configurationItem.getData();
-        storage.put(configuration.getPath(), configuration);
+        storage.put(configuration.getPath(), process(configuration));
         configTopicProducer.notifyConfigurationChanged(configurationItem.getCommit(), singletonList(configuration.getPath()));
     }
 
@@ -178,7 +180,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(storage::remove);
         Map<String, Configuration> map = new HashMap<>();
-        actualConfigs.forEach(configuration -> map.put(configuration.getPath(), configuration));
+        actualConfigs.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
         storage.putAll(map);
         version.set(commit);
     }
@@ -187,5 +189,12 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
         updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
         configTopicProducer.notifyConfigurationChanged(version.get(), new ArrayList<>(updated));
+    }
+
+    private Configuration process(Configuration configuration) {
+        for(ConfigurationProcessor processor: configurationProcessors) {
+            configuration = processor.processConfiguration(configuration);
+        }
+        return configuration;
     }
 }

@@ -1,0 +1,15 @@
+inviteExpireTime: 86400
+
+clientCabinetBaseUrl: someclientCabinetBaseUrlValue
+
+payment:
+  liqpay:
+    public_key: VVVVVVVVVALUE
+
+email:
+  subjects:
+    passwordChangedEmail:
+      en: New password was setup successfully
+      de: New password was setup successfully
+      ru: Новый пароль успешно установлен
+      uk: Новий пароль успішно встановлено
