@@ -14,4 +14,8 @@ public final class ConfigPathUtils {
         return CONFIG + TENANTS + "/" + getRequiredTenantKeyValue(tenantContextHolder);
     }
 
+    public static String getTenantPathPrefix(String tenant) {
+        return CONFIG + TENANTS + "/" + tenant;
+    }
+
 }

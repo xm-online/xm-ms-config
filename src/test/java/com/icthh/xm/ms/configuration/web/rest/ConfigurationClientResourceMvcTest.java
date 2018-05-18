@@ -1,6 +1,5 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.icthh.xm.commons.tenant.Tenant;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
@@ -8,7 +7,6 @@ import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -52,7 +50,7 @@ public class ConfigurationClientResourceMvcTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + REFRESH + testPath))
                 .andExpect(status().is2xxSuccessful());
 
-        verify(configurationService).refreshConfigurations(eq(CONFIG + TENANTS + "/INTTEST" + testPath));
+        verify(configurationService).refreshConfiguration(eq(CONFIG + TENANTS + "/INTTEST" + testPath));
         verifyNoMoreInteractions(configurationService);
     }
 

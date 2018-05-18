@@ -1,21 +1,26 @@
 package com.icthh.xm.ms.configuration.repository;
 
-import com.icthh.xm.ms.configuration.domain.Configuration;
-import lombok.SneakyThrows;
+import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 
 import java.util.List;
 
 public interface PersistenceConfigRepository {
 
-    List<Configuration> findAll();
+    boolean hasVersion(String version);
 
-    Configuration find(String path);
+    ConfigurationList findAll();
 
-    void saveAll(List<Configuration> configurations);
+    ConfigurationItem find(String path);
 
-    void save(Configuration configuration);
+    String saveAll(List<Configuration> configurations);
 
-    void save(Configuration configuration, String oldConfigHash);
+    String save(Configuration configuration);
 
-    void delete(String path);
+    String save(Configuration configuration, String oldConfigHash);
+
+    String deleteAll(List<String> paths);
+
+    String delete(String path);
 }

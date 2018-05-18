@@ -1,7 +1,5 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static com.google.common.base.CaseFormat.UPPER_CAMEL;
-import static com.google.common.base.CaseFormat.UPPER_UNDERSCORE;
 import static com.icthh.xm.commons.config.client.service.TenantConfigService.DEFAULT_TENANT_CONFIG_PATTERN;
 import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
@@ -10,7 +8,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;

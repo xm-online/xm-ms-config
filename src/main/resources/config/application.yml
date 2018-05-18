@@ -76,7 +76,6 @@ server:
 #
 # Full reference is available at: https://jhipster.github.io/common-application-properties/
 # ===================================================================
-
 jhipster:
     async:
         core-pool-size: 2
@@ -116,23 +115,13 @@ jhipster:
 # ===================================================================
 xm-config:
     enabled: true
-    hazelcast:
-        hazelcast-config-url: classpath:./config/hazelcast-consul.xml
-        interfaces: 192.168.1.*,10.0.0.*
-        consul-host: ${spring.cloud.consul.host}
-        consul-port: ${spring.cloud.consul.port}
-        consul-service-name: xm-tenant-config-hazelcast-cluster
-        consul-healthy-only: true
-        consul-service-tags: 'hazelcast'
-        consul-discovery-delay-ms: 10000
-        group-name: xm-tenant-config-hazelcast-cluster
-        group-pass: password
     xm-config-url: http://config
+    kafka-config-topic: config_topic
 
 tenant.reject-suspended: false
 
 application:
-    tenant-ignored-path-list: /api/token_key
+    tenant-ignored-path-list: /api/token_key, /api/config_map
     kafka-enabled: true
     kafka-system-queue: system_queue
     retry:

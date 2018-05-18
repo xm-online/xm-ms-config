@@ -86,7 +86,10 @@ if (OperatingSystem.current().isWindows()) {
 }
 
 test {
+    systemProperty "spring.profiles.active", "test"
+    mkdir("src/test/features")
     include '**/*UnitTest*'
+    include '**/*MvcTest*'
     include '**/*IntTest*'
 
     // uncomment if the tests reports are not generated
@@ -205,9 +208,6 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind"
     compile "com.fasterxml.jackson.module:jackson-module-afterburner"
     compile ("com.ryantenney.metrics:metrics-spring:${metrics_spring_version}")
-    compile "com.hazelcast:hazelcast"
-    compile "com.hazelcast:hazelcast-spring"
-    compile 'org.bitsofinfo:hazelcast-consul-discovery-spi:1.0-RC7'
 
     compile "javax.cache:cache-api"
     compile "org.apache.commons:commons-lang3:${commons_lang_version}"

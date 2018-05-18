@@ -2,7 +2,7 @@ package com.icthh.xm.ms.configuration.service.processors;
 
 import static java.util.stream.Collectors.toList;
 
-import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.commons.config.domain.Configuration;
 
 import java.util.List;
 

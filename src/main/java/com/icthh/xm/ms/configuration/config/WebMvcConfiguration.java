@@ -14,12 +14,12 @@ import java.util.List;
 
 @Configuration
 @Import({XmMsWebConfiguration.class, MsCfgXmRequestContextConfiguration.class})
-public class WebMvcConfig extends XmWebMvcConfigurerAdapter {
+public class WebMvcConfiguration extends XmWebMvcConfigurerAdapter {
 
     private final ApplicationProperties properties;
     private final XmRequestContextInterceptor xmRequestContextInterceptor;
 
-    public WebMvcConfig(TenantInterceptor tenantInterceptor,
+    public WebMvcConfiguration(TenantInterceptor tenantInterceptor,
                         XmLoggingInterceptor xmLoggingInterceptor,
                         ApplicationProperties properties,
                         XmRequestContextInterceptor xmRequestContextInterceptor) {

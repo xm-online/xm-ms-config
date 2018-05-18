@@ -1,9 +1,9 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class ConfigurationClientResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content));
+        configurationService.updateConfiguration(new Configuration(path, content));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -98,7 +98,7 @@ public class ConfigurationClientResource {
         if (isBlank(path)) {
             configurationService.refreshTenantConfigurations();
         } else {
-            configurationService.refreshConfigurations(getAbsolutePath(path));
+            configurationService.refreshConfiguration(getAbsolutePath(path));
         }
         return ResponseEntity.ok().build();
     }

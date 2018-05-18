@@ -14,12 +14,14 @@ import com.icthh.xm.ms.configuration.ConfigurationApp;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
 import com.icthh.xm.ms.configuration.domain.TenantState;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -32,6 +34,9 @@ import java.util.Set;
 @SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRepositoryConfiguration.class})
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class TenantResourceIntTest {
+
+    @MockBean
+    private ConfigTopicProducer configTopicProducer;
 
     @Autowired
     private TenantResource tenantResource;

@@ -7,17 +7,15 @@ import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

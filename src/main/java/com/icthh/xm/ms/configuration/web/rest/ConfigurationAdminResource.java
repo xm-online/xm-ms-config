@@ -11,15 +11,14 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
@@ -42,10 +41,10 @@ import java.util.Optional;
 public class ConfigurationAdminResource {
 
     private final UrlPathHelper urlHelper = new UrlPathHelper();
-
-    private final ConfigurationService configurationService;
     private final ObjectMapper jsonMapper = new ObjectMapper();
     private final ObjectMapper ymlmapper = new ObjectMapper(new YAMLFactory());
+
+    private final ConfigurationService configurationService;
 
     @PostMapping(value =  CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed
@@ -63,7 +62,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
-        configurationService.createConfiguration(new Configuration(path, content));
+        configurationService.updateConfiguration(new Configuration(path, content));
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
@@ -129,9 +128,9 @@ public class ConfigurationAdminResource {
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
         String path = extractPath(request).substring(CONFIG.length() + REFRESH.length());
         if (isBlank(path)) {
-            configurationService.refreshConfigurations();
+            configurationService.refreshConfiguration();
         } else {
-            configurationService.refreshConfigurations(path);
+            configurationService.refreshConfiguration(path);
         }
         return ResponseEntity.ok().build();
     }

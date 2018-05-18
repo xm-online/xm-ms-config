@@ -1,4 +1,4 @@
-package com.icthh.xm.ms.configuration.repository;
+package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
@@ -6,6 +6,7 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequest
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
 import static java.io.File.separator;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -19,21 +20,24 @@ import static org.eclipse.jgit.api.Git.cloneRepository;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
-import com.icthh.xm.ms.configuration.domain.Configuration;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
-import com.icthh.xm.ms.configuration.utils.ReturnableTask;
 import com.icthh.xm.ms.configuration.utils.Task;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
@@ -43,8 +47,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -115,11 +121,39 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @Override
     @SneakyThrows
-    public List<Configuration> findAll() {
+    public boolean hasVersion(String version) {
+        log.info("[{}] Search if commit present: {}", getRequestSourceTypeLogName(requestContextHolder), version);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
-            pull();
+            try (
+                Repository db = createRepository();
+                Git git = Git.wrap(db);
+            ) {
+                String branchName = gitProperties.getBranchName();
+                try {
+                    git.clean().setForce(true);
+                    git.checkout().setName(branchName).setForce(true).call();
+                    Iterable<RevCommit> refs = git.log().call();
+                    Optional<RevCommit> targetCommit = StreamSupport.stream(refs.spliterator(), false)
+                        .filter(revCommit -> revCommit.getName().equals(version))
+                        .findFirst();
+                    log.info("Commit {} found in local repository", targetCommit);
+                    return targetCommit.isPresent() ? true : false;
+                } catch (RefNotFoundException e) {
+                    log.info("Branch {} not found in local repository", branchName);
+                    return false;
+                }
+            }
+        });
+    }
+
+    @Override
+    @SneakyThrows
+    public ConfigurationList findAll() {
+        log.info("[{}] Find all configurations", getRequestSourceTypeLogName(requestContextHolder));
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+            String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
-            return files.stream().filter(excludeGitFiels()).map(this::fileToConfiguration).collect(toList());
+            return new ConfigurationList(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList()));
         });
     }
 
@@ -132,7 +166,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private Configuration fileToConfiguration(File file) {
+    private Configuration fileToConfiguration(File file, String commit) {
         String path = getRelativePath(file);
         String content = readFileToString(file, UTF_8);
         return new Configuration(path, content);
@@ -140,37 +174,39 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @Override
     @SneakyThrows
-    public Configuration find(String path) {
+    public ConfigurationItem find(String path) {
+        log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
-            pull();
+            String commit = pull();
             String content = readFileToString(new File(getPathname(path)), UTF_8);
-            return new Configuration(path, content);
+            return new ConfigurationItem(commit, new Configuration(path, content));
         });
     }
 
     @Override
-    public void saveAll(List<Configuration> configurations) {
+    public String saveAll(List<Configuration> configurations) {
         List<String> paths = configurations.stream().map(Configuration::getPath).collect(toList());
 
         log.info("[{}] Save configurations to git by paths {}",
                  getRequestSourceTypeLogName(requestContextHolder), paths);
-        runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
                           () -> configurations.forEach(this::writeConfiguration));
     }
 
     @Override
-    public void save(Configuration configuration) {
-        save(configuration, null);
+    public String save(Configuration configuration) {
+        return save(configuration, null);
     }
 
     @Override
-    public void save(Configuration configuration, String oldConfigHash) {
+    public String save(Configuration configuration, String oldConfigHash) {
         log.info("[src: {}] Save configuration to git with path {}", getRequestSourceTypeLogName(requestContextHolder),
                  configuration.getPath());
-        runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
+        String commit = runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
             assertConfigHash(configuration, oldConfigHash);
             writeConfiguration(configuration);
         });
+        return commit;
     }
 
     @SneakyThrows
@@ -189,10 +225,24 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
-    public void delete(String path) {
+    public String deleteAll(List<String> paths) {
+        log.info("[{}] Delete configurations from git by paths {}",
+            getRequestSourceTypeLogName(requestContextHolder), paths);
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, paths.size()), () -> {
+            paths.forEach(path -> {
+                File file = new File(rootDirectory.getAbsolutePath() + path);
+                if (file.exists()) {
+                    file.delete();
+                }
+            });
+        });
+    }
+
+    @Override
+    public String delete(String path) {
         log.info("[{}] Delete configuration from git by path {}",
                  getRequestSourceTypeLogName(requestContextHolder), path);
-        runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> {
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> {
             File file = new File(rootDirectory.getAbsolutePath() + path);
             if (file.exists()) {
                 file.delete();
@@ -200,7 +250,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         });
     }
 
-    private String getCommitMsg(String template, String path) {
+    private String getCommitMsg(String template, Object path) {
         String operationSourceMsg;
         if (isRequestSourceNameExist(requestContextHolder)) {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC_AND_APP,
@@ -240,7 +290,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    protected void pull() {
+    protected String pull() {
         try (
             Repository db = createRepository();
             Git git = Git.wrap(db);
@@ -250,6 +300,11 @@ public class JGitRepository implements PersistenceConfigRepository {
                 git.clean().setForce(true);
                 git.checkout().setName(branchName).setForce(true).call();
                 git.pull().setCredentialsProvider(createCredentialsProvider()).call();
+                Iterable<RevCommit> refs = git.log().call();
+                RevCommit lastCommit = StreamSupport.stream(refs.spliterator(), false)
+                    .max(comparing(RevCommit::getCommitTime))
+                    .get();
+                return lastCommit.getName();
             } catch (RefNotFoundException e) {
                 log.info("Branch {} not found in local repository", branchName);
                 git.fetch().setCredentialsProvider(createCredentialsProvider()).call();
@@ -260,19 +315,25 @@ public class JGitRepository implements PersistenceConfigRepository {
                     .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName)
                     .call();
                 git.pull().setCredentialsProvider(createCredentialsProvider()).call();
+                Iterable<RevCommit> refs = git.log().call();
+                RevCommit lastCommit = StreamSupport.stream(refs.spliterator(), false)
+                    .max(comparing(RevCommit::getCommitTime))
+                    .get();
+                return lastCommit.getName();
             }
         }
     }
 
     @SneakyThrows
-    protected void commitAndPush(String commitMsg) {
+    protected String commitAndPush(String commitMsg) {
         try (
             Repository db = createRepository();
             Git git = Git.wrap(db);
         ) {
             git.add().addFilepattern(".").call();
-            git.commit().setAll(true).setMessage(commitMsg).call();
+            RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
             git.push().setCredentialsProvider(createCredentialsProvider()).call();
+            return commit.getName();
         }
     }
 
@@ -282,20 +343,11 @@ public class JGitRepository implements PersistenceConfigRepository {
 
 
     @SneakyThrows
-    private <R, E extends Exception> R runWithPullCommit(String commitMsg, ReturnableTask<R, E> task) {
+    private <E extends Exception> String runWithPullCommit(String commitMsg, Task<E> task) {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             pull();
-            R r = task.execute();
-            commitAndPush(commitMsg);
-            return r;
-        });
-    }
-
-    private <E extends Exception> void runWithPullCommit(String commitMsg, Task<E> task) {
-        runWithPullCommit(commitMsg, () -> {
             task.execute();
-            return null;
+            return commitAndPush(commitMsg);
         });
     }
-
 }

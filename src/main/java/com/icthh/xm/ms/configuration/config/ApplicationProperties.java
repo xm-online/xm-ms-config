@@ -26,8 +26,6 @@ public class ApplicationProperties {
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
 
-    private Map<String, String> hazelcast = new HashMap<>();
-
     @Getter
     @Setter
     public static class GitProperties {

@@ -9,6 +9,9 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.DefaultProfileUtil;
 import io.github.jhipster.config.JHipsterConstants;
 import javax.annotation.PreDestroy;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -32,21 +35,20 @@ import java.util.Collection;
     excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
         classes = OAuth2InterceptedFeignConfiguration.class)
 )
-@EnableAutoConfiguration(exclude = {MetricFilterAutoConfiguration.class, MetricRepositoryAutoConfiguration.class})
-@EnableConfigurationProperties({ApplicationProperties.class})
+@EnableAutoConfiguration(exclude = {
+    MetricFilterAutoConfiguration.class,
+    MetricRepositoryAutoConfiguration.class
+})
+@EnableConfigurationProperties({
+    ApplicationProperties.class
+})
 @EnableDiscoveryClient
+@Slf4j
+@RequiredArgsConstructor
 public class ConfigurationApp {
 
-    private static final Logger log = LoggerFactory.getLogger(ConfigurationApp.class);
-
     private final Environment env;
-
     private final TenantContextHolder tenantContextHolder;
-
-    public ConfigurationApp(Environment env, TenantContextHolder tenantContextHolder) {
-        this.env = env;
-        this.tenantContextHolder = tenantContextHolder;
-    }
 
     /**
      * Initializes configuration.

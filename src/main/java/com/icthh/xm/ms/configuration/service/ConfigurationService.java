@@ -1,17 +1,17 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
+import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
-import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,103 +19,57 @@ import java.util.List;
 import java.util.Optional;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
-public class ConfigurationService {
+public class ConfigurationService implements InitializingBean {
 
-    private final DistributedConfigRepository distributedConfigRepository;
-
-    private final PersistenceConfigRepository persistenceConfigRepository;
-
+    private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
 
-    private final List<ConfigurationProcessor> configurationProcessors;
-
-    public ConfigurationService(DistributedConfigRepository distributedConfigRepository,
-                                PersistenceConfigRepository persistenceConfigRepository,
-                                TenantContextHolder tenantContextHolder,
-                                List<ConfigurationProcessor> configurationProcessors) {
-        this.distributedConfigRepository = distributedConfigRepository;
-        this.persistenceConfigRepository = persistenceConfigRepository;
-        this.tenantContextHolder = tenantContextHolder;
-        this.configurationProcessors = configurationProcessors;
-
-        refreshConfigurations();
-    }
-
-    public void createConfiguration(Configuration configuration) {
-        persistenceConfigRepository.save(configuration);
-        distributedConfigRepository.save(process(configuration));
-    }
-
-    private Configuration process(Configuration configuration) {
-        for(ConfigurationProcessor processor: configurationProcessors) {
-            configuration = processor.processConfiguration(configuration);
-        }
-        return configuration;
-    }
-
-    private List<Configuration> process(List<Configuration> configurations) {
-        for(ConfigurationProcessor processor: configurationProcessors) {
-            configurations = processor.processConfigurations(configurations);
-        }
-        return configurations;
-    }
-
-    public void updateConfiguration(Configuration configuration) {
-        updateConfiguration(process(configuration), null);
-    }
-
-    public void updateConfiguration(Configuration configuration, String oldConfigHash) {
-        persistenceConfigRepository.save(configuration, oldConfigHash);
-        distributedConfigRepository.save(process(configuration));
-    }
-
-    public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(distributedConfigRepository.find(path));
-    }
-
-    public void deleteConfiguration(String path) {
-        persistenceConfigRepository.delete(path);
-        distributedConfigRepository.delete(path);
-    }
-
-    public void refreshConfigurations() {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        List<String> oldKeys = distributedConfigRepository.getKeysList();
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(process(actualConfigs));
+    @Override
+    public void afterPropertiesSet() {
+        repositoryProxy.refreshInternal();
     }
 
     public void createConfigurations(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        persistenceConfigRepository.saveAll(configurations);
-        distributedConfigRepository.saveAll(process(configurations));
+        repositoryProxy.saveAll(configurations);
+    }
+
+    public void updateConfiguration(Configuration configuration) {
+        updateConfiguration(configuration, null);
+    }
+
+    public void updateConfiguration(Configuration configuration, String oldConfigHash) {
+        repositoryProxy.save(configuration, oldConfigHash);
+    }
+
+    public Optional<Configuration> findConfiguration(String path) {
+        return Optional.ofNullable(repositoryProxy.find(path).getData());
+    }
+
+    public List<Configuration> getConfigurations() {
+        return repositoryProxy.findAll().getData();
+    }
+
+    public void deleteConfiguration(String path) {
+        repositoryProxy.delete(path);
+    }
+
+    public void refreshConfiguration() {
+        repositoryProxy.refreshAll();
+    }
+
+    public void refreshConfiguration(String path) {
+        repositoryProxy.refreshPath(path);
+    }
+
+    public void refreshTenantConfigurations() {
+        repositoryProxy.refreshTenant(getRequiredTenantKeyValue(tenantContextHolder));
     }
 
     @SneakyThrows
     private Configuration toConfiguration(MultipartFile file) {
         return new Configuration(file.getOriginalFilename(), IOUtils.toString(file.getInputStream(), UTF_8));
-    }
-
-    public void refreshConfigurations(String path) {
-        Configuration configuration = persistenceConfigRepository.find(path);
-        distributedConfigRepository.save(process(configuration));
-    }
-
-    public void refreshTenantConfigurations() {
-        List<Configuration> actualConfigs = persistenceConfigRepository.findAll();
-        actualConfigs = actualConfigs.stream()
-                .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenantContextHolder)))
-                .collect(toList());
-
-        List<String> allOldKeys = distributedConfigRepository.getKeysList();
-        List<String> oldKeys = allOldKeys.stream()
-                .filter(path -> path.startsWith(getTenantPathPrefix(tenantContextHolder)))
-                .collect(toList());
-
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(process(actualConfigs));
     }
 }
