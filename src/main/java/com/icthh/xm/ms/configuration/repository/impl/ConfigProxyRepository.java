@@ -51,6 +51,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         if (StringUtils.isEmpty(commit)
             || (version.get() != null && commit.equals(version.get()))
             || persistenceConfigRepository.hasVersion(commit)) {
+            log.debug("Get configuration from memory by commit: {}", commit);
             return storage;
         } else {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
@@ -68,6 +69,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public ConfigurationList findAll() {
+        log.debug("Get configuration from memory all {}");
         return new ConfigurationList(version.get(), new ArrayList<>(storage.values()));
     }
 

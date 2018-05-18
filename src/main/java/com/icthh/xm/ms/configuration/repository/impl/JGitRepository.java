@@ -122,6 +122,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     @SneakyThrows
     public boolean hasVersion(String version) {
+        log.info("[{}] Search if commit present: {}", getRequestSourceTypeLogName(requestContextHolder), version);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             try (
                 Repository db = createRepository();
@@ -148,6 +149,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     @SneakyThrows
     public ConfigurationList findAll() {
+        log.info("[{}] Find all configurations", getRequestSourceTypeLogName(requestContextHolder));
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
@@ -173,6 +175,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     @SneakyThrows
     public ConfigurationItem find(String path) {
+        log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             String content = readFileToString(new File(getPathname(path)), UTF_8);
