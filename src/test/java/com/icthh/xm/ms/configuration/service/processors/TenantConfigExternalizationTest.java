@@ -48,16 +48,16 @@ public class TenantConfigExternalizationTest {
     @Test
     public void testConfigOverrideSubValue() {
         String value = UUID.randomUUID().toString();
-        environmentVariables.set("XM_email_subjects_passwordResetEmail_ru", value);
-        Object actual = overrideParameterAndReturnResult(asList("email", "subjects", "passwordResetEmail", "ru"));
+        environmentVariables.set("XM_email_subjects_passwordChangedEmail_ru", value);
+        Object actual = overrideParameterAndReturnResult(asList("email", "subjects", "passwordChangedEmail", "ru"));
         assertEquals(value, actual);
     }
 
     @Test
     public void testConfigOverrideSubValueUpperCase() {
         String value = UUID.randomUUID().toString();
-        environmentVariables.set("XM_EMAIL_SUBJECTS_PASSWORDRESETEMAIL_RU", value);
-        Object actual = overrideParameterAndReturnResult(asList("email", "subjects", "passwordResetEmail", "ru"));
+        environmentVariables.set("XM_EMAIL_SUBJECTS_PASSWORDCHANGEDEMAIL_RU", value);
+        Object actual = overrideParameterAndReturnResult(asList("email", "subjects", "passwordChangedEmail", "ru"));
         assertEquals(value, actual);
     }
 
