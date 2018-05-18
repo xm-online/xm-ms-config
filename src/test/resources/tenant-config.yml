@@ -1,0 +1,222 @@
+inviteExpireTime: 86400
+
+#test
+rrtApplicationPath: https://nexus.env.unitedhelp.eu/repository/mobile-app/dev/android-rrt/latest/android-rrt-latest.apk
+
+#test
+clientCabinetBaseUrl: http://user-test.unitedhelp.eu
+
+ossuserApiEndpoint: http://ossuser
+ossalarmApiEndpoint: http://ossalarm
+eventApiEndpoint: http://event
+
+#test
+entityApiEndpoint: http://admin-test.unitedhelp.eu/entity
+
+iotApiEndpoint: https://mdm.tiw-sys.eu:9443
+iotApiClientId: 1gzwyzbUGy3cIKZ6OK7RifqS4L4a
+iotApiClientSecret: l04WUc_gt1SF1BdNX72mlANfLtYa
+
+#test
+dispatcherCabinetUrl: http://dispatcher-test.unitedhelp.eu/
+#test
+agentCabinetUrl: http://agent-test.unitedhelp.eu/
+
+trueEntityApiEndpoint: http://entity
+systemUser:
+  tokenUrl: http://uaa/oauth/token
+  login: uh
+  password: P@ssw0rd
+  clientToken: Basic aW50ZXJuYWw6aW50ZXJuYWw=
+
+payment:
+
+  #test
+  defaultSandbox: true
+
+  liqpay:
+    #test
+    public_key: i34271432733
+    #test
+    private_key: hqTLDz1LdxYX06sxK4l1cEUFzSWComkXZlqBbTAc
+    #test
+    apiEndpoint: https://www.liqpay.ua/api/request
+
+    products:
+      1_year:
+        name: 1 year
+        amount: 3000
+        currency: UAH
+        periodDays: 360
+      180_days:
+        name: 180 days
+        amount: 1500
+        currency: UAH
+        periodDays: 180
+
+  paypal:
+
+    products:
+      1_year:
+        name: 1 year
+        amount: 100
+        currency: USD
+        periodDays: 360
+      180_days:
+        name: 180 days
+        amount: 50
+        currency: USD
+        periodDays: 180
+
+    sandbox:
+      #test
+      clientId: AflR0ilnmbz1On55OuVSbGqqyna6EzGuP5ltZWNqV9VB1sWImiS6kPWqKOhuBZjM88P7MXZLz6EX9Mm1
+      #test
+      secret: EHJ3xYSGgdRWRbjQ-HAMvNC1u2ysnZyGbE1vkjCBBol6xvsTkBjD4fpLMP-J3KEMHfJ8JGlPFkv4eU7M
+      #test
+      apiEndpoint: https://api.sandbox.paypal.com
+    production:
+      #test
+      clientId: AflR0ilnmbz1On55OuVSbGqqyna6EzGuP5ltZWNqV9VB1sWImiS6kPWqKOhuBZjM88P7MXZLz6EX9Mm1
+      #test
+      secret: EHJ3xYSGgdRWRbjQ-HAMvNC1u2ysnZyGbE1vkjCBBol6xvsTkBjD4fpLMP-J3KEMHfJ8JGlPFkv4eU7M
+      #test
+      apiEndpoint: https://api.sandbox.paypal.com
+
+email:
+  from:
+    en: support@unitedhelp.eu (UNITED HELP Support)
+    de: support@unitedhelp.eu (UNITED HELP Support)
+    ru: support@unitedhelp.eu (UNITED HELP / Служба поддержки)
+    uk: support@unitedhelp.eu (UNITED HELP / Служба підтримки)
+  subjects:
+    activationEmail:
+      en: Confirm your email
+      de: Confirm your email
+      ru: Подтвердите адрес электронной почты
+      uk: Підтвердіть адресу електронної пошти
+    congratulationEmail:
+      en: Welcome to the new security era!
+      de: Welcome to the new security era!
+      ru: Приветствуем в новой эре безопасности!
+      uk: Вітаємо у новій ері безпеки!
+    invitePerson:
+      en: Invitation from {{fullname}}
+      de: Invitation from {{fullname}}
+      ru: Приглашение от пользователя {{fullname}}
+      uk: Запрошення від користувача {{fullname}}
+    finishAddPersonalData:
+      en: Pay for personal protection services!
+      de: Pay for personal protection services!
+      ru: Оплатите услугу персональной безопасности!
+      uk: Оплатіть послугу персональної безпеки!
+    protectedPersonDeleted:
+      en: Personal protection service is not provided
+      de: Personal protection service is not provided
+      ru: Услуга персональной безопасности не предоставляется
+      uk: Послуга персональної безпеки не надається
+    markToExclude:
+      en: In 24 hrs you will be excluded from the account of {{fullname}}
+      de: In 24 hrs you will be excluded from the account of {{fullname}}
+      ru: Через 24 часа Вы будете исключены из аккаунта пользователя {{fullname}}
+      uk: Через 24 години Ви будете виключені з акаунту користувача {{fullname}}
+    unmarkeToExclude:
+      en: User {{fullname}} has canceled your exclusion from their account
+      de: User {{fullname}} has canceled your exclusion from their account
+      ru: Пользователь {{fullname}} отменил исключение Вас из своего аккаунта
+      uk: Користувач {{fullname}} скасував виключення Вас зі свого акаунту
+    inviteExcluded:
+      en: You were excluded from the account of {{fullname}}
+      de: You were excluded from the account of {{fullname}}
+      ru: Вы исключены из аккаунта пользователя {{fullname}}
+      uk: Вас виключили з акаунту користувача {{fullname}}
+    passwordResetEmail:
+      en: Retrieving the password to the UNITED HELP system
+      de: Retrieving the password to the UNITED HELP system
+      ru: Восстановление пароля доступа к системе UNITED HELP
+      uk: Відновлення паролю доступу до системи UNITED HELP
+    passwordChangedEmail:
+      en: New password was setup successfully
+      de: New password was setup successfully
+      ru: Новый пароль успешно установлен
+      uk: Новий пароль успішно встановлено
+    disconnectionLastDevice:
+      en: Call for help option is disabled
+      de: Call for help option is disabled
+      ru: Отключена возможность вызвать помощь
+      uk: Відключено можливість викликати допомогу
+    deleteLastDevice:
+      en: Add device for making a call for help!
+      de: Add device for making a call for help!
+      ru: Добавьте устройство для вызова помощи!
+      uk: Додайте пристрій для виклику допомоги!
+    voucherPurchase:
+      en: Voucher purchase
+      de: Voucher purchase
+      ru: Покупка ваучера
+      uk: Купівля ваучера
+    voucherUse:
+      en: Voucher used
+      de: Voucher used
+      ru: Использование ваучера
+      uk: Використання ваучера
+    voucherDeleteProtectedPerson:
+      en: Your active voucher was deleted
+      de: Your active voucher was deleted
+      ru: Ваш активный ваучер удален
+      uk: Ваш активований ваучер видалено
+    startSecurityCompany:
+      en: Your company was connected to the personal protection system
+      de: Your company was connected to the personal protection system
+      ru: Компания подключена к системе персональной безопасности
+      uk: Компанію підключено до системи персональної безпеки
+    endSecurityCompany:
+      en: Your company was disconnected from the personal protection system
+      de: Your company was disconnected from the personal protection system
+      ru: Компания отключена от системы персональной безопасности
+      uk: Компанію відключено від системи персональної безпеки
+    startDispatcher:
+      en: You were granted Dispatcher rights in the personal protection system
+      de: You were granted Dispatcher rights in the personal protection system
+      ru: Вам предоставлены права Диспетчера в системе персональной безопасности
+      uk: Вам надано права Диспетчера в системі персональної безпеки
+    endDispatcher:
+      en: You were stripped of Dispatcher rights in the personal protection system
+      de: You were stripped of Dispatcher rights in the personal protection system
+      ru: Вы лишены прав Диспетчера в системе персональной безопасности
+      uk: Вас позбавлено прав Диспетчера в системі персональної безпеки
+    startAgent:
+      en: You were granted Agent rights in the personal protection system
+      de: You were granted Agent rights in the personal protection system
+      ru: Вам предоставлены права Агента в системе персональной безопасности
+      uk: Вам надано права Агента в системі персональної безпеки
+    endAgent:
+      en: You were stripped of Agent rights in the personal protection system
+      de: You were stripped of Agent rights in the personal protection system
+      ru: Вы лишены прав Агента в системе персональной безопасности
+      uk: Вас позбавлено прав Агента в системі персональної безпеки
+    startLegalentityAgent:
+      en: Company was granted Agent rights in the personal protection system
+      de: Company was granted Agent rights in the personal protection system
+      ru: АКомпании предоставлены права Агента в системе персональной безопасности
+      uk: Компанії надано права Агента в системі персональної безпеки
+    endLegalentityAgent:
+      en: Company was stripped of Agent rights in the personal protection system
+      de: Company was stripped of Agent rights in the personal protection system
+      ru: Компания лишена прав Агента в системе персональной безопасности
+      uk: Компанію позбавлено прав Агента в системі персональної безпеки
+    companyRightsChange:
+      en: Company rights in the personal protection system changed
+      de: Company rights in the personal protection system changed
+      ru: Изменены права компании в системе персональной безопасности
+      uk: Змінено права компанії в системі персональної безпеки
+    personalRightsChange:
+      en: Your rights in the personal protection system changed
+      de: Your rights in the personal protection system changed
+      ru: Изменены Ваши права в системе персональной безопасности
+      uk: Змінено Ваші права в системі персональної безпеки
+    agentRegister:
+      en: Continue registration in the security system
+      de: Continue registration in the security system
+      ru: Продолжите регистрацию в системе безопасности
+      uk: Продовжіть реєстрацію в системі безпеки
