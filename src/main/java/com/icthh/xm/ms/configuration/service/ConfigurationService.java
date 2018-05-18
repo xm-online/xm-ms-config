@@ -3,12 +3,12 @@ package com.icthh.xm.ms.configuration.service;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -28,28 +28,46 @@ public class ConfigurationService {
 
     private final TenantContextHolder tenantContextHolder;
 
+    private final List<ConfigurationProcessor> configurationProcessors;
+
     public ConfigurationService(DistributedConfigRepository distributedConfigRepository,
                                 PersistenceConfigRepository persistenceConfigRepository,
-                                TenantContextHolder tenantContextHolder) {
+                                TenantContextHolder tenantContextHolder,
+                                List<ConfigurationProcessor> configurationProcessors) {
         this.distributedConfigRepository = distributedConfigRepository;
         this.persistenceConfigRepository = persistenceConfigRepository;
         this.tenantContextHolder = tenantContextHolder;
+        this.configurationProcessors = configurationProcessors;
 
         refreshConfigurations();
     }
 
     public void createConfiguration(Configuration configuration) {
         persistenceConfigRepository.save(configuration);
-        distributedConfigRepository.save(configuration);
+        distributedConfigRepository.save(process(configuration));
+    }
+
+    private Configuration process(Configuration configuration) {
+        for(ConfigurationProcessor processor: configurationProcessors) {
+            configuration = processor.processConfiguration(configuration);
+        }
+        return configuration;
+    }
+
+    private List<Configuration> process(List<Configuration> configurations) {
+        for(ConfigurationProcessor processor: configurationProcessors) {
+            configurations = processor.processConfigurations(configurations);
+        }
+        return configurations;
     }
 
     public void updateConfiguration(Configuration configuration) {
-        updateConfiguration(configuration, null);
+        updateConfiguration(process(configuration), null);
     }
 
     public void updateConfiguration(Configuration configuration, String oldConfigHash) {
         persistenceConfigRepository.save(configuration, oldConfigHash);
-        distributedConfigRepository.save(configuration);
+        distributedConfigRepository.save(process(configuration));
     }
 
     public Optional<Configuration> findConfiguration(String path) {
@@ -66,13 +84,13 @@ public class ConfigurationService {
         List<String> oldKeys = distributedConfigRepository.getKeysList();
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(actualConfigs);
+        distributedConfigRepository.saveAll(process(actualConfigs));
     }
 
     public void createConfigurations(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
         persistenceConfigRepository.saveAll(configurations);
-        distributedConfigRepository.saveAll(configurations);
+        distributedConfigRepository.saveAll(process(configurations));
     }
 
     @SneakyThrows
@@ -82,7 +100,7 @@ public class ConfigurationService {
 
     public void refreshConfigurations(String path) {
         Configuration configuration = persistenceConfigRepository.find(path);
-        distributedConfigRepository.save(configuration);
+        distributedConfigRepository.save(process(configuration));
     }
 
     public void refreshTenantConfigurations() {
@@ -98,6 +116,6 @@ public class ConfigurationService {
 
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(distributedConfigRepository::delete);
-        distributedConfigRepository.saveAll(actualConfigs);
+        distributedConfigRepository.saveAll(process(actualConfigs));
     }
 }

@@ -3,7 +3,7 @@
 <configuration scan="true">
     <include resource="org/springframework/boot/logging/logback/base.xml"/>
 
-    <logger name="com.icthh.xm.ms.configuration" level="INFO"/>
+    <logger name="com.icthh.xm.ms.configuration" level="TRACE"/>
 
     <logger name="io.github.jhipster" level="WARN"/>
 
