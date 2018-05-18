@@ -1,11 +1,13 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
-import static org.junit.Assert.*;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
+import com.icthh.xm.commons.logging.util.MdcUtils;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -27,10 +29,11 @@ public class ConfigTopicProducerUnitTest {
 
     @Test
     public void notifyConfigurationChanged() {
+        MdcUtils.putRid("testRid");
         when(configProperties.getKafkaConfigTopic()).thenReturn("topic");
         producer.notifyConfigurationChanged("commit", Collections.singletonList("path"));
 
-        verify(kafkaTemplate).send("topic", "{\"commit\":\"commit\",\"paths\":[\"path\"]}");
+        verify(kafkaTemplate).send("topic", "{\"eventId\":\"testRid\",\"commit\":\"commit\",\"paths\":[\"path\"]}");
     }
 
     @Test
