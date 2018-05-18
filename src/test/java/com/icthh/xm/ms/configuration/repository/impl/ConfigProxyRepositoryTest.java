@@ -34,11 +34,13 @@ public class ConfigProxyRepositoryTest {
     public void getMap() {
         Configuration configuration1 = new Configuration("path1", "content1");
         configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getVersion().set("commit1");
 
         Map<String, Configuration> result = configProxyRepository.getMap(null);
 
         assertThat(result).containsOnlyKeys("path1");
         assertThat(result).containsValue(configuration1);
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verifyZeroInteractions(persistenceConfigRepository, configTopicProducer);
     }
 
@@ -47,6 +49,7 @@ public class ConfigProxyRepositoryTest {
         Configuration configuration1 = new Configuration("path1", "content1");
         Configuration configuration2 = new Configuration("path2", "content2");
         configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getVersion().set("commit1");
         when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit2", Collections.singletonList(configuration2)));
         when(persistenceConfigRepository.hasVersion("commit2")).thenReturn(true);
 
@@ -54,6 +57,7 @@ public class ConfigProxyRepositoryTest {
 
         assertThat(result).containsOnlyKeys("path1");
         assertThat(result).containsValue(configuration1);
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verifyZeroInteractions(configTopicProducer);
     }
 
@@ -69,6 +73,7 @@ public class ConfigProxyRepositoryTest {
 
         assertThat(result).containsOnlyKeys("path2");
         assertThat(result).containsValue(configuration2);
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit2");
         verifyZeroInteractions(configTopicProducer);
     }
 
@@ -106,6 +111,7 @@ public class ConfigProxyRepositoryTest {
         String result = configProxyRepository.save(configuration1);
 
         assertThat(result).isEqualTo("commit1");
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -117,6 +123,7 @@ public class ConfigProxyRepositoryTest {
         String result = configProxyRepository.save(configuration1, "hash1");
 
         assertThat(result).isEqualTo("commit1");
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -128,6 +135,7 @@ public class ConfigProxyRepositoryTest {
         String result = configProxyRepository.saveAll(singletonList(configuration1));
 
         assertThat(result).isEqualTo("commit1");
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -138,6 +146,7 @@ public class ConfigProxyRepositoryTest {
         String result = configProxyRepository.delete("path1");
 
         assertThat(result).isEqualTo("commit1");
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -148,6 +157,7 @@ public class ConfigProxyRepositoryTest {
         String result = configProxyRepository.deleteAll(singletonList("path1"));
 
         assertThat(result).isEqualTo("commit1");
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
