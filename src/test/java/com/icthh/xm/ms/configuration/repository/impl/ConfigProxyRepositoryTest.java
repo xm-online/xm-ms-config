@@ -168,6 +168,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshInternal();
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verifyZeroInteractions(configTopicProducer);
     }
 
@@ -178,6 +179,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshAll();
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -188,6 +190,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshPath("path1");
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -198,6 +201,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshTenant("tenant");
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("/config/tenants/tenant/path1"));
     }
 }
