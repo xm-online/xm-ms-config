@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -11,24 +12,32 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigProxyRepositoryTest {
 
-    @InjectMocks
     private ConfigProxyRepository configProxyRepository;
     @Mock
     private PersistenceConfigRepository persistenceConfigRepository;
     @Mock
     private ConfigTopicProducer configTopicProducer;
+
+    @Before
+    public void before() {
+        configProxyRepository = new ConfigProxyRepository(persistenceConfigRepository, configTopicProducer, emptyList());
+    }
 
     @Test
     public void getMap() {
@@ -168,6 +177,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshInternal();
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verifyZeroInteractions(configTopicProducer);
     }
 
@@ -178,6 +188,7 @@ public class ConfigProxyRepositoryTest {
 
         configProxyRepository.refreshAll();
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -185,9 +196,11 @@ public class ConfigProxyRepositoryTest {
     public void refreshPath() {
         Configuration configuration1 = new Configuration("path1", "content1");
         when(persistenceConfigRepository.find("path1")).thenReturn(new ConfigurationItem("commit1", configuration1));
+        configProxyRepository.getVersion().set("commit0");
 
         configProxyRepository.refreshPath("path1");
 
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit0");
         verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
     }
 
@@ -195,9 +208,11 @@ public class ConfigProxyRepositoryTest {
     public void refreshTenant() {
         Configuration configuration1 = new Configuration("/config/tenants/tenant/path1", "content1");
         when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit1", singletonList(configuration1)));
+        configProxyRepository.getVersion().set("commit0");
 
         configProxyRepository.refreshTenant("tenant");
 
-        verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("/config/tenants/tenant/path1"));
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit0");
+        verify(configTopicProducer).notifyConfigurationChanged("commit0", singletonList("/config/tenants/tenant/path1"));
     }
 }

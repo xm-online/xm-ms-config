@@ -59,7 +59,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
             Set<String> oldKeys = storage.keySet();
-            refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+            refreshStorage(actualConfigs, oldKeys);
+            updateVersion(configurationList.getCommit());
             return storage;
         }
     }
@@ -138,7 +139,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.keySet();
-        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+        refreshStorage(actualConfigs, oldKeys);
+        updateVersion(configurationList.getCommit());
     }
 
     @Override
@@ -147,7 +149,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.keySet();
 
-        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+        refreshStorage(actualConfigs, oldKeys);
+        updateVersion(configurationList.getCommit());
         notifyChanged(actualConfigs, oldKeys);
     }
 
@@ -172,16 +175,19 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             .filter(path -> path.startsWith(getTenantPathPrefix(tenant)))
             .collect(toSet());
 
-        refreshStorage(configurationList.getCommit(), actualConfigs, oldKeys);
+        refreshStorage(actualConfigs, oldKeys);
         notifyChanged(actualConfigs, oldKeys);
     }
 
-    private void refreshStorage(String commit, List<Configuration> actualConfigs, Set<String> oldKeys) {
+    private void refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(storage::remove);
         Map<String, Configuration> map = new HashMap<>();
         actualConfigs.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
         storage.putAll(map);
+    }
+
+    private void updateVersion(String commit) {
         version.set(commit);
     }
 
