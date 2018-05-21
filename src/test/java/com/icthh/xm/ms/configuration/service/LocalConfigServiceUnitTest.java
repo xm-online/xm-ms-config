@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.icthh.xm.commons.config.client.api.ConfigurationChangedListener;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import org.junit.Test;
@@ -25,7 +26,7 @@ public class LocalConfigServiceUnitTest {
     @Mock
     private DistributedConfigRepository inMemoryRepository;
     @Mock
-    private Consumer<Configuration> configurationListener;
+    private ConfigurationChangedListener configurationListener;
 
     @Test
     public void getConfigurationMap() {
@@ -41,9 +42,9 @@ public class LocalConfigServiceUnitTest {
         Map<String, Configuration> config = Collections.singletonMap("path", new Configuration("path", "content"));
         when(inMemoryRepository.getMap("commit")).thenReturn(config);
 
-        configService.onConfigurationChanged(configurationListener);
+        configService.addConfigurationChangedListener(configurationListener);
         configService.updateConfigurations("commit", Collections.singletonList("path"));
 
-        verify(configurationListener).accept(config.get("path"));
+        verify(configurationListener).onConfigurationChanged(config.get("path"));
     }
 }
