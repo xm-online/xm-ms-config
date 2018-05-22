@@ -137,7 +137,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                         .filter(revCommit -> revCommit.getName().equals(version))
                         .findFirst();
                     log.info("Commit {} found in local repository", targetCommit);
-                    return targetCommit.isPresent() ? true : false;
+                    return targetCommit.isPresent();
                 } catch (RefNotFoundException e) {
                     log.info("Branch {} not found in local repository", branchName);
                     return false;
@@ -202,11 +202,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     public String save(Configuration configuration, String oldConfigHash) {
         log.info("[src: {}] Save configuration to git with path {}", getRequestSourceTypeLogName(requestContextHolder),
                  configuration.getPath());
-        String commit = runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
             assertConfigHash(configuration, oldConfigHash);
             writeConfiguration(configuration);
         });
-        return commit;
     }
 
     @SneakyThrows

@@ -20,6 +20,7 @@ public final class Constants {
     public static final String CERTIFICATE = "X.509";
     public static final String PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----%n%s%n-----END PUBLIC KEY-----";
 
+    public static final String PRIVATE = "/private";
     public static final String API_PREFIX = "/api";
     public static final String TENANTS = "/tenants";
     public static final String CONFIG = "/config";
