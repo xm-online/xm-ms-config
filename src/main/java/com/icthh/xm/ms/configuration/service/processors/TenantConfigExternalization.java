@@ -39,7 +39,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         Map<String, Object> configMap = mapper.readValue(configuration.getContent(), Map.class);
 
-        if (isEnvPresent(tenant + "_")) {
+        if (configMap != null && isEnvPresent(tenant + "_")) {
             processConfigMap(tenant, configMap);
         } else {
             return configuration;
