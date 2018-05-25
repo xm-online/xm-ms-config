@@ -127,4 +127,8 @@ jhipster:
 
 application:
     git:
+        uri: http://gitlab.jbs.com.ua/icthothouse/xm-ms-config-repository
+        login: ssenko
+        password: "!ctymrjcthutq!"
+        branch-name: test
         max-wait-time-second: 30
