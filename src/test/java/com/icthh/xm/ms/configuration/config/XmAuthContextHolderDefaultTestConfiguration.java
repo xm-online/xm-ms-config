@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
+import static com.icthh.xm.commons.i18n.I18nConstants.LANGUAGE;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -24,6 +25,7 @@ public class XmAuthContextHolderDefaultTestConfiguration {
         when(context.hasAuthentication()).thenReturn(true);
         when(context.getLogin()).thenReturn(Optional.of("testLogin"));
         when(context.getUserKey()).thenReturn(Optional.of("ACCOUNT.TEST"));
+        when(context.getDetailsValue(LANGUAGE)).thenReturn(Optional.of("en"));
 
         XmAuthenticationContextHolder holder = mock(XmAuthenticationContextHolder.class);
         when(holder.getContext()).thenReturn(context);
