@@ -273,6 +273,7 @@ dependencies {
     compile "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
     compile "com.icthh.xm.commons:xm-commons-permission:${xm_commons_version}"
     compile "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
+    compile "com.icthh.xm.commons:xm-commons-i18n:${xm_commons_version}"
 }
 
 clean {

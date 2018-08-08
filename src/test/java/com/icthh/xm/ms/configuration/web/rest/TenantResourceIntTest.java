@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.icthh.xm.commons.exceptions.spring.web.ExceptionTranslator;
+import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.ConfigurationApp;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
