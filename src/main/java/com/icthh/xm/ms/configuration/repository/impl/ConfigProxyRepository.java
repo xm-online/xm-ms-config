@@ -194,6 +194,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private void notifyChanged(List<Configuration> actualConfigs, Set<String> oldKeys) {
         Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
         updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
+        updated.addAll(oldKeys);
         configTopicProducer.notifyConfigurationChanged(version.get(), new ArrayList<>(updated));
     }
 
