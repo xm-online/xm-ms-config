@@ -79,6 +79,7 @@ public class ConfigMapResourceMvcTest {
         private String version;
     }
 
+
     @Test
     @SneakyThrows
     public void getConfigMapFilteredWithCommit() {
