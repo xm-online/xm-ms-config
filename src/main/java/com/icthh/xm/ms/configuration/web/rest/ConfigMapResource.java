@@ -39,7 +39,6 @@ import java.util.Map;
 @RequestMapping(API_PREFIX + PRIVATE)
 public class ConfigMapResource {
 
-    private final ConfigService configService;
     private final ConfigurationService configurationService;
 
     @GetMapping("/config_map")
@@ -47,14 +46,14 @@ public class ConfigMapResource {
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(
         @RequestParam(name = "version", required = false) String version) {
-        return ResponseEntity.ok(configService.getConfigurationMap(version));
+        return ResponseEntity.ok(configurationService.getConfigurationMap(version));
     }
 
     @PostMapping("/config_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(@RequestBody GetConfigRequest getConfigRequest) {
-        return ResponseEntity.ok(configService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
+        return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
     @PutMapping(value = "/config")
