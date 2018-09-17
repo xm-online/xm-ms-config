@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class LocalConfigServiceUnitTest {
 
     @InjectMocks
-    private LocalConfigService configService;
+    private ConfigurationService configService;
 
     @Mock
     private DistributedConfigRepository inMemoryRepository;
