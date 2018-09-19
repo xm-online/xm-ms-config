@@ -45,9 +45,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     public Map<String, Configuration> getConfigurationMap(String commit, Collection<String> paths) {
         Map<String, Configuration> map = getConfigurationMap(commit);
         Map<String, Configuration> resultMap = new HashMap<>();
-        for (String path: paths) {
-            resultMap.put(path, map.get(path));
-        }
+        paths.forEach(path -> resultMap.put(path, map.get(path)));
         return resultMap;
     }
 
