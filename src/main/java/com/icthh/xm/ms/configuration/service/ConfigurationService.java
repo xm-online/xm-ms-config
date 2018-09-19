@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,7 +44,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     @Override
     public Map<String, Configuration> getConfigurationMap(String commit, Collection<String> paths) {
         Map<String, Configuration> map = getConfigurationMap(commit);
-        return paths.stream().collect(toMap(identity(), map::get));
+        Map<String, Configuration> resultMap = new HashMap<>();
+        paths.forEach(path -> resultMap.put(path, map.get(path)));
+        return resultMap;
     }
 
     @Override
