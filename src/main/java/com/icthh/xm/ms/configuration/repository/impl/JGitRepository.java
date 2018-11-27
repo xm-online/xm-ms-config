@@ -34,6 +34,7 @@ import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationExcepti
 import com.icthh.xm.ms.configuration.utils.Task;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.Repository;
@@ -153,7 +154,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
-            return new ConfigurationList(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file, commit)).collect(toList()));
+            return new ConfigurationList(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file)).collect(toList()));
         });
     }
 
@@ -166,9 +167,9 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private Configuration fileToConfiguration(File file, String commit) {
-        String path = getRelativePath(file);
+    private Configuration fileToConfiguration(File file) {
         String content = readFileToString(file, UTF_8);
+        String path = StringUtils.replaceChars(getRelativePath(file), File.separator, "/");
         return new Configuration(path, content);
     }
 
