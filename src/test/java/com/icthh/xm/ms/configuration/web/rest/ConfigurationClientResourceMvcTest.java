@@ -23,7 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@WebMvcTest(controllers = ConfigurationClientResource.class)
+@WebMvcTest(controllers = ConfigurationClientResource.class, secure = false)
 @ContextConfiguration(classes = {ConfigurationClientResource.class})
 public class ConfigurationClientResourceMvcTest {
 

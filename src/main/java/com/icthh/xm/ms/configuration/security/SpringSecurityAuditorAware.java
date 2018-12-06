@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * Implementation of AuditorAware based on Spring Security.
  */
@@ -16,7 +18,7 @@ public class SpringSecurityAuditorAware implements AuditorAware<String> {
     private final XmAuthenticationContextHolder authenticationContextHolder;
 
     @Override
-    public String getCurrentAuditor() {
-        return authenticationContextHolder.getContext().getLogin().orElse(Constants.SYSTEM_ACCOUNT);
+    public Optional<String> getCurrentAuditor() {
+        return Optional.of(authenticationContextHolder.getContext().getLogin().orElse(Constants.SYSTEM_ACCOUNT));
     }
 }

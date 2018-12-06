@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.Collections;
@@ -38,7 +38,6 @@ public class ConfigTopicProducerUnitTest {
 
     @Test
     public void notifyConfigurationChangedIfNoPaths() {
-        when(configProperties.getKafkaConfigTopic()).thenReturn("topic");
         producer.notifyConfigurationChanged("commit", Collections.emptyList());
 
         verifyZeroInteractions(kafkaTemplate);

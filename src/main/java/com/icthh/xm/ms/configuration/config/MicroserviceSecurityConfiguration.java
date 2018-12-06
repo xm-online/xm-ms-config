@@ -1,22 +1,16 @@
 package com.icthh.xm.ms.configuration.config;
 
-import static com.icthh.xm.ms.configuration.config.Constants.CERTIFICATE;
-import static com.icthh.xm.ms.configuration.config.Constants.PUBLIC_KEY;
-
 import com.icthh.xm.commons.permission.constants.RoleConstant;
 import com.icthh.xm.ms.configuration.security.DomainJwtAccessTokenConverter;
 import com.icthh.xm.ms.configuration.service.TokenKeyService;
-import io.github.jhipster.config.JHipsterProperties;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.loadbalancer.RestTemplateCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.codec.Base64;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.provider.token.TokenStore;
@@ -31,21 +25,13 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
+import static com.icthh.xm.ms.configuration.config.Constants.CERTIFICATE;
+import static com.icthh.xm.ms.configuration.config.Constants.PUBLIC_KEY;
+
 @Configuration
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerAdapter {
-
-    private final JHipsterProperties jHipsterProperties;
-
-    private final DiscoveryClient discoveryClient;
-
-    public MicroserviceSecurityConfiguration(JHipsterProperties jHipsterProperties,
-            DiscoveryClient discoveryClient) {
-
-        this.jHipsterProperties = jHipsterProperties;
-        this.discoveryClient = discoveryClient;
-    }
 
     @Override
     public void configure(HttpSecurity http) throws Exception {
@@ -99,7 +85,7 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
         CertificateFactory f = CertificateFactory.getInstance(CERTIFICATE);
         X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
         PublicKey pk = certificate.getPublicKey();
-        return String.format(PUBLIC_KEY, new String(Base64.encode(pk.getEncoded())));
+        return String.format(PUBLIC_KEY, Base64.encodeBase64String(pk.getEncoded()));
     }
 
 }

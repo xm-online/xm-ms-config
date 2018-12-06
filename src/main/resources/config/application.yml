@@ -4,8 +4,8 @@
 # This configuration will be overridden by the Spring profile you use,
 # for example application-dev.yml if you use the "dev" profile.
 #
-# More information on profiles: https://jhipster.github.io/profiles/
-# More information on configuration properties: https://jhipster.github.io/common-application-properties/
+# More information on profiles: https://www.jhipster.tech/profiles/
+# More information on configuration properties: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
 # ===================================================================
@@ -24,12 +24,13 @@
 #                        timeoutInMilliseconds: 10000
 
 management:
-    security:
-        roles: ADMIN
-    context-path: /management
+    endpoints:
+        web:
+            base-path: /management
     health:
         mail:
-            enabled: false # When using the MailService, configure an SMTP server and set this to true
+            enabled: false
+
 spring:
     application:
         name: config
@@ -58,24 +59,22 @@ spring:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
-security:
-    basic:
-        enabled: false
-    oauth2:
-        resource:
-            filter-order: 3
-
 server:
-    session:
-        cookie:
-            http-only: true
+    servlet:
+        session:
+            cookie:
+                http-only: true
 
-
+# Properties to be exposed on the /info management endpoint
+info:
+    # Comma separated list of profiles that will trigger the ribbon to show
+    display-ribbon-on-profiles: "dev"
 # ===================================================================
 # JHipster specific properties
 #
-# Full reference is available at: https://jhipster.github.io/common-application-properties/
+# Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
+
 jhipster:
     async:
         core-pool-size: 2
@@ -102,8 +101,6 @@ jhipster:
         contact-email:
         license:
         license-url:
-    ribbon:
-        display-on-active-profiles: dev
 
 # ===================================================================
 # Application specific properties
@@ -111,10 +108,10 @@ jhipster:
 # to have type-safe configuration, like in the JHipsterProperties above
 #
 # More documentation is available at:
-# https://jhipster.github.io/common-application-properties/
+# https://www.jhipster.tech/common-application-properties/
 # ===================================================================
+xm-config.enabled: true
 xm-config:
-    enabled: true
     xm-config-url: http://config
     kafka-config-topic: config_topic
 

@@ -1,12 +1,21 @@
 package com.icthh.xm.ms.configuration.domain;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Value;
+
+import java.util.Objects;
 
 @Value
 public class TenantState {
     private String name;
     private String state;
+
+    @JsonCreator
+    public TenantState(@JsonProperty("name") String name, @JsonProperty("state") String state) {
+        this.name = name;
+        this.state = state;
+    }
 
     @Override
     public boolean equals(Object o) {

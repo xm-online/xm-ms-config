@@ -1,16 +1,5 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import static org.codehaus.groovy.runtime.InvokerHelper.asList;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.refEq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -32,8 +21,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Arrays.asList;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.refEq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 @RunWith(SpringRunner.class)
-@WebMvcTest(controllers = ConfigMapResource.class)
+@WebMvcTest(controllers = ConfigMapResource.class, secure = false)
 @ContextConfiguration(classes = ConfigMapResource.class)
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigMapResourceMvcTest {
@@ -81,21 +79,22 @@ public class ConfigMapResourceMvcTest {
     @SneakyThrows
     public void getConfigMapFilteredWithCommit() {
         when(configurationService.getConfigurationMap("commit1", asList("path")))
-                .thenReturn(Collections.singletonMap("path", new Configuration("path", "content")));
+            .thenReturn(Collections.singletonMap("path", new Configuration("path", "content")));
 
-        mockMvc.perform(post("/api/private/config_map", "commit1").content(toJson(new GetConfigRequest(asList("path"), "commit1")))
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.path.path").value("path"))
-                .andExpect(jsonPath("$.path.content").value("content"));
+        mockMvc.perform(post("/api/private/config_map", "commit1")
+            .content(toJson(new GetConfigRequest(asList("path"), "commit1")))
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.path.path").value("path"))
+            .andExpect(jsonPath("$.path.content").value("content"));
     }
 
     @Test
     @SneakyThrows
     public void updateConfigMapWithCommit() {
         mockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "someHash").content(toJson(new Configuration("somePath", "some content")))
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
         verify(configurationService).updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("someHash"));
     }
 
