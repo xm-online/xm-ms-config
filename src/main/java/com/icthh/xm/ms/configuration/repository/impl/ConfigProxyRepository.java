@@ -42,6 +42,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private final ConfigTopicProducer configTopicProducer;
     private final List<ConfigurationProcessor> configurationProcessors;
 
+    private final Object lock = new Object();
+
     /**
      * Get internal map config. If commit is not specified, or commit is the same as inmemory,
      * or commit is older than inmemory - return from storage, else reload from git
@@ -58,7 +60,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         } else {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
-            Set<String> oldKeys = storage.keySet();
+            Set<String> oldKeys = new HashSet<>(storage.keySet());
             refreshStorage(actualConfigs, oldKeys);
             updateVersion(configurationList.getCommit());
             return storage;
@@ -138,7 +140,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void refreshInternal() {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
-        Set<String> oldKeys = storage.keySet();
+        Set<String> oldKeys = new HashSet<>(storage.keySet());
         refreshStorage(actualConfigs, oldKeys);
         updateVersion(configurationList.getCommit());
     }
@@ -147,7 +149,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void refreshAll() {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
-        Set<String> oldKeys = storage.keySet();
+        Set<String> oldKeys = new HashSet<>(storage.keySet());
 
         refreshStorage(actualConfigs, oldKeys);
         updateVersion(configurationList.getCommit());
@@ -180,11 +182,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private void refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(storage::remove);
-        Map<String, Configuration> map = new HashMap<>();
-        actualConfigs.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
-        storage.putAll(map);
+        synchronized (lock) {
+            actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+            oldKeys.forEach(storage::remove);
+            actualConfigs.forEach(configuration -> storage.put(configuration.getPath(), process(configuration)));
+        }
     }
 
     private void updateVersion(String commit) {
