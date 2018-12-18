@@ -30,6 +30,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
     private static final String TENANT_NAME = "tenantName";
     private final Map<String, String> env = getenv();
 
+    @SuppressWarnings("unchecked")
     @Override
     @SneakyThrows
     public Configuration processConfiguration(Configuration configuration) {
@@ -49,13 +50,14 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
     }
 
     private void processConfigMap(String path, Map<String, Object> configMap) {
-        for (String key: configMap.keySet()) {
-            Object oldValue = configMap.get(key);
+        for (Map.Entry<String, Object> entry : configMap.entrySet()) {
+            String key = entry.getKey();
+            Object oldValue = entry.getValue();
             String envVarKey = path + "_" + key;
             if (isSimpleValueType(oldValue) && isEnvExactlyPresent(envVarKey)) {
                 Object envValue = getEnv(envVarKey);
                 log.info("{} it's simple type |{}|, and override by env variable |{}|", envVarKey, oldValue, envValue);
-                configMap.put(key, envValue);
+                entry.setValue(envValue);
                 continue;
             }
             if (!isEnvPresent(envVarKey + "_")) {
@@ -67,6 +69,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
                 continue;
             }
             if (oldValue instanceof Map) {
+                //noinspection unchecked
                 processConfigMap(envVarKey, (Map<String, Object>) oldValue);
                 continue;
             } else if (isEnvExactlyPresent(envVarKey)) {

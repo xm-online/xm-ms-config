@@ -19,7 +19,7 @@ import io.undertow.Undertow.Builder;
 import io.undertow.UndertowOptions;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.context.embedded.undertow.UndertowEmbeddedServletContainerFactory;
+import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockServletContext;
@@ -89,7 +89,7 @@ public class WebConfigurerTest {
     @Test
     public void testCustomizeServletContainer() {
         env.setActiveProfiles(JHipsterConstants.SPRING_PROFILE_PRODUCTION);
-        UndertowEmbeddedServletContainerFactory container = new UndertowEmbeddedServletContainerFactory();
+        UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
         webConfigurer.customize(container);
         assertThat(container.getMimeMappings().get("abs")).isEqualTo("audio/x-mpeg");
         assertThat(container.getMimeMappings().get("html")).isEqualTo("text/html;charset=utf-8");
@@ -104,7 +104,7 @@ public class WebConfigurerTest {
     @Test
     public void testUndertowHttp2Enabled() {
         props.getHttp().setVersion(JHipsterProperties.Http.Version.V_2_0);
-        UndertowEmbeddedServletContainerFactory container = new UndertowEmbeddedServletContainerFactory();
+        UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
         webConfigurer.customize(container);
         Builder builder = Undertow.builder();
         container.getBuilderCustomizers().forEach(c -> c.customize(builder));

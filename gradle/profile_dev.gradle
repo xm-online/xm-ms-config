@@ -34,5 +34,10 @@ processResources {
             it.replace('#project.version#', version)
         }
     }
+    filesMatching('**/application.yml') {
+        filter {
+            it.replace('#project.version#', version)
+        }
+    }
 }
 

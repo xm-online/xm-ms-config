@@ -59,7 +59,6 @@ public class ConfigProxyRepositoryTest {
         Configuration configuration2 = new Configuration("path2", "content2");
         configProxyRepository.getStorage().put("path1", configuration1);
         configProxyRepository.getVersion().set("commit1");
-        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit2", Collections.singletonList(configuration2)));
         when(persistenceConfigRepository.hasVersion("commit2")).thenReturn(true);
 
         Map<String, Configuration> result = configProxyRepository.getMap("commit2");
