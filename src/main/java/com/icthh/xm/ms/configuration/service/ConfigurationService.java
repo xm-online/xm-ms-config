@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.client.api.AbstractConfigService;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,11 +33,13 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final DistributedConfigRepository inMemoryRepository;
 
     @Override
+    @LoggingAspectConfig(resultDetails = false)
     public Map<String, Configuration> getConfigurationMap(String commit) {
         return inMemoryRepository.getMap(commit);
     }
 
     @Override
+    @LoggingAspectConfig(resultDetails = false, inputCollectionAware = true)
     public Map<String, Configuration> getConfigurationMap(String commit, Collection<String> paths) {
         Map<String, Configuration> map = getConfigurationMap(commit);
         Map<String, Configuration> resultMap = new HashMap<>();

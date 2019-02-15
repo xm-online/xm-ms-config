@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.config.domain.ConfigEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
+import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -39,6 +40,8 @@ public class ConfigTopicProducer {
     public void notifyConfigurationChanged(String commit, List<String> paths) {
         if (CollectionUtils.isNotEmpty(paths)) {
             ConfigEvent event = buildEvent(MdcUtils.getRid(), commit, paths);
+            log.info("prepared ConfigEvent: commit = {}, paths.count = {}, top paths: {}",
+                     commit, paths.size(), ConfigPathUtils.printPathsWithLimit(paths));
             serializeEvent(event).ifPresent(this::send);
         }
     }
@@ -64,7 +67,8 @@ public class ConfigTopicProducer {
 
     private void send(String content) {
         if (StringUtils.isNotBlank(content)) {
-            log.info("Sending system event to kafka-topic = '{}', data = '{}'", configProperties.getKafkaConfigTopic(), content);
+            log.info("Sending system event to kafka-topic = '{}', data.length = '{}'",
+                     configProperties.getKafkaConfigTopic(), content.length());
             template.send(configProperties.getKafkaConfigTopic(), content);
         }
     }
