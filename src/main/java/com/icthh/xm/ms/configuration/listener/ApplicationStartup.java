@@ -6,6 +6,7 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.repository.kafka.SystemQueueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
@@ -50,6 +51,7 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
         ContainerProperties containerProps = new ContainerProperties(name);
 
         Map<String, Object> props = kafkaProperties.buildConsumerProperties();
+        props.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, applicationProperties.getKafkaMetadataMaxAge());
         ConsumerFactory<String, String> factory = new DefaultKafkaConsumerFactory<>(props);
 
         ConcurrentMessageListenerContainer<String, String> container =

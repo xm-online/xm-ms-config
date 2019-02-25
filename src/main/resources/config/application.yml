@@ -121,6 +121,7 @@ application:
     tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config
     kafka-enabled: true
     kafka-system-queue: system_queue
+    kafka-metadata-max-age: 60000 #in milliseconds
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
