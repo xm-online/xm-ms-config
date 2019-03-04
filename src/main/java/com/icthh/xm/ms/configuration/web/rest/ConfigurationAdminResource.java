@@ -56,6 +56,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PostMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @SneakyThrows
@@ -66,6 +67,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
+    @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PutMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE')")

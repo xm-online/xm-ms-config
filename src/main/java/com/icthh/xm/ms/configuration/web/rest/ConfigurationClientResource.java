@@ -39,6 +39,7 @@ public class ConfigurationClientResource {
     private final ConfigurationService configurationService;
     private final TenantContextHolder tenantContextHolder;
 
+    @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PostMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @SneakyThrows
@@ -49,6 +50,7 @@ public class ConfigurationClientResource {
         return ResponseEntity.created(new URI("/api" + path)).build();
     }
 
+    @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PutMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.UPDATE')")
