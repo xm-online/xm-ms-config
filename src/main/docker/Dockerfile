@@ -1,6 +1,6 @@
 FROM jbsukraine/oracle-jre:8
 
-ENTRYPOINT /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh']
 
 ADD src/main/docker/entrypoint.sh /
 
