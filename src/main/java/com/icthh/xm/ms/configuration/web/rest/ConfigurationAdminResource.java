@@ -87,7 +87,7 @@ public class ConfigurationAdminResource {
     @GetMapping(value = CONFIG + "/**")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         return getConfiguration(request.getParameterMap().containsKey("toJson"), path);
