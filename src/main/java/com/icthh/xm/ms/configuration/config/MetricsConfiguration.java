@@ -71,21 +71,19 @@ public class MetricsConfiguration extends MetricsConfigurerAdapter implements Se
         metricRegistry.register(PROP_METRIC_REG_JVM_ATTRIBUTE_SET, new JvmAttributeGaugeSet());
         if (jHipsterProperties.getMetrics().getJmx().isEnabled()) {
             log.debug("Initializing Metrics JMX reporting");
-            try (JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build()) {
-                jmxReporter.start();
-            }
+            JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry).build();
+            jmxReporter.start();
         }
         if (jHipsterProperties.getMetrics().getLogs().isEnabled()) {
             log.info("Initializing Metrics Log reporting");
             Marker metricsMarker = MarkerFactory.getMarker("metrics");
-            try (final Slf4jReporter reporter = Slf4jReporter.forRegistry(metricRegistry)
-                    .outputTo(LoggerFactory.getLogger("metrics"))
-                    .markWith(metricsMarker)
-                    .convertRatesTo(TimeUnit.SECONDS)
-                    .convertDurationsTo(TimeUnit.MILLISECONDS)
-                    .build()) {
-                reporter.start(jHipsterProperties.getMetrics().getLogs().getReportFrequency(), TimeUnit.SECONDS);
-            }
+            final Slf4jReporter reporter = Slf4jReporter.forRegistry(metricRegistry)
+                .outputTo(LoggerFactory.getLogger("metrics"))
+                .markWith(metricsMarker)
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build();
+            reporter.start(jHipsterProperties.getMetrics().getLogs().getReportFrequency(), TimeUnit.SECONDS);
         }
     }
 
