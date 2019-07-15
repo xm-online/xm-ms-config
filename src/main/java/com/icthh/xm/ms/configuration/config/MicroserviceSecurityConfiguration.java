@@ -3,6 +3,8 @@ package com.icthh.xm.ms.configuration.config;
 import com.icthh.xm.commons.permission.constants.RoleConstant;
 import com.icthh.xm.ms.configuration.security.DomainJwtAccessTokenConverter;
 import com.icthh.xm.ms.configuration.service.TokenKeyService;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.client.loadbalancer.RestTemplateCustomizer;
@@ -60,7 +62,7 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
 
     @Bean
     public JwtAccessTokenConverter jwtAccessTokenConverter(TokenKeyService tokenKeyService)
-            throws CertificateException {
+            throws CertificateException, IOException {
         DomainJwtAccessTokenConverter converter = new DomainJwtAccessTokenConverter();
         converter.setVerifierKey(getKeyFromConfigServer(tokenKeyService));
         return converter;
@@ -73,19 +75,21 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
         return restTemplate;
     }
 
-    private String getKeyFromConfigServer(TokenKeyService tokenKeyService) throws CertificateException {
+
+    private String getKeyFromConfigServer(TokenKeyService tokenKeyService) throws CertificateException, IOException {
         String content = tokenKeyService.getKey();
 
         if (StringUtils.isBlank(content)) {
             throw new CertificateException("Certificate not found.");
         }
 
-        InputStream fin = new ByteArrayInputStream(content.getBytes());
+        try (InputStream fin = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
 
-        CertificateFactory f = CertificateFactory.getInstance(CERTIFICATE);
-        X509Certificate certificate = (X509Certificate)f.generateCertificate(fin);
-        PublicKey pk = certificate.getPublicKey();
-        return String.format(PUBLIC_KEY, Base64.encodeBase64String(pk.getEncoded()));
+            CertificateFactory f = CertificateFactory.getInstance(CERTIFICATE);
+            X509Certificate certificate = (X509Certificate) f.generateCertificate(fin);
+            PublicKey pk = certificate.getPublicKey();
+            return String.format(PUBLIC_KEY, Base64.encodeBase64String(pk.getEncoded()));
+        }
     }
 
 }

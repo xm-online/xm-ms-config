@@ -13,6 +13,7 @@ import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.listFiles;
 import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.apache.commons.io.FileUtils.write;
+import static org.apache.commons.io.FilenameUtils.concat;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
@@ -21,6 +22,7 @@ import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.exceptions.BusinessException;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -32,6 +34,15 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -42,16 +53,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.function.Predicate;
-import java.util.stream.StreamSupport;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -110,7 +111,9 @@ public class JGitRepository implements PersistenceConfigRepository {
             return;
         }
 
-        repositoryFolder.mkdirs();
+        if (!repositoryFolder.mkdirs()) {
+            throw new BusinessException("Cannot create dirs");
+        }
         repositoryFolder.deleteOnExit();
 
         cloneRepository()
@@ -154,7 +157,10 @@ public class JGitRepository implements PersistenceConfigRepository {
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
             Collection<File> files = listFiles(rootDirectory, INSTANCE, INSTANCE);
-            return new ConfigurationList(commit, files.stream().filter(excludeGitFiels()).map(file -> fileToConfiguration(file)).collect(toList()));
+            return new ConfigurationList(commit, files.stream()
+                                                      .filter(excludeGitFiels())
+                                                      .map(this::fileToConfiguration)
+                                                      .collect(toList()));
         });
     }
 
@@ -230,9 +236,10 @@ public class JGitRepository implements PersistenceConfigRepository {
             getRequestSourceTypeLogName(requestContextHolder), paths);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, paths.size()), () -> {
             paths.forEach(path -> {
-                File file = new File(rootDirectory.getAbsolutePath() + path);
+
+                File file = new File(concat(rootDirectory.getAbsolutePath(), path));
                 if (file.exists()) {
-                    file.delete();
+                    assertDelete(file.delete(), path);
                 }
             });
         });
@@ -243,11 +250,17 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("[{}] Delete configuration from git by path {}",
                  getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> {
-            File file = new File(rootDirectory.getAbsolutePath() + path);
+            File file = new File(concat(rootDirectory.getAbsolutePath(), path));
             if (file.exists()) {
-                file.delete();
+                assertDelete(file.delete(), path);
             }
         });
+    }
+
+    private void assertDelete(boolean status, String path) {
+        if (!status) {
+            throw new BusinessException("Cannot delete file with path: {}", path);
+        }
     }
 
     private String getCommitMsg(String template, Object path) {
@@ -269,7 +282,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private String getPathname(String path) {
-        return rootDirectory.getAbsolutePath() + path;
+        return concat(rootDirectory.getAbsolutePath(), path);
     }
 
     @SneakyThrows
