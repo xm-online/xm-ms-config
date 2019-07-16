@@ -113,7 +113,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         boolean mkdirsResult = repositoryFolder.mkdirs();
         if (!mkdirsResult) {
-            throw new BusinessException("Cannot create dirs");
+            log.error("Cannot create dirs");
         }
         repositoryFolder.deleteOnExit();
 
@@ -256,7 +256,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     private void assertDelete(boolean status, String path) {
         if (!status) {
-            throw new BusinessException("Cannot delete file with path: {}", path);
+            log.error("Cannot delete file with path: {}", path);
         }
     }
 
