@@ -39,7 +39,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
@@ -47,6 +46,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -288,7 +288,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         return new File(getGitPath());
     }
 
-    @SneakyThrows
+//    @SneakyThrows
     protected String pull() {
         return executeGitAction("pull", git -> {
             String branchName = gitProperties.getBranchName();
@@ -362,13 +362,15 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private <R> R executeGitAction(String logActionName, Function<Git, R> function) {
+    private <R> R executeGitAction(String logActionName, GitFunction<R> function) {
         StopWatch stopWatch = StopWatch.createStarted();
         try (
             Repository db = createRepository();
             Git git = Git.wrap(db)
         ) {
             return function.apply(git);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             log.info("GIT: [{}] procedure executed in {} ms", logActionName, stopWatch.getTime());
         }
@@ -384,5 +386,10 @@ public class JGitRepository implements PersistenceConfigRepository {
             log.info("GIT: User task executed in {} ms", stopWatch.getTime());
             return commitAndPush(commitMsg);
         });
+    }
+
+    @FunctionalInterface
+    public interface GitFunction<R> {
+        R apply(Git git) throws GitAPIException;
     }
 }
