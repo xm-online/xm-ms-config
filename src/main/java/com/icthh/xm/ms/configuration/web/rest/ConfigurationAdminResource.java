@@ -50,8 +50,7 @@ public class ConfigurationAdminResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
-    public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files,
-                                                     @PathVariable("tenant") String tenant) {
+    public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files) {
         configurationService.createConfigurations(files);
         return ResponseEntity.ok().build();
     }

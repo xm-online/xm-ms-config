@@ -5,6 +5,7 @@ import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -20,6 +21,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -113,19 +115,19 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testDeleteMultipleDocuments() {
-        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+        mockMvc.perform(post(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname41")
                             .content("some content")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().is2xxSuccessful());
-        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+        mockMvc.perform(post(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname42")
                             .content("some content")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().is2xxSuccessful());
-        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname41")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(content().string("some content"))
                .andExpect(status().is2xxSuccessful());
-        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname42")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(content().string("some content"))
                .andExpect(status().is2xxSuccessful());
@@ -137,16 +139,71 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                             .contentType(MediaType.APPLICATION_JSON))
                .andExpect(status().is2xxSuccessful());
 
-        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname41")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().isNotFound());
-        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname42")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().isNotFound());
 
     }
 
-    // TODO - write test for CREATE multiple files
+    @Test
+    @SneakyThrows
+    public void testCreateMultipleFiles() {
 
-    // TODO - write test to delete whole directory
+        MockMultipartFile file1 = new MockMultipartFile("files",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt",
+                                                        "text/plain",
+                                                        "test content1".getBytes());
+        MockMultipartFile file2 = new MockMultipartFile("files",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt",
+                                                        "text/plain",
+                                                        "test content2".getBytes());
+        mockMvc.perform(multipart(API_PREFIX + CONFIG)
+                            .file(file1)
+                            .file(file2))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful())
+               .andExpect(content().string("test content1"));
+
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful())
+               .andExpect(content().string("test content2"));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testDeleteParentDirectory() {
+
+        MockMultipartFile file1 = new MockMultipartFile("files",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt",
+                                                        "text/plain",
+                                                        "test content1".getBytes());
+        MockMultipartFile file2 = new MockMultipartFile("files",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt",
+                                                        "text/plain",
+                                                        "test content2".getBytes());
+        mockMvc.perform(multipart(API_PREFIX + CONFIG)
+                            .file(file1)
+                            .file(file2))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(delete(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andDo(result -> System.out.println(result.getResponse().getContentAsString()))
+               .andExpect(status().isNotFound());
+
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().isNotFound());
+    }
 }

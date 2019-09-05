@@ -146,6 +146,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void delete() {
         when(persistenceConfigRepository.delete("path1")).thenReturn("commit1");
+        configProxyRepository.getStorage().put("path1", new Configuration());
 
         String result = configProxyRepository.delete("path1");
 
@@ -157,6 +158,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void deleteAll() {
         when(persistenceConfigRepository.deleteAll(singletonList("path1"))).thenReturn("commit1");
+        configProxyRepository.getStorage().put("path1", new Configuration());
 
         String result = configProxyRepository.deleteAll(singletonList("path1"));
 

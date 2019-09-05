@@ -54,6 +54,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
+import org.springframework.util.FileSystemUtils;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -236,8 +237,11 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     private void deleteExistingFile(final String path) {
         File file = Paths.get(rootDirectory.getAbsolutePath(), path).toFile();
-        if (file.exists()) {
-            assertDelete(file.delete(), path);
+        if (file.isDirectory()) {
+            log.info("delete whole directory by path: {}", file.getPath());
+            assertDelete(FileSystemUtils.deleteRecursively(file), file.getPath());
+        } else if (file.exists()) {
+            assertDelete(file.delete(), file.getPath());
         } else {
             log.warn("tried to delete file which does not exists: {}", file);
         }
