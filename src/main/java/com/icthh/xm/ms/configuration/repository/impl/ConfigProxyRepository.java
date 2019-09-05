@@ -74,7 +74,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public ConfigurationList findAll() {
-        log.debug("Get configuration from memory all {}");
+        log.debug("Get configuration from memory all");
         return new ConfigurationList(version.get(), new ArrayList<>(storage.values()));
     }
 

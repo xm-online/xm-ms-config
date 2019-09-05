@@ -81,9 +81,11 @@ jhipster:
 
 xm-config.enabled: true
 xm-config:
+    xm-config-url: http://config
     kafka-config-topic: config_topic
 
 application:
+    kafka-enabled: false
     git:
         uri: null
         login: null
