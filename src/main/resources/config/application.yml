@@ -58,6 +58,8 @@ spring:
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
+            properties:
+                max.block.ms: 5000
 
 server:
     servlet:
