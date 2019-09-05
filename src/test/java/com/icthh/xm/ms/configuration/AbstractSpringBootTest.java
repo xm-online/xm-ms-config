@@ -3,7 +3,6 @@ package com.icthh.xm.ms.configuration;
 import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
 import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
 import com.icthh.xm.ms.configuration.config.TenantConfigMockConfiguration;
-import com.icthh.xm.ms.configuration.config.TestConfiguration;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -12,8 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     ConfigurationApp.class,
     SecurityBeanOverrideConfiguration.class,
     LocalJGitRepositoryConfiguration.class,
-    TenantConfigMockConfiguration.class,
-    TestConfiguration.class
+    TenantConfigMockConfiguration.class
 })
 @RunWith(SpringRunner.class)
 public abstract class AbstractSpringBootTest {

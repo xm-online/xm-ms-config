@@ -77,6 +77,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         repositoryProxy.delete(path);
     }
 
+    public void deleteConfigurations(List<String> paths){
+        repositoryProxy.deleteAll(paths);
+    }
+
     public void refreshConfiguration() {
         repositoryProxy.refreshAll();
     }

@@ -124,6 +124,14 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping(CONFIG + TENANTS + "/{tenant}")
+    @Timed
+    @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
+    public ResponseEntity<Void> deleteConfigurations(@RequestBody List<String> paths) {
+        configurationService.deleteConfigurations(paths);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping(value = CONFIG + REFRESH + "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")

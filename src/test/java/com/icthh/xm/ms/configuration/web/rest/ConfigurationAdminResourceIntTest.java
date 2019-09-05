@@ -27,6 +27,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
+    private static final String FULL_PATH_PREFIX = CONFIG + TENANTS;
+
     @MockBean
     private ConfigTopicProducer configTopicProducer;
 
@@ -108,6 +110,43 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                 .andExpect(status().isNotFound());
     }
 
-    // TODO - write test for DELETE multiple files
+    @Test
+    @SneakyThrows
+    public void testDeleteMultipleDocuments() {
+        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+                            .content("some content")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+                            .content("some content")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(content().string("some content"))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(content().string("some content"))
+               .andExpect(status().is2xxSuccessful());
 
+        mockMvc.perform(delete(API_PREFIX + CONFIG + TENANTS + "/test")
+                            .content(
+                                "[\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname41\", "
+                                + "\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname42\"]")
+                            .contentType(MediaType.APPLICATION_JSON))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname41")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().isNotFound());
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname42")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().isNotFound());
+
+    }
+
+    // TODO - write test for CREATE multiple files
+
+    // TODO - write test to delete whole directory
 }
