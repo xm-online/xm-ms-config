@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public class TenantConfigExternalizationTest {
+public class TenantConfigExternalizationUnitTest {
 
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();

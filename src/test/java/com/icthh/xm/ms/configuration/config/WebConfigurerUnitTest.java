@@ -36,7 +36,7 @@ import java.util.*;
  *
  * @see WebConfigurer
  */
-public class WebConfigurerTest {
+public class WebConfigurerUnitTest {
 
     private WebConfigurer webConfigurer;
 
