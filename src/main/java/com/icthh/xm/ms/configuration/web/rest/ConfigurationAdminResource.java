@@ -46,7 +46,7 @@ public class ConfigurationAdminResource {
 
     private final ConfigurationService configurationService;
 
-    @PostMapping(value =  CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
@@ -83,7 +83,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(value = CONFIG + "/**")
+    @GetMapping(value = CONFIG + "/**", produces = {APPLICATION_JSON_VALUE, APPLICATION_JSON_UTF8_VALUE, TEXT_PLAIN_VALUE})
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")

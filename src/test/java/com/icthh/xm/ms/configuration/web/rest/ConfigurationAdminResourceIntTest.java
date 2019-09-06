@@ -181,12 +181,12 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
     public void testDeleteParentDirectory() {
 
         MockMultipartFile file1 = new MockMultipartFile("files",
-                                                        FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt",
-                                                        "text/plain",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.json",
+                                                        MediaType.APPLICATION_JSON_VALUE,
                                                         "test content1".getBytes());
         MockMultipartFile file2 = new MockMultipartFile("files",
-                                                        FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt",
-                                                        "text/plain",
+                                                        FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.json",
+                                                        MediaType.APPLICATION_JSON_VALUE,
                                                         "test content2".getBytes());
         mockMvc.perform(multipart(API_PREFIX + CONFIG)
                             .file(file1)
@@ -197,13 +197,12 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().is2xxSuccessful());
 
-        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.txt")
-                            .contentType(MediaType.TEXT_PLAIN))
-               .andDo(result -> System.out.println(result.getResponse().getContentAsString()))
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder1/test1.json")
+                            .contentType(MediaType.APPLICATION_JSON))
                .andExpect(status().isNotFound());
 
-        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.txt")
-                            .contentType(MediaType.TEXT_PLAIN))
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder2/test2.json")
+                            .contentType(MediaType.APPLICATION_JSON))
                .andExpect(status().isNotFound());
     }
 }
