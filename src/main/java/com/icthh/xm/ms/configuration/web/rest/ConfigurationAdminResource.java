@@ -29,6 +29,7 @@ import org.springframework.web.util.UrlPathHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,8 +127,17 @@ public class ConfigurationAdminResource {
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}")
     @Timed
     @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
-    public ResponseEntity<Void> deleteConfigurations(@RequestBody List<String> paths) {
-        configurationService.deleteConfigurations(paths);
+    public ResponseEntity<Void> deleteConfigurations(@RequestBody(required = false) List<String> paths,
+                                                     HttpServletRequest request) {
+
+        List<String> nonNullPaths = Optional.ofNullable(paths)
+                                           .orElseGet(Collections::emptyList);
+
+        if (nonNullPaths.isEmpty()) {
+            configurationService.deleteConfiguration(extractPath(request));
+        } else {
+            configurationService.deleteConfigurations(nonNullPaths);
+        }
         return ResponseEntity.ok().build();
     }
 

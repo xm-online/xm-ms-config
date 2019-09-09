@@ -205,4 +205,26 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                             .contentType(MediaType.APPLICATION_JSON))
                .andExpect(status().isNotFound());
     }
+
+    @Test
+    @SneakyThrows
+    public void testDeleteTenantDirectory() {
+
+        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/TENANT1/folder/subfolder/documentname31")
+                            .content("some content")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT1/folder/subfolder/documentname31")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(content().string("some content"))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(delete(API_PREFIX + CONFIG + TENANTS + "/TENANT1")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT1/folder/subfolder/documentname31")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().isNotFound());
+    }
 }
