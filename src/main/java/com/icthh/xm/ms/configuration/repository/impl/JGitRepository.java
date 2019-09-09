@@ -297,7 +297,6 @@ public class JGitRepository implements PersistenceConfigRepository {
         return new File(getGitPath());
     }
 
-//    @SneakyThrows
     protected String pull() {
         return executeGitAction("pull", git -> {
             String branchName = gitProperties.getBranchName();
