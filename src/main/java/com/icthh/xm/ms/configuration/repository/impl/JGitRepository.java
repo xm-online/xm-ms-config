@@ -32,15 +32,6 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.function.Predicate;
-import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +46,16 @@ import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.util.FS;
 import org.springframework.util.FileSystemUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -120,11 +121,15 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
         repositoryFolder.deleteOnExit();
 
-        cloneRepository()
-            .setURI(gitProperties.getUri())
-            .setDirectory(repositoryFolder)
-            .setCredentialsProvider(createCredentialsProvider())
-            .call().close();
+        executeLoggedAction("cloneRepository", () -> {
+            cloneRepository()
+                .setURI(gitProperties.getUri())
+                .setDirectory(repositoryFolder)
+                .setCredentialsProvider(createCredentialsProvider())
+                .call().close();
+            return null;
+        });
+
     }
 
     @Override
@@ -367,18 +372,23 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private <R> R executeGitAction(String logActionName, GitFunction<R> function) {
-        StopWatch stopWatch = StopWatch.createStarted();
         try (
             Repository db = createRepository();
             Git git = Git.wrap(db)
         ) {
-            return function.apply(git);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return executeLoggedAction(logActionName, () -> function.apply(git));
+        }
+    }
+
+    private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action){
+        StopWatch stopWatch = StopWatch.createStarted();
+        try {
+            return action.get();
+        } catch (Exception e){
+            return null;
         } finally {
             log.info("GIT: [{}] procedure executed in {} ms", logActionName, stopWatch.getTime());
         }
-
     }
 
     @SneakyThrows
@@ -395,5 +405,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     @FunctionalInterface
     public interface GitFunction<R> {
         R apply(Git git) throws GitAPIException;
+    }
+
+    @FunctionalInterface
+    public interface ThrowingSupplier<R, E extends Exception> {
+        R get() throws E;
     }
 }
