@@ -84,7 +84,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(value = CONFIG + "/**", produces = {APPLICATION_JSON_VALUE, APPLICATION_JSON_UTF8_VALUE, TEXT_PLAIN_VALUE})
+    @GetMapping(value = CONFIG + "/**")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
