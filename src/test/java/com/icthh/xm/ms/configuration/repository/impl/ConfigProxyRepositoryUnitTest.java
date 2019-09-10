@@ -12,21 +12,17 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ConfigProxyRepositoryTest {
+public class ConfigProxyRepositoryUnitTest {
 
     private ConfigProxyRepository configProxyRepository;
     @Mock
@@ -150,6 +146,7 @@ public class ConfigProxyRepositoryTest {
     @Test
     public void delete() {
         when(persistenceConfigRepository.delete("path1")).thenReturn("commit1");
+        configProxyRepository.getStorage().put("path1", new Configuration());
 
         String result = configProxyRepository.delete("path1");
 
@@ -161,6 +158,7 @@ public class ConfigProxyRepositoryTest {
     @Test
     public void deleteAll() {
         when(persistenceConfigRepository.deleteAll(singletonList("path1"))).thenReturn("commit1");
+        configProxyRepository.getStorage().put("path1", new Configuration());
 
         String result = configProxyRepository.deleteAll(singletonList("path1"));
 

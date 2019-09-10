@@ -1,35 +1,36 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import static com.icthh.xm.ms.configuration.config.Constants.*;
+import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
+import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
+import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
-import com.icthh.xm.ms.configuration.ConfigurationApp;
-import com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration;
-import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
+import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, LocalJGitRepositoryConfiguration.class})
 @WithMockUser(authorities = {"SUPER-ADMIN"})
-public class ConfigurationClientResourceIntTest {
+public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "test75";
 

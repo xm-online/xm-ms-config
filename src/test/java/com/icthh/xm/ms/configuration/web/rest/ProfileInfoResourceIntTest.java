@@ -1,33 +1,26 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.icthh.xm.ms.configuration.ConfigurationApp;
-import com.icthh.xm.ms.configuration.config.SecurityBeanOverrideConfiguration;
-import com.icthh.xm.ms.configuration.config.TestConfiguration;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.env.Environment;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.core.env.Environment;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
  * Test class for the ProfileInfoResource REST controller.
  *
  * @see ProfileInfoResource
  **/
-@RunWith(SpringRunner.class)
-@SpringBootTest(classes = {ConfigurationApp.class, SecurityBeanOverrideConfiguration.class, TestConfiguration.class})
-public class ProfileInfoResourceIntTest {
+public class ProfileInfoResourceIntTest extends AbstractSpringBootTest {
 
     @Mock
     private Environment environment;

@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +75,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public ConfigurationList findAll() {
-        log.debug("Get configuration from memory all {}");
+        log.debug("Get configuration from memory all");
         return new ConfigurationList(version.get(), new ArrayList<>(storage.values()));
     }
 
@@ -117,11 +118,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public String delete(String path) {
         String commit = persistenceConfigRepository.delete(path);
-
-        storage.remove(path);
+        List<String> removedPaths = removeExactOrByPrefix(path);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, singletonList(path));
-
+        configTopicProducer.notifyConfigurationChanged(commit, removedPaths);
         return commit;
     }
 
@@ -129,9 +128,12 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public String deleteAll(List<String> paths) {
         String commit = persistenceConfigRepository.deleteAll(paths);
 
-        paths.forEach(storage::remove);
+        Set<String> removed = paths.stream()
+                                   .map(this::removeExactOrByPrefix)
+                                   .flatMap(List::stream)
+                                   .collect(toSet());
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, paths);
+        configTopicProducer.notifyConfigurationChanged(commit, new LinkedList<>(removed));
 
         return commit;
     }
@@ -179,6 +181,22 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
         refreshStorage(actualConfigs, oldKeys);
         notifyChanged(actualConfigs, oldKeys);
+    }
+
+    private List<String> removeExactOrByPrefix(final String path) {
+        Configuration removed = storage.remove(path);
+        if (removed == null) {
+            List<String> subPaths = storage.keySet()
+                                           .stream()
+                                           .filter(key -> key.startsWith(path))
+                                           .collect(toList());
+            if (!subPaths.isEmpty()) {
+                log.warn("Remove all sub-paths of [{}]: {}", path, subPaths);
+                subPaths.forEach(storage::remove);
+            }
+            return subPaths;
+        }
+        return singletonList(path);
     }
 
     private void refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {

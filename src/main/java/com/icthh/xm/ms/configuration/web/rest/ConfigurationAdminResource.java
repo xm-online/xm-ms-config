@@ -29,6 +29,7 @@ import org.springframework.web.util.UrlPathHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +47,11 @@ public class ConfigurationAdminResource {
 
     private final ConfigurationService configurationService;
 
-    @PostMapping(value =  CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
-    public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files,
-                                                     @PathVariable("tenant") String tenant) {
+    public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files) {
         configurationService.createConfigurations(files);
         return ResponseEntity.ok().build();
     }
@@ -121,6 +121,23 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.DELETE')")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
         configurationService.deleteConfiguration(extractPath(request));
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping(CONFIG + TENANTS + "/{tenant}")
+    @Timed
+    @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
+    public ResponseEntity<Void> deleteConfigurations(@RequestBody(required = false) List<String> paths,
+                                                     HttpServletRequest request) {
+
+        List<String> nonNullPaths = Optional.ofNullable(paths)
+                                           .orElseGet(Collections::emptyList);
+
+        if (nonNullPaths.isEmpty()) {
+            configurationService.deleteConfiguration(extractPath(request));
+        } else {
+            configurationService.deleteConfigurations(nonNullPaths);
+        }
         return ResponseEntity.ok().build();
     }
 
