@@ -325,7 +325,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     protected String commitAndPush(String commitMsg) {
         return executeGitAction("commitAndPush", git -> {
-            // TODO - check if directory is not clean: git.status().call().isClean()
+            if (git.status().call().isClean()) {
+                log.info("Skip commit to git as working directory is clean after performing: {}", commitMsg);
+                return "undefined";
+            }
             git.add().addFilepattern(".").call();
             RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
             git.push().setCredentialsProvider(createCredentialsProvider()).call();
@@ -361,10 +364,9 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private String findLastCommit(Git git) {
-        // TODO - get last commit as git.log().setMaxCount(1).call().iterator().next()
-        Iterable<RevCommit> refs = git.log().call();
+        Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
         return StreamSupport.stream(refs.spliterator(), false)
-                            .max(comparing(RevCommit::getCommitTime))
+                            .findFirst()
                             .map(AnyObjectId::getName)
                             .orElse("[N/A]");
     }
