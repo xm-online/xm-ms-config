@@ -325,15 +325,14 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     protected String commitAndPush(String commitMsg) {
         return executeGitAction("commitAndPush", git -> {
-            if (!git.status().call().isClean()) {
-                git.add().addFilepattern(".").call();
-                RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
-                git.push().setCredentialsProvider(createCredentialsProvider()).call();
-                return commit.getName();
-            } else {
+            if (git.status().call().isClean()) {
                 log.info("Skip commit to git as working directory is clean after performing: {}", commitMsg);
                 return "undefined";
             }
+            git.add().addFilepattern(".").call();
+            RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
+            git.push().setCredentialsProvider(createCredentialsProvider()).call();
+            return commit.getName();
         });
     }
 
