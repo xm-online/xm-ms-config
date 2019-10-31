@@ -84,6 +84,14 @@ public class ConfigurationClientResource {
         return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
     }
 
+    @GetMapping(value = PROFILE + "/webapp/public/**")
+    @Timed
+    @LoggingAspectConfig(inputDetails = false, resultDetails = false)
+    public ResponseEntity<String> getPublicWebAppConfigurations(HttpServletRequest request) {
+        String path = extractPath(request);
+        return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+    }
+
     @DeleteMapping(PROFILE + "/**")
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.DELETE')")
