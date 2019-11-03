@@ -65,8 +65,7 @@ public class JGitRepositoryTest {
     public void testGetByVersion() {
         String path = "/config/test.file";
         jGitRepository.save(new Configuration(path, "1"));
-        jGitRepository.save(new Configuration(path, "2"));
-        String ref = jGitRepository.findLastCommit();
+        String ref = jGitRepository.save(new Configuration(path, "2"));
         jGitRepository.save(new Configuration(path, "3"));
         assertEquals("3", jGitRepository.find(path).getData().getContent());
         assertEquals("2", jGitRepository.find(path, ref).getData().getContent());

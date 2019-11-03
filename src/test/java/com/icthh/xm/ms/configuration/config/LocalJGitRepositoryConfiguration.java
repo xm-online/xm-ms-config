@@ -55,8 +55,6 @@ public class LocalJGitRepositoryConfiguration {
         initTestGitFolder.delete();
     }
 
-
-
     @SneakyThrows
     public static void createGitRepository(TemporaryFolder serverGitFolder,
                                            TemporaryFolder initTestGitFolder,

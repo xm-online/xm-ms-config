@@ -409,10 +409,6 @@ public class JGitRepository implements PersistenceConfigRepository {
         return FileRepositoryBuilder.create(getGitDir());
     }
 
-    public String findLastCommit() {
-        return executeGitAction("log", this::findLastCommit);
-    }
-
     @SneakyThrows
     private String findLastCommit(Git git) {
         Iterable<RevCommit> refs = git.log().setMaxCount(1).call();

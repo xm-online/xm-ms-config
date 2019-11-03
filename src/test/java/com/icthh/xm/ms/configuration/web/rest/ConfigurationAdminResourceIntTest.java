@@ -2,6 +2,8 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
+import static com.icthh.xm.ms.configuration.config.Constants.INMEMORY;
+import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -107,6 +109,30 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/version/file?version=" + version)
                                 .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(content().string("2"))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testInMemoryUpdate() {
+        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/version/file")
+                                .content("1")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(put(API_PREFIX + INMEMORY + CONFIG + TENANTS + "/test/version/file")
+                                .content("2")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/version/file")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("2"))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(API_PREFIX + CONFIG + "/refresh"))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/version/file")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("1"))
                 .andExpect(status().is2xxSuccessful());
     }
 

@@ -5,6 +5,7 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
+import afu.org.checkerframework.checker.oigj.qual.O;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
@@ -102,26 +103,32 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public String save(Configuration configuration, String oldConfigHash) {
         String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
+        updateConfigurationInMemory(configuration, commit);
+        return commit;
+    }
 
+    @Override
+    public void updateConfigurationInMemory(Configuration configuration, String commit) {
         storage.put(configuration.getPath(), process(configuration));
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
-
-        return commit;
     }
 
     @Override
     public String saveAll(List<Configuration> configurations) {
         String commit = persistenceConfigRepository.saveAll(configurations);
+        updateConfigurationsInMemory(configurations, commit);
+        return commit;
+    }
 
+    @Override
+    public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
         storage.putAll(map);
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
-
-        return commit;
     }
 
     @Override
