@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Primary;
 public class LocalJGitRepositoryConfiguration {
 
     TemporaryFolder serverGitFolder = new TemporaryFolder();
+    TemporaryFolder configGitFolder = new TemporaryFolder();
     TemporaryFolder initTestGitFolder = new TemporaryFolder();
 
     @Bean(destroyMethod = "destroy")
@@ -46,6 +47,12 @@ public class LocalJGitRepositoryConfiguration {
                     super.initRepository();
                 }
             }
+            @Override
+            @SneakyThrows
+            protected File createGitWorkDirectory() {
+                configGitFolder.create();
+                return configGitFolder.getRoot();
+            }
         };
     }
 
@@ -53,6 +60,7 @@ public class LocalJGitRepositoryConfiguration {
     public void destory() {
         serverGitFolder.delete();
         initTestGitFolder.delete();
+        configGitFolder.delete();
     }
 
     @SneakyThrows
