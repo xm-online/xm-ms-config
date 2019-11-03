@@ -6,7 +6,6 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequest
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
 import static java.io.File.separator;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -32,21 +31,6 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.RefNotFoundException;
-import org.eclipse.jgit.lib.AnyObjectId;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.eclipse.jgit.util.FS;
-import org.springframework.util.FileSystemUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,6 +40,26 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.RefNotFoundException;
+import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.util.FS;
+import org.springframework.util.FileSystemUtils;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -103,7 +107,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private File createGitWorkDirectory() {
+    protected File createGitWorkDirectory() {
         return Files.createTempDirectory("xm2-config-repository").toFile();
     }
 
@@ -178,6 +182,49 @@ public class JGitRepository implements PersistenceConfigRepository {
             String content = readFileToString(new File(getPathname(path)), UTF_8);
             return new ConfigurationItem(commit, new Configuration(path, content));
         });
+    }
+
+    @Override
+    @SneakyThrows
+    public ConfigurationItem find(String path, String version) {
+        log.info("[{}] Find configuration by path: {} and version: {}",
+                 getRequestSourceTypeLogName(requestContextHolder), path, version);
+
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+            if (!hasVersion(version)) {
+                pull();
+            }
+
+            String content = executeGitAction("blob", git -> {
+                String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
+                return getBlobContent(git.getRepository(), version, normalizedPath);
+            });
+            return new ConfigurationItem(version, new Configuration(path, content));
+        });
+    }
+
+    @SneakyThrows
+    public String getBlobContent(Repository repository, String revision, String path) {
+
+        ObjectId lastCommitId = repository.resolve(revision);
+        try (RevWalk revWalk = new RevWalk(repository)) {
+            RevCommit commit = revWalk.parseCommit(lastCommitId);
+
+            RevTree tree = commit.getTree();
+            TreeWalk treeWalk = new TreeWalk(repository);
+            treeWalk.addTree(tree);
+            treeWalk.setRecursive(true);
+            treeWalk.setFilter(PathFilter.create(path));
+            if (!treeWalk.next()) {
+                return null;
+            }
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = repository.open(objectId);
+            byte[] content = loader.getBytes();
+            revWalk.dispose();
+
+            return new String(content, UTF_8);
+        }
     }
 
     @Override
@@ -362,6 +409,10 @@ public class JGitRepository implements PersistenceConfigRepository {
         return FileRepositoryBuilder.create(getGitDir());
     }
 
+    public String findLastCommit() {
+        return executeGitAction("log", this::findLastCommit);
+    }
+
     @SneakyThrows
     private String findLastCommit(Git git) {
         Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
@@ -381,12 +432,11 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
     }
 
+    @SneakyThrows
     private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action){
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             return action.get();
-        } catch (Exception e){
-            return null;
         } finally {
             log.info("GIT: [{}] procedure executed in {} ms", logActionName, stopWatch.getTime());
         }

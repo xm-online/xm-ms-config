@@ -86,6 +86,15 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
+    public ConfigurationItem find(String path, String version) {
+        if (version == null) {
+            return find(path);
+        }
+        log.debug("Get configuration from storage by path {} and version", path, version);
+        return persistenceConfigRepository.find(path, version);
+    }
+
+    @Override
     public String save(Configuration configuration) {
         return save(configuration, null);
     }
@@ -181,6 +190,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
         refreshStorage(actualConfigs, oldKeys);
         notifyChanged(actualConfigs, oldKeys);
+    }
+
+    @Override
+    public String getCommitVersion() {
+        return version.get();
     }
 
     private List<String> removeExactOrByPrefix(final String path) {

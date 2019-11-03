@@ -14,6 +14,8 @@ public interface PersistenceConfigRepository {
 
     ConfigurationItem find(String path);
 
+    ConfigurationItem find(String path, String version);
+
     String saveAll(List<Configuration> configurations);
 
     String save(Configuration configuration);

@@ -12,6 +12,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -69,6 +70,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return Optional.ofNullable(repositoryProxy.find(path).getData());
     }
 
+    public Optional<Configuration> findConfiguration(String path, String version) {
+        return Optional.ofNullable(repositoryProxy.find(path, version).getData());
+    }
+
     public List<Configuration> getConfigurations() {
         return repositoryProxy.findAll().getData();
     }
@@ -97,5 +102,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private Configuration toConfiguration(MultipartFile file) {
         String path = StringUtils.replaceChars(file.getOriginalFilename(), File.separator, "/");
         return new Configuration(path, IOUtils.toString(file.getInputStream(), UTF_8));
+    }
+
+    public String getVersion() {
+        return inMemoryRepository.getCommitVersion();
     }
 }

@@ -15,4 +15,6 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
     void refreshPath(String path);
 
     void refreshTenant(String tenant);
+
+    String getCommitVersion();
 }

@@ -90,11 +90,23 @@ public class ConfigurationAdminResource {
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
-        return getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+        String version = request.getParameter("version");
+        return getConfiguration(request.getParameterMap().containsKey("toJson"), path, version);
+    }
+
+    @GetMapping(value = "/version")
+    @Timed
+    @PostAuthorize("hasPermission({'returnObject': returnObject}, 'CONFIG.ADMIN.GET_VERSION')")
+    public ResponseEntity<String> getVersion() {
+        return ResponseEntity.ok(configurationService.getVersion());
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path) {
-        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path);
+        return getConfiguration(toJson, path, null);
+    }
+
+    protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
+        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path, version);
         if (!maybeConfiguration.isPresent()) {
             throw new EntityNotFoundException("Not found configuration.");
         }
