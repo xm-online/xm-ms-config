@@ -5,7 +5,6 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-import afu.org.checkerframework.checker.oigj.qual.O;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;

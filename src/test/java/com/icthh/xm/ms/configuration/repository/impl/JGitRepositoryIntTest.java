@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class JGitRepositoryTest {
+public class JGitRepositoryIntTest {
 
     @Rule
     public TemporaryFolder serverGitFolder = new TemporaryFolder();
