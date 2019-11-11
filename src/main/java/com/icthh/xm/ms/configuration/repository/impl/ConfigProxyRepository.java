@@ -86,6 +86,15 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
+    public ConfigurationItem find(String path, String version) {
+        if (version == null) {
+            return find(path);
+        }
+        log.debug("Get configuration from storage by path {} and version", path, version);
+        return persistenceConfigRepository.find(path, version);
+    }
+
+    @Override
     public String save(Configuration configuration) {
         return save(configuration, null);
     }
@@ -93,26 +102,32 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public String save(Configuration configuration, String oldConfigHash) {
         String commit = persistenceConfigRepository.save(configuration, oldConfigHash);
+        updateConfigurationInMemory(configuration, commit);
+        return commit;
+    }
 
+    @Override
+    public void updateConfigurationInMemory(Configuration configuration, String commit) {
         storage.put(configuration.getPath(), process(configuration));
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
-
-        return commit;
     }
 
     @Override
     public String saveAll(List<Configuration> configurations) {
         String commit = persistenceConfigRepository.saveAll(configurations);
+        updateConfigurationsInMemory(configurations, commit);
+        return commit;
+    }
 
+    @Override
+    public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), process(configuration)));
         storage.putAll(map);
         version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
             .map(Configuration::getPath).collect(toList()));
-
-        return commit;
     }
 
     @Override
@@ -181,6 +196,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
         refreshStorage(actualConfigs, oldKeys);
         notifyChanged(actualConfigs, oldKeys);
+    }
+
+    @Override
+    public String getCommitVersion() {
+        return version.get();
     }
 
     private List<String> removeExactOrByPrefix(final String path) {

@@ -56,6 +56,15 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping(value = INMEMORY + CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
+    @Timed
+    @SneakyThrows
+    @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY.LIST')")
+    public ResponseEntity<Void> updateConfigurationsInMemory(@RequestParam(value = "files") List<MultipartFile> files) {
+        configurationService.updateConfigurationsInMemory(files);
+        return ResponseEntity.ok().build();
+    }
+
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PostMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
@@ -84,17 +93,42 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+
+    @LoggingAspectConfig(inputExcludeParams = {"content"})
+    @PutMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
+    @Timed
+    @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY')")
+    public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody String content,
+                                                            HttpServletRequest request) {
+        String path = extractPath(request).substring(INMEMORY.length() - 1);
+        Configuration configuration = new Configuration(path, content);
+        configurationService.updateConfigurationInMemory(configuration);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping(value = CONFIG + "/**")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
-        return getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+        String version = request.getParameter("version");
+        return getConfiguration(request.getParameterMap().containsKey("toJson"), path, version);
+    }
+
+    @GetMapping(value = "/version")
+    @Timed
+    @PostAuthorize("hasPermission({'returnObject': returnObject}, 'CONFIG.ADMIN.GET_VERSION')")
+    public ResponseEntity<String> getVersion() {
+        return ResponseEntity.ok(configurationService.getVersion());
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path) {
-        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path);
+        return getConfiguration(toJson, path, null);
+    }
+
+    protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
+        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path, version);
         if (!maybeConfiguration.isPresent()) {
             throw new EntityNotFoundException("Not found configuration.");
         }

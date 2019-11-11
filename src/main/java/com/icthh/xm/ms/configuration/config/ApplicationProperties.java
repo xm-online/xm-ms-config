@@ -35,7 +35,7 @@ public class ApplicationProperties {
         private String login;
         private String password;
         private String branchName;
-        private Integer maxWaitTimeSecond;
+        private Integer maxWaitTimeSecond = 30;
     }
 
     @Getter
