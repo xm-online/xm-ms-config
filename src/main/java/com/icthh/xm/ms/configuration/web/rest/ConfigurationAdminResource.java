@@ -98,7 +98,7 @@ public class ConfigurationAdminResource {
     @PutMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY')")
-    public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody String content,
+    public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody(required = false) String content,
                                                             HttpServletRequest request) {
         String path = extractPath(request).substring(INMEMORY.length());
         Configuration configuration = new Configuration(path, content);
