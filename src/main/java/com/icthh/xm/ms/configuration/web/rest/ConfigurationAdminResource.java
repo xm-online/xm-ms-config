@@ -106,6 +106,14 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}/", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
+    @Timed
+    @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.DELETE_IN_MEMORY')")
+    public ResponseEntity<Void> deleteConfigurationInMemory(@RequestBody(required = false) List<String> paths) {
+        configurationService.deleteConfigurationInMemory(paths);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping(value = CONFIG + "/**")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
