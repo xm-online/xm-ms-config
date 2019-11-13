@@ -217,7 +217,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         verifyDocument("4");
 
 
-        mockMvc.perform(delete(INMEMORY + API_PREFIX + CONFIG + TENANTS + "/test")
+        mockMvc.perform(delete(API_PREFIX + INMEMORY + CONFIG + TENANTS + "/test")
                                 .content(
                                         "[\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname2\", "
                                         + "\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname3\"]")
@@ -243,7 +243,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
     }
 
     private void createDocument(String placeholder) throws Exception {
-        mockMvc.perform(post(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname" + placeholder)
+        mockMvc.perform(put(API_PREFIX + INMEMORY + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname" + placeholder)
                                 .content(placeholder)
                                 .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(status().is2xxSuccessful());
