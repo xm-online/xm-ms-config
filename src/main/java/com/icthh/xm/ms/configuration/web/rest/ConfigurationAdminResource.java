@@ -56,7 +56,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping(value = INMEMORY + CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = INMEMORY + CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY.LIST')")
@@ -100,7 +100,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY')")
     public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody String content,
                                                             HttpServletRequest request) {
-        String path = extractPath(request).substring(INMEMORY.length() - 1);
+        String path = extractPath(request).substring(INMEMORY.length());
         Configuration configuration = new Configuration(path, content);
         configurationService.updateConfigurationInMemory(configuration);
         return ResponseEntity.ok().build();
