@@ -3,7 +3,6 @@ package com.icthh.xm.ms.configuration.web.rest;
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.INMEMORY;
-import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -203,6 +202,51 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().isNotFound());
 
+    }
+
+    @Test
+    @SneakyThrows
+    public void testDeleteInMemory() {
+        createDocument("1");
+        createDocument("2");
+        createDocument("3");
+        createDocument("4");
+        verifyDocument("1");
+        verifyDocument("2");
+        verifyDocument("3");
+        verifyDocument("4");
+
+
+        mockMvc.perform(delete(API_PREFIX + INMEMORY + CONFIG + TENANTS + "/test")
+                                .content(
+                                        "[\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname2\", "
+                                        + "\"" + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname3\"]")
+                                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().is2xxSuccessful());
+
+        verifyDocument("1");
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname2")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname3")
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().isNotFound());
+        verifyDocument("4");
+
+    }
+
+    private void verifyDocument(String s) throws Exception {
+        mockMvc.perform(get(API_PREFIX + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname" + s)
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string(s))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    private void createDocument(String placeholder) throws Exception {
+        mockMvc.perform(put(API_PREFIX + INMEMORY + FULL_PATH_PREFIX + "/test/folder/subfolder/documentname" + placeholder)
+                                .content(placeholder)
+                                .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
     }
 
     @Test

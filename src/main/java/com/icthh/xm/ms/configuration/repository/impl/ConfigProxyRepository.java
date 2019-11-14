@@ -142,15 +142,21 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public String deleteAll(List<String> paths) {
         String commit = persistenceConfigRepository.deleteAll(paths);
+        version.set(commit);
+        deleteAllInMemory(paths, commit);
+        return commit;
+    }
 
+    public void deleteAllInMemory(List<String> paths) {
+        deleteAllInMemory(paths, getCommitVersion());
+    }
+
+    private void deleteAllInMemory(List<String> paths, String commit) {
         Set<String> removed = paths.stream()
                                    .map(this::removeExactOrByPrefix)
                                    .flatMap(List::stream)
                                    .collect(toSet());
-        version.set(commit);
         configTopicProducer.notifyConfigurationChanged(commit, new LinkedList<>(removed));
-
-        return commit;
     }
 
     @Override

@@ -118,4 +118,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     public String getVersion() {
         return inMemoryRepository.getCommitVersion();
     }
+
+    public void deleteConfigurationInMemory(List<String> paths) {
+        inMemoryRepository.deleteAllInMemory(paths);
+    }
 }

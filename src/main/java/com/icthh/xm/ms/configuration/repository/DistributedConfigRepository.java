@@ -13,6 +13,8 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
 
     void updateConfigurationsInMemory(List<Configuration> configurations, String commit);
 
+    void deleteAllInMemory(List<String> paths);
+
     void refreshInternal();
 
     void refreshAll();
