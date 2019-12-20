@@ -1,14 +1,20 @@
 package com.icthh.xm.ms.configuration.web.rest.vm;
 
 import ch.qos.logback.classic.Logger;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * View Model object for storing a Logback logger.
  */
 public class LoggerVM {
 
+    @Getter
+    @Setter
     private String name;
 
+    @Getter
+    @Setter
     private String level;
 
     public LoggerVM(Logger logger) {
@@ -18,22 +24,6 @@ public class LoggerVM {
 
     public LoggerVM() {
         // Empty public constructor used by Jackson.
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLevel() {
-        return level;
-    }
-
-    public void setLevel(String level) {
-        this.level = level;
     }
 
     @Override

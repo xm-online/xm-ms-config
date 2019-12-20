@@ -31,7 +31,7 @@ spring:
             host: localhost
             port: 8500
     kafka:
-        bootstrap-servers: localhost:9093
+        bootstrap-servers: localhost:9092
     mail:
         host: localhost
         port: 25
@@ -50,6 +50,8 @@ spring:
 
 server:
     port: 8084
+    http2:
+        enabled: false
 
 # ===================================================================
 # JHipster specific properties
@@ -57,8 +59,6 @@ server:
 # Full reference is available at: https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 jhipster:
-    http:
-        version: V_1_1 # To use HTTP/2 you will need SSL support (see above the "server.ssl" configuration)
     # CORS is only enabled by default with the "dev" profile, so BrowserSync can access the API
     cors:
         allowed-origins: "*"
@@ -77,10 +77,6 @@ jhipster:
         from: configuration@localhost
         base-url: http://127.0.0.1:8084
     metrics: # DropWizard Metrics configuration, used by MetricsConfiguration
-        jmx:
-            enabled: true
-        prometheus:
-            enabled: false #expose metrics via prometheus
         logs: # Reports Dropwizard metrics in the logs
             enabled: false
             report-frequency: 60 # in seconds

@@ -15,6 +15,7 @@ import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -43,11 +44,10 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private final ConfigTopicProducer configTopicProducer;
     private final List<ConfigurationProcessor> configurationProcessors;
 
-    private final Object lock = new Object();
-
     /**
      * Get internal map config. If commit is not specified, or commit is the same as inmemory,
      * or commit is older than inmemory - return from storage, else reload from git
+     *
      * @param commit required commit
      * @return config map
      */
@@ -90,7 +90,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         if (version == null) {
             return find(path);
         }
-        log.debug("Get configuration from storage by path {} and version", path, version);
+        log.debug("Get configuration from storage by path {} and version {}", path, version);
         return persistenceConfigRepository.find(path, version);
     }
 
@@ -153,9 +153,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     private void deleteAllInMemory(List<String> paths, String commit) {
         Set<String> removed = paths.stream()
-                                   .map(this::removeExactOrByPrefix)
-                                   .flatMap(List::stream)
-                                   .collect(toSet());
+            .map(this::removeExactOrByPrefix)
+            .flatMap(List::stream)
+            .collect(toSet());
         configTopicProducer.notifyConfigurationChanged(commit, new LinkedList<>(removed));
     }
 
@@ -213,9 +213,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         Configuration removed = storage.remove(path);
         if (removed == null) {
             List<String> subPaths = storage.keySet()
-                                           .stream()
-                                           .filter(key -> key.startsWith(path))
-                                           .collect(toList());
+                .stream()
+                .filter(key -> key.startsWith(path))
+                .collect(toList());
             if (!subPaths.isEmpty()) {
                 log.warn("Remove all sub-paths of [{}]: {}", path, subPaths);
                 subPaths.forEach(storage::remove);
@@ -225,12 +225,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         return singletonList(path);
     }
 
+    @Synchronized
     private void refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
-        synchronized (lock) {
-            actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-            oldKeys.forEach(storage::remove);
-            actualConfigs.forEach(configuration -> storage.put(configuration.getPath(), process(configuration)));
-        }
+        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+        oldKeys.forEach(storage::remove);
+        actualConfigs.forEach(configuration -> storage.put(configuration.getPath(), process(configuration)));
     }
 
     private void updateVersion(String commit) {
@@ -245,7 +244,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private Configuration process(Configuration configuration) {
-        for(ConfigurationProcessor processor: configurationProcessors) {
+        for (ConfigurationProcessor processor : configurationProcessors) {
             configuration = processor.processConfiguration(configuration);
         }
         return configuration;

@@ -6,6 +6,7 @@ import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.isBlank;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -30,7 +31,6 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
     private static final String TENANT_NAME = "tenantName";
     private final Map<String, String> env = getenv();
 
-    @SuppressWarnings("unchecked")
     @Override
     @SneakyThrows
     public Configuration processConfiguration(Configuration configuration) {
@@ -38,7 +38,9 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
             return configuration;
         }
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
-        Map<String, Object> configMap = mapper.readValue(configuration.getContent(), Map.class);
+        Map<String, Object> configMap = mapper.readValue(configuration.getContent(),
+                new TypeReference<Map<String, Object>>() {
+        });
 
         if (configMap != null && isEnvPresent(tenant + "_")) {
             processConfigMap(tenant, configMap);
@@ -49,6 +51,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
         return new Configuration(configuration.getPath(), mapper.writeValueAsString(configMap));
     }
 
+    @SuppressWarnings("unchecked")
     private void processConfigMap(String path, Map<String, Object> configMap) {
         for (Map.Entry<String, Object> entry : configMap.entrySet()) {
             String key = entry.getKey();
@@ -61,22 +64,21 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
                 continue;
             }
             if (!isEnvPresent(envVarKey + "_")) {
-                log.trace("{} and not overrided by env variable", envVarKey);
+                log.trace("{} and not overrode by env variable", envVarKey);
                 continue;
             }
             if (oldValue == null) {
-                log.trace("{} is null, and not overrided by env variable", envVarKey);
+                log.trace("{} is null, and not overrode by env variable", envVarKey);
                 continue;
             }
             if (oldValue instanceof Map) {
-                //noinspection unchecked
                 processConfigMap(envVarKey, (Map<String, Object>) oldValue);
                 continue;
             } else if (isEnvExactlyPresent(envVarKey)) {
                 log.error("Unsupported type of config value {}:{}", envVarKey, oldValue.getClass());
             }
 
-            log.warn("Env variables not overrided any configs {}", getEnvKeysStartBy(envVarKey));
+            log.warn("Env variables not overrode any configs {}", getEnvKeysStartBy(envVarKey));
         }
     }
 

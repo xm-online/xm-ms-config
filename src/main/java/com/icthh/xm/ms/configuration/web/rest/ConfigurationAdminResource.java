@@ -171,7 +171,6 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
     public ResponseEntity<Void> deleteConfigurations(@RequestBody(required = false) List<String> paths,
                                                      HttpServletRequest request) {
-
         List<String> nonNullPaths = Optional.ofNullable(paths)
                                            .orElseGet(Collections::emptyList);
 
