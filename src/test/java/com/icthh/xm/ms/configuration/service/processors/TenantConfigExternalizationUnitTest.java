@@ -95,7 +95,7 @@ public class TenantConfigExternalizationUnitTest {
     public void overrideDoubleNumbers() {
         String value = "" + 123.5;
         environmentVariables.set("XM_inviteExpireTime", value);
-        Object actual = overrideParameterAndReturnResult(asList("inviteExpireTime"));
+        Object actual = overrideParameterAndReturnResult(singletonList("inviteExpireTime"));
         assertEquals(123.5, actual);
     }
 
@@ -103,7 +103,7 @@ public class TenantConfigExternalizationUnitTest {
     public void noyOverideByOtherTenant() {
         String value = "" + 123.5;
         environmentVariables.set("OTHER_inviteExpireTime", value);
-        Object actual = overrideParameterAndReturnResult(asList("inviteExpireTime"));
+        Object actual = overrideParameterAndReturnResult(singletonList("inviteExpireTime"));
         assertEquals(86400, actual);
     }
 
