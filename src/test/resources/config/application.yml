@@ -32,6 +32,13 @@ spring:
             enabled: false
     thymeleaf:
         mode: XHTML
+    cloud:
+        bus:
+            enabled: false
+        discovery:
+            enabled: false
+        consul:
+            enabled: false
 
 server:
     port: 10344
