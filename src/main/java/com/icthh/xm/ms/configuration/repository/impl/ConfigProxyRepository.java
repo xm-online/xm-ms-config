@@ -153,9 +153,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     private void deleteAllInMemory(List<String> paths, String commit) {
         Set<String> removed = paths.stream()
-            .map(this::removeExactOrByPrefix)
-            .flatMap(List::stream)
-            .collect(toSet());
+                                   .map(this::removeExactOrByPrefix)
+                                   .flatMap(List::stream)
+                                   .collect(toSet());
         configTopicProducer.notifyConfigurationChanged(commit, new LinkedList<>(removed));
     }
 
@@ -213,9 +213,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         Configuration removed = storage.remove(path);
         if (removed == null) {
             List<String> subPaths = storage.keySet()
-                .stream()
-                .filter(key -> key.startsWith(path))
-                .collect(toList());
+                                           .stream()
+                                           .filter(key -> key.startsWith(path))
+                                           .collect(toList());
             if (!subPaths.isEmpty()) {
                 log.warn("Remove all sub-paths of [{}]: {}", path, subPaths);
                 subPaths.forEach(storage::remove);

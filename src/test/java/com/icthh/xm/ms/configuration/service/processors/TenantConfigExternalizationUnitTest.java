@@ -100,7 +100,7 @@ public class TenantConfigExternalizationUnitTest {
     }
 
     @Test
-    public void noyOverideByOtherTenant() {
+    public void noyOverrideByOtherTenant() {
         String value = "" + 123.5;
         environmentVariables.set("OTHER_inviteExpireTime", value);
         Object actual = overrideParameterAndReturnResult(singletonList("inviteExpireTime"));
