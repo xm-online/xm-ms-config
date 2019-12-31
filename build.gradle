@@ -97,10 +97,11 @@ if (OperatingSystem.current().isWindows()) {
 
 bootWar {
     mainClassName = 'com.icthh.xm.ms.configuration.ConfigurationApp'
-}
-
-war {
-
+    manifest {
+        attributes(
+            "Implementation-Version": archiveVersion
+        )
+    }
 }
 
 defaultTasks "bootWar"

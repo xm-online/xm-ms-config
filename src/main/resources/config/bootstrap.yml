@@ -14,7 +14,11 @@ spring:
     cloud:
         consul:
             discovery:
-                tags: profile=${spring.profiles.active}, version=${info.project.version}
+                tags:
+                    - profile=${spring.profiles.active}
+                    - version=${build.version}
+                    - git-branch=${git.branch:}
+                    - git-commit=${git.commit.id.abbrev:}
             config:
                 fail-fast: false # if not in "prod" profile, do not force to use Spring Cloud Config
                 format: yaml
