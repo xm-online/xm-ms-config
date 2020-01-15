@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
@@ -44,6 +45,7 @@ public class ConfigurationClientResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
+    @PrivilegeDescription("Privilege to create config for client")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
         configurationService.updateConfiguration(new Configuration(path, content));
@@ -54,6 +56,7 @@ public class ConfigurationClientResource {
     @PutMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.UPDATE')")
+    @PrivilegeDescription("Privilege to update config for client")
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
@@ -71,6 +74,7 @@ public class ConfigurationClientResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_LIST.ITEM')")
+    @PrivilegeDescription("Privilege to get config for client")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
@@ -95,6 +99,7 @@ public class ConfigurationClientResource {
     @DeleteMapping(PROFILE + "/**")
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.DELETE')")
+    @PrivilegeDescription("Privilege to delete config for client")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
         configurationService.deleteConfiguration(extractPath(request));
         return ResponseEntity.ok().build();
@@ -103,6 +108,7 @@ public class ConfigurationClientResource {
     @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
+    @PrivilegeDescription("Privilege to refresh config for client")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
         String path = extractUrlPath(request).substring(REFRESH.length());
         if (isBlank(path)) {
