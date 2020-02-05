@@ -49,6 +49,11 @@ server:
 #
 # Full reference is available at: https://jhipster.github.io/common-application-properties/
 # ===================================================================
+management:
+    metrics:
+        export:
+            prometheus:
+                enabled: true
 
 jhipster:
     async:
