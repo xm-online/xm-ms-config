@@ -30,6 +30,17 @@ management:
     health:
         mail:
             enabled: false
+    metrics:
+        enable:
+            http: true
+            jvm: true
+            logback: true
+            process: true
+            system: true
+        export:
+            prometheus:
+                enabled: true
+                step: 60
 
 spring:
     application:
