@@ -145,11 +145,14 @@ public class ConfigurationAdminResource {
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
-        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path, version);
-        if (!maybeConfiguration.isPresent()) {
-            throw new EntityNotFoundException("Not found configuration.");
-        }
-        String content = maybeConfiguration.get().getContent();
+        Configuration maybeConfiguration = configurationService.findConfiguration(path, version).orElseThrow(
+            () -> new EntityNotFoundException("Not found configuration.")
+        );
+        return createResponse(toJson, path, maybeConfiguration);
+    }
+
+    protected ResponseEntity<String> createResponse(Boolean toJson, String path, Configuration maybeConfiguration) {
+        String content = maybeConfiguration.getContent();
 
         if (path.endsWith(".yml") && toJson) {
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(convertToJson(content));

@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -34,6 +35,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 @RequestMapping(API_PREFIX)
 public class ConfigurationClientResource {
 
+    private static final String EMPTY_YML = "---";
     private final UrlPathHelper urlHelper = new UrlPathHelper();
 
     private final ConfigurationAdminResource configurationAdminResource;
@@ -82,11 +84,14 @@ public class ConfigurationClientResource {
 
     @GetMapping(value = PROFILE + "/webapp/settings-private.yml")
     @Timed
-    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     public ResponseEntity<String> getWebAppPrivateConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
-        return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+        Configuration maybeConfiguration = configurationService.findConfiguration(path, null)
+                                                               .orElse(new Configuration(path, EMPTY_YML));
+        Boolean toJson = request.getParameterMap().containsKey("toJson");
+        return configurationAdminResource.createResponse(toJson, path, maybeConfiguration);
     }
 
     @GetMapping(value = PROFILE + "/webapp/settings-public.yml")
