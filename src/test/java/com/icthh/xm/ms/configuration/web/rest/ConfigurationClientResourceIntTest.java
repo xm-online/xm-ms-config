@@ -29,6 +29,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+@WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "test75";
@@ -60,7 +61,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testAddSetTenantPath() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
                 .content("some content 78342578956234789562378946589237465892346576")
@@ -74,7 +74,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testAddDocument() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
                     .content("some content")
@@ -88,7 +87,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testUpdateDocument() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .content("some content")
@@ -106,7 +104,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testUpdateDocumentWithHash() {
         String content = "some content";
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
@@ -125,7 +122,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testUpdateDocumentWithUncorrectHash() {
         String content = "some content";
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
@@ -140,7 +136,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testYmlJson() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname.yml")
                 .content("field: \"field value\"")
@@ -155,7 +150,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    @WithMockUser(authorities = {"SUPER-ADMIN"})
     public void testDeleteDocument() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .content("some content")
