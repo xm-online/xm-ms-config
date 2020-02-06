@@ -80,6 +80,15 @@ public class ConfigurationClientResource {
         return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
     }
 
+    @GetMapping(value = PROFILE + "/webapp/settings-private.yml")
+    @Timed
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
+    @LoggingAspectConfig(inputDetails = false, resultDetails = false)
+    public ResponseEntity<String> getWebAppPrivateConfiguration(HttpServletRequest request) {
+        String path = extractPath(request);
+        return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+    }
+
     @GetMapping(value = PROFILE + "/webapp/settings-public.yml")
     @Timed
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
