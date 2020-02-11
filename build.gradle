@@ -288,3 +288,9 @@ task stage(dependsOn: 'bootWar') {
 compileJava.dependsOn processResources
 processResources.dependsOn cleanResources,bootBuildInfo
 bootBuildInfo.mustRunAfter cleanResources
+
+task getProjectVersion {
+    doLast {
+        println project.version
+    }
+}
