@@ -8,8 +8,10 @@ import com.icthh.xm.commons.tenant.spring.config.TenantContextConfiguration;
 import io.github.jhipster.config.JHipsterProperties;
 import io.undertow.UndertowOptions;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory;
 import org.springframework.boot.web.server.MimeMappings;
 import org.springframework.boot.web.server.WebServerFactory;
@@ -46,6 +48,9 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
 
     private final JHipsterProperties jHipsterProperties;
 
+    private final ServerProperties serverProperties;
+
+    @Setter(onMethod=@__({@Autowired(required = false)}))
     private MetricRegistry metricRegistry;
 
     @Override
@@ -68,12 +73,10 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
         /*
          * Enable HTTP/2 for Undertow - https://twitter.com/ankinson/status/829256167700492288
          * HTTP/2 requires HTTPS, so HTTP requests will fallback to HTTP/1.1.
-         * See the JHipsterProperties class and your application-*.yml configuration files
+         * See the SeverProperties class and your application-*.yml configuration files
          * for more information.
          */
-        if (jHipsterProperties.getHttp().getVersion().equals(JHipsterProperties.Http.Version.V_2_0) &&
-            server instanceof UndertowServletWebServerFactory) {
-
+        if (serverProperties.getHttp2().isEnabled() && server instanceof UndertowServletWebServerFactory) {
             ((UndertowServletWebServerFactory) server)
                 .addBuilderCustomizers(builder ->
                     builder.setServerOption(UndertowOptions.ENABLE_HTTP2, true));
@@ -129,10 +132,5 @@ public class WebConfigurer implements ServletContextInitializer, WebServerFactor
             source.registerCorsConfiguration("/v2/api-docs", config);
         }
         return new CorsFilter(source);
-    }
-
-    @Autowired(required = false)
-    public void setMetricRegistry(MetricRegistry metricRegistry) {
-        this.metricRegistry = metricRegistry;
     }
 }

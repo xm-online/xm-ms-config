@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.exceptions.EntityNotFoundException;
+import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
@@ -51,6 +52,7 @@ public class ConfigurationAdminResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
+    @PrivilegeDescription("Privilege to create list of configurations for admin")
     public ResponseEntity<Void> createConfigurations(@RequestParam(value = "files") List<MultipartFile> files) {
         configurationService.createConfigurations(files);
         return ResponseEntity.ok().build();
@@ -60,6 +62,7 @@ public class ConfigurationAdminResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY.LIST')")
+    @PrivilegeDescription("Privilege to update list of configurations in memory for admin")
     public ResponseEntity<Void> updateConfigurationsInMemory(@RequestParam(value = "files") List<MultipartFile> files) {
         configurationService.updateConfigurationsInMemory(files);
         return ResponseEntity.ok().build();
@@ -70,6 +73,7 @@ public class ConfigurationAdminResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
+    @PrivilegeDescription("Privilege to create configuration for admin")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
         configurationService.updateConfiguration(new Configuration(path, content));
@@ -80,6 +84,7 @@ public class ConfigurationAdminResource {
     @PutMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE')")
+    @PrivilegeDescription("Privilege to update configuration for admin")
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
@@ -98,6 +103,7 @@ public class ConfigurationAdminResource {
     @PutMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY')")
+    @PrivilegeDescription("Privilege to update configuration in memory for admin")
     public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody(required = false) String content,
                                                             HttpServletRequest request) {
         String path = extractPath(request).substring(INMEMORY.length());
@@ -109,6 +115,7 @@ public class ConfigurationAdminResource {
     @DeleteMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.DELETE_IN_MEMORY')")
+    @PrivilegeDescription("Privilege to delete configuration in memory for admin")
     public ResponseEntity<Void> deleteConfigurationInMemory(@RequestBody(required = false) List<String> paths) {
         configurationService.deleteConfigurationInMemory(paths);
         return ResponseEntity.ok().build();
@@ -118,6 +125,7 @@ public class ConfigurationAdminResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
+    @PrivilegeDescription("Privilege to get configuration for admin")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         String version = request.getParameter("version");
@@ -127,6 +135,7 @@ public class ConfigurationAdminResource {
     @GetMapping(value = "/version")
     @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject}, 'CONFIG.ADMIN.GET_VERSION')")
+    @PrivilegeDescription("Privilege to get version for admin")
     public ResponseEntity<String> getVersion() {
         return ResponseEntity.ok(configurationService.getVersion());
     }
@@ -136,11 +145,14 @@ public class ConfigurationAdminResource {
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
-        Optional<Configuration> maybeConfiguration = configurationService.findConfiguration(path, version);
-        if (!maybeConfiguration.isPresent()) {
-            throw new EntityNotFoundException("Not found configuration.");
-        }
-        String content = maybeConfiguration.get().getContent();
+        Configuration maybeConfiguration = configurationService.findConfiguration(path, version).orElseThrow(
+            () -> new EntityNotFoundException("Not found configuration.")
+        );
+        return createResponse(toJson, path, maybeConfiguration);
+    }
+
+    protected ResponseEntity<String> createResponse(Boolean toJson, String path, Configuration maybeConfiguration) {
+        String content = maybeConfiguration.getContent();
 
         if (path.endsWith(".yml") && toJson) {
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(convertToJson(content));
@@ -161,6 +173,7 @@ public class ConfigurationAdminResource {
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}/**")
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.DELETE')")
+    @PrivilegeDescription("Privilege to delete configuration for admin")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
         configurationService.deleteConfiguration(extractPath(request));
         return ResponseEntity.ok().build();
@@ -169,9 +182,9 @@ public class ConfigurationAdminResource {
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}")
     @Timed
     @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
+    @PrivilegeDescription("Privilege to delete list of configurations for admin")
     public ResponseEntity<Void> deleteConfigurations(@RequestBody(required = false) List<String> paths,
                                                      HttpServletRequest request) {
-
         List<String> nonNullPaths = Optional.ofNullable(paths)
                                            .orElseGet(Collections::emptyList);
 
@@ -186,6 +199,7 @@ public class ConfigurationAdminResource {
     @PostMapping(value = CONFIG + REFRESH + "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")
+    @PrivilegeDescription("Privilege to refresh configuration for admin")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
         String path = extractPath(request).substring(CONFIG.length() + REFRESH.length());
         if (isBlank(path)) {

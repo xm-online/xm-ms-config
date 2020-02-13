@@ -2,6 +2,8 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.exceptions.EntityNotFoundException;
+import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
@@ -33,6 +35,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 @RequestMapping(API_PREFIX)
 public class ConfigurationClientResource {
 
+    private static final String EMPTY_YML = "---";
     private final UrlPathHelper urlHelper = new UrlPathHelper();
 
     private final ConfigurationAdminResource configurationAdminResource;
@@ -44,6 +47,7 @@ public class ConfigurationClientResource {
     @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
+    @PrivilegeDescription("Privilege to create config for client")
     public ResponseEntity<Void> createConfiguration(@RequestBody String content, HttpServletRequest request) {
         String path = extractPath(request);
         configurationService.updateConfiguration(new Configuration(path, content));
@@ -54,6 +58,7 @@ public class ConfigurationClientResource {
     @PutMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
     @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.UPDATE')")
+    @PrivilegeDescription("Privilege to update config for client")
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
                                                     HttpServletRequest request,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
@@ -71,9 +76,22 @@ public class ConfigurationClientResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_LIST.ITEM')")
+    @PrivilegeDescription("Privilege to get config for client")
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+    }
+
+    @GetMapping(value = PROFILE + "/webapp/settings-private.yml")
+    @Timed
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
+    @LoggingAspectConfig(inputDetails = false, resultDetails = false)
+    public ResponseEntity<String> getWebAppPrivateConfiguration(HttpServletRequest request) {
+        String path = extractPath(request);
+        Configuration maybeConfiguration = configurationService.findConfiguration(path, null)
+                                                               .orElse(new Configuration(path, EMPTY_YML));
+        Boolean toJson = request.getParameterMap().containsKey("toJson");
+        return configurationAdminResource.createResponse(toJson, path, maybeConfiguration);
     }
 
     @GetMapping(value = PROFILE + "/webapp/settings-public.yml")
@@ -95,6 +113,7 @@ public class ConfigurationClientResource {
     @DeleteMapping(PROFILE + "/**")
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.DELETE')")
+    @PrivilegeDescription("Privilege to delete config for client")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
         configurationService.deleteConfiguration(extractPath(request));
         return ResponseEntity.ok().build();
@@ -103,6 +122,7 @@ public class ConfigurationClientResource {
     @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
+    @PrivilegeDescription("Privilege to refresh config for client")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
         String path = extractUrlPath(request).substring(REFRESH.length());
         if (isBlank(path)) {

@@ -168,4 +168,37 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     }
 
 
+    @Test
+    @SneakyThrows
+    public void authorizedUserWithPermissionCanGetPrivateWebConfig() {
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
+                            .content("some: content")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(content().string("{\"some\":\"content\"}"))
+               .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void getDefaultPrivateSettingIfNotExists() {
+        mockMvc.perform(delete(API_PREFIX + PROFILE + "/webapp/settings-private.yml"))
+               .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    @WithMockUser(authorities = {"ANONYMOUS"})
+    public void notAuthorizedUserCanNotGetPrivateWebConfig() {
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
+                            .contentType(MediaType.TEXT_PLAIN))
+               .andExpect(status().isForbidden());
+    }
+
+
 }

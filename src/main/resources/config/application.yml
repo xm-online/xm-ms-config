@@ -30,6 +30,17 @@ management:
     health:
         mail:
             enabled: false
+    metrics:
+        enable:
+            http: true
+            jvm: true
+            logback: true
+            process: true
+            system: true
+        export:
+            prometheus:
+                enabled: true
+                step: 60
 
 spring:
     application:
@@ -41,6 +52,8 @@ spring:
                 instanceId: ${spring.application.name}:${spring.application.instance-id:${random.value}}
     jackson:
         serialization.write_dates_as_timestamps: false
+    main:
+        allow-bean-definition-overriding: true
     messages:
         basename: i18n/messages
     mvc:

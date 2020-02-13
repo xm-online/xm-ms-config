@@ -1,18 +1,18 @@
 {
   "generator-jhipster": {
     "promptValues": {
-      "packageName": "com.icthh.xm.ms.configuration",
-      "nativeLanguage": "en"
+      "packageName": "com.icthh.xm.ms.configuration"
     },
-    "jhipsterVersion": "5.7.0",
+    "jhipsterVersion": "6.5.1",
+    "applicationType": "microservice",
     "baseName": "configuration",
     "packageName": "com.icthh.xm.ms.configuration",
     "packageFolder": "com/icthh/xm/ms/configuration",
     "serverPort": "8084",
     "authenticationType": "uaa",
     "uaaBaseName": "uaa",
-    "hibernateCache": "no",
-    "clusteredHttpSession": false,
+    "cacheProvider": "no",
+    "enableHibernateCache": false,
     "websocket": false,
     "databaseType": "no",
     "devDatabaseType": "no",
@@ -21,24 +21,21 @@
     "messageBroker": false,
     "serviceDiscoveryType": "consul",
     "buildTool": "gradle",
-    "enableSocialSignIn": false,
-    "jwtSecretKey": "",
-    "enableTranslation": true,
-    "applicationType": "microservice",
+    "enableSwaggerCodegen": false,
+    "jwtSecretKey": "MWYxOTJmZTVlOWYxMTE4OTVmZjVjMDk1Y2JlNzExYzdmNjFmNGIxZjdhMGI5MTIzYTY4MzZhYjE0MmUxMzFiNDY1NDNhOTM4MGI2ODI0NzE1NDA5M2I2M2Q1YzdkNTljZjc5MjA2YjhmODEwMTE1MWI5YThjOGQyMDlmMzliYTg=",
+    "embeddableLaunchScript": false,
     "testFrameworks": [
       "gatling",
       "cucumber"
     ],
     "jhiPrefix": "jhi",
+    "entitySuffix": "",
+    "dtoSuffix": "DTO",
+    "otherModules": [],
+    "enableTranslation": false,
+    "clientPackageManager": "npm",
+    "blueprints": [],
     "skipClient": true,
-    "skipUserManagement": true,
-    "nativeLanguage": "en",
-    "languages": [
-      "en"
-    ],
-    "clientPackageManager": "yarn",
-    "cacheProvider": "no",
-    "enableHibernateCache": false,
-    "otherModules": []
+    "skipUserManagement": true
   }
 }

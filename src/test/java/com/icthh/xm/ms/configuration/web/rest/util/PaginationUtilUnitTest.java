@@ -26,17 +26,18 @@ public class PaginationUtilUnitTest {
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, baseUrl);
         List<String> strHeaders = headers.get(HttpHeaders.LINK);
         assertNotNull(strHeaders);
-        assertTrue(strHeaders.size() == 1);
+        assertEquals(1, strHeaders.size());
         String headerData = strHeaders.get(0);
-        assertTrue(headerData.split(",").length == 4);
+        assertEquals(4, headerData.split(",").length);
         String expectedData = "</api/_search/example?page=7&size=50>; rel=\"next\","
                 + "</api/_search/example?page=5&size=50>; rel=\"prev\","
                 + "</api/_search/example?page=7&size=50>; rel=\"last\","
                 + "</api/_search/example?page=0&size=50>; rel=\"first\"";
         assertEquals(expectedData, headerData);
         List<String> xTotalCountHeaders = headers.get("X-Total-Count");
-        assertTrue(xTotalCountHeaders.size() == 1);
-        assertTrue(Long.valueOf(xTotalCountHeaders.get(0)).equals(400L));
+        assertNotNull(xTotalCountHeaders);
+        assertEquals(1, xTotalCountHeaders.size());
+        assertEquals(400L, Long.parseLong(xTotalCountHeaders.get(0)));
     }
 
 }

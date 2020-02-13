@@ -17,6 +17,7 @@ import com.icthh.xm.commons.tenant.TenantKey;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -212,7 +213,7 @@ public class PrivilegeService {
         if (StringUtils.isBlank(tenant)) {
             return path;
         }
-        return StringUtils.replaceAll(path, "\\{tenantName\\}", tenant.toUpperCase());
+        return RegExUtils.replaceAll(path, "\\{tenantName\\}", tenant.toUpperCase());
     }
 
 }
