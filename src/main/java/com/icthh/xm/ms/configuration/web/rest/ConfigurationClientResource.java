@@ -86,6 +86,7 @@ public class ConfigurationClientResource {
     @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
+    @PrivilegeDescription("Privilege to get private ui settings")
     public ResponseEntity<String> getWebAppPrivateConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         Configuration maybeConfiguration = configurationService.findConfiguration(path, null)
