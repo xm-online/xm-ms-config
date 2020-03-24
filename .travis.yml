@@ -20,7 +20,7 @@ script:
   - export PROJECT_VERSION="$IMAGE_BRANCH"
   - if [ "$IMAGE_BRANCH" == "master" ]; 
     then 
-        PROJECT_VERSION=$(./gradlew -q  getProjectVersion)
+        PROJECT_VERSION=$(./gradlew -q  getProjectVersion);
         export SONAR_PK=$(echo  -n $TRAVIS_REPO_SLUG | sed -e 's/\//:/g');
         ./gradlew -x test --no-daemon sonarqube -Dsonar.projectKey="$SONAR_PK"
         -Dsonar.projectName="$SONAR_PK" -Dsonar.java.binaries="." -Dsonar.projectVersion="$IMAGE_BRANCH";
