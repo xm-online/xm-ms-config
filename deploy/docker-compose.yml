@@ -14,10 +14,6 @@ services:
         secrets:
             - source: APPLICATION_GIT_PASSWORD
               target: APPLICATION_GIT_PASSWORD
-            - source: APPLICATION_GIT_URI
-              target: APPLICATION_GIT_URI
-            - source: APPLICATION_GIT_LOGIN
-              target: APPLICATION_GIT_LOGIN
         logging:
             driver: syslog
             options:
@@ -26,10 +22,6 @@ services:
 
 secrets:
     APPLICATION_GIT_PASSWORD:
-        external: true
-    APPLICATION_GIT_URI:
-        external: true
-    APPLICATION_GIT_LOGIN:
         external: true
 
 networks:
