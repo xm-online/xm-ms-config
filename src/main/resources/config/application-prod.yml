@@ -111,5 +111,5 @@ application:
         uri:
         login:
         password:
-        branch-name: dev
+        branch-name: master
         max-wait-time-second: 30
