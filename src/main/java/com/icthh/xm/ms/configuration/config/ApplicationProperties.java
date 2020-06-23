@@ -21,6 +21,7 @@ public class ApplicationProperties {
 
     private GitProperties git;
     private final Retry retry = new Retry();
+    private final UaaPermissions uaaPermissions = new UaaPermissions();
 
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private boolean kafkaEnabled;
@@ -45,5 +46,12 @@ public class ApplicationProperties {
         private int maxAttempts;
         private long delay;
         private int multiplier;
+    }
+
+    @Getter
+    @Setter
+    public static class UaaPermissions {
+        private boolean enabled;
+        private int retryDelay;
     }
 }

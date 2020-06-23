@@ -143,4 +143,7 @@ application:
         max-attempts: 3
         delay: 10000 #in milliseconds
         multiplier: 2
+    uaa-permissions:
+        enabled: false # enables uaa-stored permissions and roles
+        retry-delay: 1000
 
