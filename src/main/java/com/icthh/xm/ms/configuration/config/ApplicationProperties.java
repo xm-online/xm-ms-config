@@ -51,7 +51,7 @@ public class ApplicationProperties {
     @Getter
     @Setter
     public static class UaaPermissions {
-        private boolean enabled;
+        private String url;
         private int retryDelay;
     }
 }

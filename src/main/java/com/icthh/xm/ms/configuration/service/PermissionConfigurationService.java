@@ -6,15 +6,16 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.annotations.VisibleForTesting;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
@@ -37,14 +38,12 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
  * the configured tenants
  */
 @Component
-@ConditionalOnProperty(prefix = "application", value = "uaa-permissions.enabled", havingValue = "true")
-@RequiredArgsConstructor
 @Slf4j
 class PermissionConfigurationService {
 
     public static final String UAA_PERMISSIONS_PROPERTY = "uaa-permissions";
     public static final String TENANT_CONFIG_YML = "/tenant-config.yml";
-    private final RestTemplate loadBalancedRestTemplate;
+    private final RestTemplate restTemplate;
     private final ConfigurationService configService;
     private final TenantService tenantService;
 
@@ -54,6 +53,14 @@ class PermissionConfigurationService {
     private String clientId;
     @Value("${jhipster.security.client-authorization.client-secret:internal}")
     private String clientSecret;
+    @Value("${application.uaa-permissions.url:http://uaa}")
+    private String uaaUrl = "http://uaa";
+
+    public PermissionConfigurationService(@Lazy RestTemplate loadBalancedRestTemplate, ConfigurationService configService, TenantService tenantService) {
+        this.restTemplate = loadBalancedRestTemplate;
+        this.configService = configService;
+        this.tenantService = tenantService;
+    }
 
     @EventListener
     @Retryable(maxAttempts = Integer.MAX_VALUE,
@@ -78,12 +85,12 @@ class PermissionConfigurationService {
 
         configService.updateConfigurationInMemory(Configuration.of()
             .path(String.format("/config/tenants/%s/roles.yml", tenantKey))
-            .content(getConfig(token, String.format("http://uaa/roles/%s/configuration", tenantKey)))
+            .content(getConfig(token, String.format(uaaUrl + "/roles/%s/configuration", tenantKey)))
             .build());
 
         configService.updateConfigurationInMemory(Configuration.of()
             .path(String.format("/config/tenants/%s/permissions.yml", tenantKey))
-            .content(getConfig(token, String.format("http://uaa/permissions/%s/configuration", tenantKey)))
+            .content(getConfig(token, String.format(uaaUrl + "/permissions/%s/configuration", tenantKey)))
             .build());
     }
 
@@ -110,7 +117,7 @@ class PermissionConfigurationService {
         MultiValueMap<String, String> headers = new HttpHeaders();
         headers.add("Authorization", token);
 
-        return loadBalancedRestTemplate.exchange(url,
+        return restTemplate.exchange(url,
             HttpMethod.GET, new HttpEntity<>(headers), String.class).getBody();
     }
 
@@ -119,7 +126,7 @@ class PermissionConfigurationService {
         headers.add("x-tenant", tenantName);
         headers.add("Authorization", "Basic " + new String(Base64.encodeBase64(String.format("%s:%s", clientId, clientSecret).getBytes())));
 
-        Map<String, String> response = loadBalancedRestTemplate.exchange(tokenUrl + "?grant_type=client_credentials",
+        Map<String, String> response = restTemplate.exchange(tokenUrl + "?grant_type=client_credentials",
             HttpMethod.POST, new HttpEntity<>(headers), Map.class).getBody();
 
         return String.format("%s %s", response.get("token_type"), response.get(("access_token")));

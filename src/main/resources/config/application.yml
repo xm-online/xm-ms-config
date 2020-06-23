@@ -144,6 +144,6 @@ application:
         delay: 10000 #in milliseconds
         multiplier: 2
     uaa-permissions:
-        enabled: false # enables uaa-stored permissions and roles
+        url: http://uaa
         retry-delay: 1000
 
