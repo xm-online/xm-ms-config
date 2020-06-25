@@ -2,6 +2,10 @@ version: '3.3'
 services:
     config-app:
         image: xmonline/xm-ms-config:${IMAGE_XM_MS_CONFIG_TAG:-latest}
+        volumes:
+            - type: bind
+              source: ./xm-ms-config-repository.git
+              target: /opt/xm-ms-config-repository.git
         networks:
             - xm2
         env_file:
