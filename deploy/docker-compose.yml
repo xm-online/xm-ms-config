@@ -32,4 +32,4 @@ networks:
     xm2:
         driver: overlay
 volumes:
-		config-repo:
+    config-repo:
