@@ -7,8 +7,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
@@ -24,6 +26,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
@@ -39,7 +43,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
  */
 @Component
 @Slf4j
-class PermissionConfigurationService {
+public class PermissionConfigurationService {
 
     public static final String UAA_PERMISSIONS_PROPERTY = "uaa-permissions";
     public static final String TENANT_CONFIG_YML = "/tenant-config.yml";
@@ -73,25 +77,39 @@ class PermissionConfigurationService {
 
     @VisibleForTesting
     void updateConfigurationFromUaa() {
-        tenantService.getTenants("uaa").stream()
-            .filter(t -> "ACTIVE".equals(t.getState()))
-            .map(t -> t.getName().toUpperCase())
-            .filter(this::isUaaPermissionsEnabled)
+        getTenantKeysWithUaaPermissionsEnabled()
             .forEach(this::updatePermissionConfiguration);
     }
 
+    public List<String> getTenantKeysWithUaaPermissionsEnabled() {
+        return tenantService.getTenants("uaa").stream()
+            .filter(t -> "ACTIVE".equals(t.getState()))
+            .map(t -> t.getName().toUpperCase())
+            .filter(this::isUaaPermissionsEnabled)
+            .collect(Collectors.toList());
+    }
+
+    @Synchronized
     private void updatePermissionConfiguration(String tenantKey) {
+        getConfigs(tenantKey)
+            .forEach(configService::updateConfigurationInMemory);
+    }
+
+    public List<Configuration> getConfigs(String tenantKey) {
         String token = getAuthToken(tenantKey);
 
-        configService.updateConfigurationInMemory(Configuration.of()
-            .path(String.format("/config/tenants/%s/roles.yml", tenantKey))
-            .content(getConfig(token, String.format(uaaUrl + "/roles/%s/configuration", tenantKey)))
-            .build());
+        return Stream.of(
+            Pair.of("/config/tenants/%s/roles.yml", "/roles/%s/configuration"),
+            Pair.of("/config/tenants/%s/permissions.yml", "/permissions/%s/configuration"))
+            .map(configUrlPair -> getConfiguration(tenantKey, token, configUrlPair.getLeft(), configUrlPair.getRight()))
+            .collect(Collectors.toList());
+    }
 
-        configService.updateConfigurationInMemory(Configuration.of()
-            .path(String.format("/config/tenants/%s/permissions.yml", tenantKey))
-            .content(getConfig(token, String.format(uaaUrl + "/permissions/%s/configuration", tenantKey)))
-            .build());
+    private Configuration getConfiguration(String tenantKey, String token, String s, String s2) {
+        return Configuration.of()
+            .path(String.format(s, tenantKey))
+            .content(getConfig(token, String.format(uaaUrl + s2, tenantKey)))
+            .build();
     }
 
     @SneakyThrows
@@ -104,6 +122,11 @@ class PermissionConfigurationService {
             return false;
         }
 
+        return isUaaPermissionsEnabled(configuration);
+    }
+
+    @SneakyThrows
+    public boolean isUaaPermissionsEnabled(Configuration configuration) {
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
