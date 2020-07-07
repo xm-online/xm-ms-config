@@ -144,3 +144,6 @@ application:
         delay: 10000 #in milliseconds
         multiplier: 2
 
+gracefulShutdown:
+    enabled: false
+    shutdownDelay:
