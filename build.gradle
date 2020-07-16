@@ -192,7 +192,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
     implementation "com.fasterxml.jackson.core:jackson-annotations"
-    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jackson_databind_version}"
     implementation "com.fasterxml.jackson.module:jackson-module-afterburner"
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io"
