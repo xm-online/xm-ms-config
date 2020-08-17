@@ -29,4 +29,11 @@ public class TokenResource {
     public ResponseEntity<String> getTokenKey() {
         return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(tokenKeyService.getKey());
     }
+
+    @GetMapping("/jwk")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<String> getJwk() {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(tokenKeyService.getJwk());
+    }
 }

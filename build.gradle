@@ -103,7 +103,7 @@ bootWar {
     }
 }
 
-defaultTasks "bootWar"
+defaultTasks "bootRun"
 
 springBoot {
     mainClassName = "com.icthh.xm.ms.configuration.ConfigurationApp"
@@ -223,6 +223,7 @@ dependencies {
     implementation "org.springframework.security:spring-security-web"
     implementation "org.springframework.security.oauth:spring-security-oauth2"
     implementation "org.springframework.security:spring-security-jwt"
+    implementation "com.nimbusds:nimbus-jose-jwt:${nimbus_jose_jwt_version}"
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${jaxb_runtime_version}"
     implementation ("io.springfox:springfox-swagger2") {
         exclude module: "mapstruct"
