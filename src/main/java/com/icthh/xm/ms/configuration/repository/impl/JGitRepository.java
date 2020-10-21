@@ -26,6 +26,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
+import com.icthh.xm.ms.configuration.config.SshTransportConfigCallback;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
@@ -44,7 +45,13 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.GitCommand;
+import org.eclipse.jgit.api.PullCommand;
+import org.eclipse.jgit.api.PushCommand;
+import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
@@ -126,11 +133,10 @@ public class JGitRepository implements PersistenceConfigRepository {
         repositoryFolder.deleteOnExit();
 
         executeLoggedAction("cloneRepository", () -> {
-            cloneRepository()
-                .setURI(gitProperties.getUri())
-                .setDirectory(repositoryFolder)
-                .setCredentialsProvider(createCredentialsProvider())
-                .call().close();
+            CloneCommand cloneCommand = cloneRepository().setURI(gitProperties.getUri())
+                                                         .setDirectory(repositoryFolder);
+            cloneCommand = setAuthorizationConfig(cloneCommand);
+            cloneCommand.call().close();
             return null;
         });
 
@@ -353,17 +359,23 @@ public class JGitRepository implements PersistenceConfigRepository {
                 git.checkout()
                    .setName(branchName)
                    .setForce(true).call();
-                git.pull().setCredentialsProvider(createCredentialsProvider()).call();
+                PullCommand pull = git.pull();
+                pull = setAuthorizationConfig(pull);
+                pull.call();
                 return findLastCommit(git);
             } catch (RefNotFoundException e) {
                 log.info("Branch {} not found in local repository, pull from remote.", branchName);
-                git.fetch().setCredentialsProvider(createCredentialsProvider()).call();
+                FetchCommand fetch = git.fetch();
+                fetch = setAuthorizationConfig(fetch);
+                fetch.call();
                 git.checkout()
                    .setCreateBranch(true)
                    .setName(branchName)
                    .setUpstreamMode(TRACK)
                    .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName).call();
-                git.pull().setCredentialsProvider(createCredentialsProvider()).call();
+                PullCommand pull = git.pull();
+                pull = setAuthorizationConfig(pull);
+                pull.call();
                 return findLastCommit(git);
             }
         });
@@ -378,7 +390,9 @@ public class JGitRepository implements PersistenceConfigRepository {
             }
             git.add().addFilepattern(".").call();
             RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
-            git.push().setCredentialsProvider(createCredentialsProvider()).call();
+            PushCommand push = git.push();
+            push = setAuthorizationConfig(push);
+            push.call();
             return commit.getName();
         });
     }
@@ -457,5 +471,12 @@ public class JGitRepository implements PersistenceConfigRepository {
     @FunctionalInterface
     public interface ThrowingSupplier<R, E extends Exception> {
         R get() throws E;
+    }
+
+    private <T extends GitCommand> T setAuthorizationConfig(TransportCommand<T, ?> cloneCommand) {
+        if (gitProperties.getSsh().isEnabled()) {
+            return cloneCommand.setTransportConfigCallback(new SshTransportConfigCallback(gitProperties.getSsh()));
+        }
+        return cloneCommand.setCredentialsProvider(createCredentialsProvider());
     }
 }
