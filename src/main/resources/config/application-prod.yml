@@ -108,6 +108,10 @@ jhipster:
 
 application:
     git:
+        ssh:
+            enabled: false
+            private-key:
+            pass-phrase:
         uri:
         login:
         password:

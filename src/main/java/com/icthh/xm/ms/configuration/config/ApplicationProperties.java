@@ -5,9 +5,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Properties specific to JHipster.
@@ -36,6 +34,15 @@ public class ApplicationProperties {
         private String password;
         private String branchName;
         private Integer maxWaitTimeSecond = 30;
+        private SshProperties ssh = new SshProperties();
+
+        @Getter
+        @Setter
+        public static class SshProperties {
+            private boolean enabled;
+            private String privateKey;
+            private String passPhrase;
+        }
     }
 
     @Getter
