@@ -4,10 +4,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
@@ -25,7 +28,25 @@ public class TenantConfigExternalizationUnitTest {
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+    @Test
+    public void testLongStringMustNotSplitOnNewLine() {
+        environmentVariables.set("XM_something", "Bart");
+        Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", loadFile("tenant-config.yml"));
+        Configuration processedConfiguration = new TenantConfigExternalization().processConfiguration(configuration);
+        String content = processedConfiguration.getContent();
+
+        // string between {veryLongString: "} and {"}
+        Pattern pattern = Pattern.compile("(?s)(?<=veryLongString: \").*?(?=\")", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(content);
+        matcher.find();
+        String veryLongString = matcher.group();
+
+        assertFalse(veryLongString.contains("\n"));
+        assertFalse(veryLongString.contains("\\"));
+    }
+
 
     @Test
     public void testConfigOverride() {

@@ -9,6 +9,7 @@ import static org.apache.commons.lang.StringUtils.isBlank;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +28,8 @@ import java.util.function.Predicate;
 public class TenantConfigExternalization implements ConfigurationProcessor {
 
     private final AntPathMatcher matcher = new AntPathMatcher();
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper
+        mapper = new ObjectMapper(new YAMLFactory().disable(YAMLGenerator.Feature.SPLIT_LINES));
     private static final String TENANT_NAME = "tenantName";
     private final Map<String, String> env = getenv();
 
