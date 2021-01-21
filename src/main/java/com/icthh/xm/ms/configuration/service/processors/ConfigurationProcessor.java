@@ -4,18 +4,19 @@ import static java.util.stream.Collectors.toList;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 
+import java.util.Collections;
 import java.util.List;
 
 public interface ConfigurationProcessor {
 
-    default List<Configuration> processConfigurations(List<Configuration> configurations) {
-        if (configurations == null) {
-            return null;
-        }
-
-        return configurations.stream().map(this::processConfiguration).collect(toList());
+    default boolean isPrivate() {
+        return false;
     }
 
-    Configuration processConfiguration(Configuration configuration);
+    default List<Configuration> processToConfigurations(Configuration configuration) {
+        return Collections.singletonList(processToConfiguration(configuration));
+    }
+
+    Configuration processToConfiguration(Configuration configuration);
 
 }

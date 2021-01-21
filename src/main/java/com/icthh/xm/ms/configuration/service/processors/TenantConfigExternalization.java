@@ -33,7 +33,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
 
     @Override
     @SneakyThrows
-    public Configuration processConfiguration(Configuration configuration) {
+    public Configuration processToConfiguration(Configuration configuration) {
         if (!matcher.match(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath())) {
             return configuration;
         }

@@ -111,7 +111,7 @@ public class TenantConfigExternalizationUnitTest {
     @SneakyThrows
     private Object overrideParameterAndReturnResult(List<String> path) {
         Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", loadFile("tenant-config.yml"));
-        Configuration processedConfiguration = new TenantConfigExternalization().processConfiguration(configuration);
+        Configuration processedConfiguration = new TenantConfigExternalization().processToConfiguration(configuration);
         Map<String, Object> configMap = mapper.readValue(processedConfiguration.getContent(), Map.class);
         Object map = configMap;
         for(String key: path) {

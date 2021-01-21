@@ -50,6 +50,14 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return resultMap;
     }
 
+    public Optional<Configuration> findConfiguration(String path, String version) {
+        return Optional.ofNullable(repositoryProxy.find(path, version).getData());
+    }
+
+    public Optional<Configuration> findConfiguration(String path) {
+        return findConfiguration(path, null);
+    }
+
     @Override
     public void afterPropertiesSet() {
         repositoryProxy.refreshInternal();
@@ -75,18 +83,6 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     public void updateConfigurationsInMemory(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
         inMemoryRepository.updateConfigurationsInMemory(configurations, inMemoryRepository.getCommitVersion());
-    }
-
-    public Optional<Configuration> findConfiguration(String path) {
-        return Optional.ofNullable(repositoryProxy.find(path).getData());
-    }
-
-    public Optional<Configuration> findConfiguration(String path, String version) {
-        return Optional.ofNullable(repositoryProxy.find(path, version).getData());
-    }
-
-    public List<Configuration> getConfigurations() {
-        return repositoryProxy.findAll().getData();
     }
 
     public void deleteConfiguration(String path) {
