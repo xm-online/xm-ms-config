@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.service.processors;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
@@ -111,7 +112,8 @@ public class TenantConfigExternalizationUnitTest {
     @SneakyThrows
     private Object overrideParameterAndReturnResult(List<String> path) {
         Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", loadFile("tenant-config.yml"));
-        Configuration processedConfiguration = new TenantConfigExternalization().processToConfiguration(configuration);
+        Configuration processedConfiguration = new TenantConfigExternalization()
+                .processConfiguration(configuration, emptyMap(), emptyMap()).get(0);
         Map<String, Object> configMap = mapper.readValue(processedConfiguration.getContent(), Map.class);
         Object map = configMap;
         for(String key: path) {

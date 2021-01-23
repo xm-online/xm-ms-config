@@ -14,6 +14,7 @@ import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ConfigProxyRepository implements DistributedConfigRepository {
     @Getter(AccessLevel.PACKAGE)
     private final AtomicReference<String> version = new AtomicReference<>();
@@ -38,14 +40,6 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private final MemoryConfigStorage storage;
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final ConfigTopicProducer configTopicProducer;
-
-    public ConfigProxyRepository(PersistenceConfigRepository persistenceConfigRepository,
-                                 ConfigTopicProducer configTopicProducer,
-                                 List<ConfigurationProcessor> configurationProcessors) {
-        this.storage = new MemoryConfigStorage(configurationProcessors);
-        this.persistenceConfigRepository = persistenceConfigRepository;
-        this.configTopicProducer = configTopicProducer;
-    }
 
     /**
      * Get internal map config. If commit is not specified, or commit is the same as inmemory,
@@ -64,7 +58,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         } else {
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
-            refreshStorage(actualConfigs, storage.getConfigPathsList());
+            storage.refreshStorage(actualConfigs);
             updateVersion(configurationList.getCommit());
             return storage.getPrivateConfigs();
         }
@@ -165,8 +159,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void refreshInternal() {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
-        refreshStorage(actualConfigs, storage.getConfigPathsList());
+        Set<String> updated = storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getCommit());
+        notifyChanged(updated);
     }
 
     @Override
@@ -175,9 +170,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> oldKeys = storage.getConfigPathsList();
 
-        refreshStorage(actualConfigs, oldKeys);
+        Set<String> updated = storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getCommit());
-        notifyChanged(actualConfigs, oldKeys);
+        notifyChanged(updated);
     }
 
     @Override
@@ -196,9 +191,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
 
-        Set<String> oldKeys = storage.getConfigPathsList(tenant);
-        refreshStorage(actualConfigs, oldKeys);
-        notifyChanged(actualConfigs, oldKeys);
+        Set<String> updated = storage.refreshStorage(actualConfigs, tenant);
+        notifyChanged(updated);
     }
 
     @Override
@@ -206,21 +200,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         return version.get();
     }
 
-    @Synchronized
-    private void refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
-        actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
-        oldKeys.forEach(storage::removeConfig);
-        actualConfigs.forEach(configuration -> storage.updateConfig(configuration.getPath(), configuration));
-    }
-
     private void updateVersion(String commit) {
         version.set(commit);
     }
 
-    private void notifyChanged(List<Configuration> actualConfigs, Set<String> oldKeys) {
-        Set<String> updated = new HashSet<>(oldKeys.size() + actualConfigs.size());
-        updated.addAll(actualConfigs.stream().map(Configuration::getPath).collect(toSet()));
-        updated.addAll(oldKeys);
+    private void notifyChanged(Set<String> updated) {
         configTopicProducer.notifyConfigurationChanged(version.get(), new ArrayList<>(updated));
     }
 }

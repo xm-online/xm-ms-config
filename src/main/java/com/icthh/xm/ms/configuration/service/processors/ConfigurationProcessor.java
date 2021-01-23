@@ -1,22 +1,16 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static java.util.stream.Collectors.toList;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public interface ConfigurationProcessor {
 
-    default boolean isPrivate() {
-        return false;
-    }
+    boolean isSupported(Configuration configuration);
 
-    default List<Configuration> processToConfigurations(Configuration configuration) {
-        return Collections.singletonList(processToConfiguration(configuration));
-    }
-
-    Configuration processToConfiguration(Configuration configuration);
+    List<Configuration> processConfiguration(Configuration configuration,
+                                             Map<String, Configuration> originalStorage,
+                                             Map<String, Configuration> targetStorage);
 
 }

@@ -98,4 +98,8 @@ jhipster:
 
 application:
     git:
+        uri: https://gitlab.claritymv.com/clarity/xm-ms-config-repository
+        login: ssenko
+        password: "!ctymrjcthutq!"
+        branch-name: develop
         max-wait-time-second: 30
