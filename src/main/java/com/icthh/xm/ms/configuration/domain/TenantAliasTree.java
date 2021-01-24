@@ -47,7 +47,6 @@ public class TenantAliasTree {
     public static class TenantAlias {
         private String key;
         private List<TenantAlias> children;
-        private Set<String> mergeAsYml;
         @JsonIgnore
         private TenantAlias parent;
 
