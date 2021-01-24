@@ -98,8 +98,4 @@ jhipster:
 
 application:
     git:
-        uri: 
-        login: 
-        password: 
-        branch-name: 
         max-wait-time-second: 30
