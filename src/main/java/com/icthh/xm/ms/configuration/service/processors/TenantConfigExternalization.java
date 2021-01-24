@@ -73,11 +73,11 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
                 continue;
             }
             if (!isEnvPresent(envVarKey + "_")) {
-                log.trace("{} and not overrode by env variable", envVarKey);
+                log.trace("{} and not overridden by env variable", envVarKey);
                 continue;
             }
             if (oldValue == null) {
-                log.trace("{} is null, and not overrode by env variable", envVarKey);
+                log.trace("{} is null, and not overridden by env variable", envVarKey);
                 continue;
             }
             if (oldValue instanceof Map) {
@@ -87,7 +87,7 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
                 log.error("Unsupported type of config value {}:{}", envVarKey, oldValue.getClass());
             }
 
-            log.warn("Env variables not overrode any configs {}", getEnvKeysStartBy(envVarKey));
+            log.warn("Env variables not overridden any configs {}", getEnvKeysStartBy(envVarKey));
         }
     }
 

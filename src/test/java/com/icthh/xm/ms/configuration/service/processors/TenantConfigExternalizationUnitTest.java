@@ -1,6 +1,5 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -9,14 +8,12 @@ import static org.junit.Assert.assertEquals;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
-import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.springframework.core.io.ClassPathResource;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -111,21 +108,19 @@ public class TenantConfigExternalizationUnitTest {
 
     @SneakyThrows
     private Object overrideParameterAndReturnResult(List<String> path) {
-        Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", loadFile("tenant-config.yml"));
-        Configuration processedConfiguration = new TenantConfigExternalization()
-                .processConfiguration(configuration, emptyMap(), emptyMap()).get(0);
+        Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", TestUtil.loadFile("tenant-config.yml"));
+        List<Configuration> processedConfigurations = new TenantConfigExternalization()
+                .processConfiguration(configuration, emptyMap(), emptyMap());
+        Configuration processedConfiguration = configuration;
+        if (!processedConfigurations.isEmpty()) {
+            processedConfiguration = processedConfigurations.get(0);
+        }
         Map<String, Object> configMap = mapper.readValue(processedConfiguration.getContent(), Map.class);
         Object map = configMap;
         for(String key: path) {
             map = ((Map)map).get(key);
         }
         return map;
-    }
-
-    @SneakyThrows
-    public static String loadFile(String path) {
-        InputStream cfgInputStream = new ClassPathResource(path).getInputStream();
-        return IOUtils.toString(cfgInputStream, UTF_8);
     }
 
 }

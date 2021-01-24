@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static com.icthh.xm.ms.configuration.domain.TenantAliasTree.TraverseRule.CONTINUE;
@@ -41,9 +43,11 @@ public class TenantAliasTree {
     }
 
     @Data
+    @ToString(exclude = "children")
     public static class TenantAlias {
         private String key;
         private List<TenantAlias> children;
+        private Set<String> mergeAsYml;
         @JsonIgnore
         private TenantAlias parent;
 
@@ -72,8 +76,8 @@ public class TenantAliasTree {
             List<TenantAlias> parentsList = new ArrayList<>();
             TenantAlias currentNode = child;
             while (currentNode.parent != null) {
-                parentsList.add(parent);
-                currentNode = child.parent;
+                parentsList.add(currentNode.parent);
+                currentNode = currentNode.parent;
             }
 
             parents.put(child.getKey(), parentsList);

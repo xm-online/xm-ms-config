@@ -159,17 +159,14 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void refreshInternal() {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
-        Set<String> updated = storage.refreshStorage(actualConfigs);
+        storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getCommit());
-        notifyChanged(updated);
     }
 
     @Override
     public void refreshAll() {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
-        Set<String> oldKeys = storage.getConfigPathsList();
-
         Set<String> updated = storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getCommit());
         notifyChanged(updated);

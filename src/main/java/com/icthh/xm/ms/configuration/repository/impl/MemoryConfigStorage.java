@@ -157,15 +157,13 @@ public class MemoryConfigStorage {
     private Set<Configuration> processConfiguration(Set<Configuration> configurations,
                                                     List<? extends ConfigurationProcessor> configurationProcessors,
                                                     Map<String, Configuration> processedStorage) {
-        Set<Configuration> currentConfigurations = configurations;
+        Set<Configuration> currentConfigurations = new HashSet<>(configurations);
         for (var processor: configurationProcessors) {
             Set<Configuration> processedConfiguration = currentConfigurations.stream()
                     .filter(processor::isSupported)
                     .flatMap(runProcessor(processor, processedStorage))
                     .collect(toSet());
 
-            currentConfigurations = new HashSet<>();
-            currentConfigurations.addAll(configurations);
             currentConfigurations.addAll(processedConfiguration);
         }
         return currentConfigurations;
@@ -187,5 +185,11 @@ public class MemoryConfigStorage {
 
     public Set<String> processedPaths() {
         return processedStorage.keySet();
+    }
+
+    public void clear() {
+        storage.clear();
+        processedStorage.clear();
+        privateStorage.clear();
     }
 }

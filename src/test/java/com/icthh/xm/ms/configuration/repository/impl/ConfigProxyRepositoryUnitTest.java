@@ -10,8 +10,10 @@ import static org.mockito.Mockito.when;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,10 +31,13 @@ public class ConfigProxyRepositoryUnitTest {
     private PersistenceConfigRepository persistenceConfigRepository;
     @Mock
     private ConfigTopicProducer configTopicProducer;
+    @Mock
+    private TenantAliasService tenantAliasService;
 
     @Before
     public void before() {
-        configProxyRepository = new ConfigProxyRepository(persistenceConfigRepository, configTopicProducer, emptyList());
+        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorage(emptyList(), emptyList(), tenantAliasService);
+        configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository, configTopicProducer);
     }
 
     @Test
@@ -205,6 +210,7 @@ public class ConfigProxyRepositoryUnitTest {
     public void refreshTenant() {
         Configuration configuration1 = new Configuration("/config/tenants/tenant/path1", "content1");
         when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit1", singletonList(configuration1)));
+        when(tenantAliasService.getTenantAliasTree()).thenReturn(new TenantAliasTree());
         configProxyRepository.getVersion().set("commit0");
 
         configProxyRepository.refreshTenant("tenant");
