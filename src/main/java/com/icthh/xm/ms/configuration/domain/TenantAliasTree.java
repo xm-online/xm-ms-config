@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiFunction;
 
 import static com.icthh.xm.ms.configuration.domain.TenantAliasTree.TraverseRule.CONTINUE;
@@ -69,34 +68,38 @@ public class TenantAliasTree {
 
     private Map<String, List<TenantAlias>> parents() {
         Map<String, List<TenantAlias>> parents = new HashMap<>();
-        traverse((parent, child) -> {
-            child.parent = parent;
-
-            List<TenantAlias> parentsList = new ArrayList<>();
-            TenantAlias currentNode = child;
-            while (currentNode.parent != null) {
-                parentsList.add(currentNode.parent);
-                currentNode = currentNode.parent;
-            }
-
-            parents.put(child.getKey(), parentsList);
-            return CONTINUE;
-        });
+        traverse((parent, child) -> initParentField(parents, parent, child));
         return parents;
+    }
+
+    private TraverseRule initParentField(Map<String, List<TenantAlias>> parents, TenantAlias parent, TenantAlias child) {
+        child.parent = parent;
+
+        List<TenantAlias> parentsList = new ArrayList<>();
+        TenantAlias currentNode = child;
+        while (currentNode.parent != null) {
+            parentsList.add(currentNode.parent);
+            currentNode = currentNode.parent;
+        }
+
+        parents.put(child.getKey(), parentsList);
+        return CONTINUE;
     }
 
     private Map<String, TenantAlias> tenants() {
         Map<String, TenantAlias> tenants = new HashMap<>();
-        traverse((parent, child) -> {
-            tenants.put(parent.getKey(), parent);
-            if (tenants.containsKey(child.getKey())) {
-                log.error("Key {} present twice in tenant alias configuration", child.getKey());
-                throw new WrongTenantAliasConfiguration(child.getKey() + " present twice in tenant alias configuration");
-            }
-            tenants.put(child.getKey(), child);
-            return CONTINUE;
-        });
+        traverse((parent, child) -> consumeTenants(tenants, parent, child));
         return tenants;
+    }
+
+    private TraverseRule consumeTenants(Map<String, TenantAlias> tenants, TenantAlias parent, TenantAlias child) {
+        tenants.put(parent.getKey(), parent);
+        if (tenants.containsKey(child.getKey())) {
+            log.error("Key {} present twice in tenant alias configuration", child.getKey());
+            throw new WrongTenantAliasConfiguration(child.getKey() + " present twice in tenant alias configuration");
+        }
+        tenants.put(child.getKey(), child);
+        return CONTINUE;
     }
 
     public enum TraverseRule {
