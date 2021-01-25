@@ -173,9 +173,14 @@ public class MemoryConfigStorage {
                                                                         Map<String, Configuration> processedStorage) {
         var storage = unmodifiableMap(this.storage);
         return configuration -> {
-            List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage);
-            processedStorage.putAll(configurations.stream().collect(toMap(Configuration::getPath, identity())));
-            return configurations.stream();
+            try {
+                List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage);
+                processedStorage.putAll(configurations.stream().collect(toMap(Configuration::getPath, identity())));
+                return configurations.stream();
+            } catch (Exception e) {
+                log.error("Error run processor", e);
+            }
+            return Stream.empty();
         };
     }
 
