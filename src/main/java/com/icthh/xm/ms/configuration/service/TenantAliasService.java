@@ -26,7 +26,7 @@ import java.util.Map;
 @Service
 public class TenantAliasService implements PublicConfigurationProcessor {
 
-    private static final String TENANT_ALIAS_CONFIG = "/config/tenants/tenant-aliases.yml";
+    public static final String TENANT_ALIAS_CONFIG = "/config/tenants/tenant-aliases.yml";
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final ConfigurationService configurationService;
 

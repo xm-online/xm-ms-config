@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.Arrays.asList;
 import static java.util.function.Function.identity;
@@ -155,7 +156,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     private void loadTenantAliasConfig() {
-        Configuration configuration = new Configuration("/config/tenants/tenantAliasTree.yml", loadFile("tenantAliasTree.yml"));
+        Configuration configuration = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
         configurationService.updateConfigurationInMemory(configuration);
     }
 
