@@ -1,21 +1,16 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static java.util.stream.Collectors.toList;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 
 import java.util.List;
+import java.util.Map;
 
 public interface ConfigurationProcessor {
 
-    default List<Configuration> processConfigurations(List<Configuration> configurations) {
-        if (configurations == null) {
-            return null;
-        }
+    boolean isSupported(Configuration configuration);
 
-        return configurations.stream().map(this::processConfiguration).collect(toList());
-    }
-
-    Configuration processConfiguration(Configuration configuration);
+    List<Configuration> processConfiguration(Configuration configuration,
+                                             Map<String, Configuration> originalStorage,
+                                             Map<String, Configuration> targetStorage);
 
 }

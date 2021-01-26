@@ -70,21 +70,11 @@ public class ConfigurationServiceUnitTest {
     @Test
     public void findConfiguration() {
         Configuration configuration = new Configuration("path", "content");
-        when(configProxyRepository.find("path")).thenReturn(new ConfigurationItem("commit", configuration));
+        when(configProxyRepository.find("path", null)).thenReturn(new ConfigurationItem("commit", configuration));
 
         Optional<Configuration> result = configurationService.findConfiguration("path");
 
         assertThat(result.get()).isEqualTo(configuration);
-    }
-
-    @Test
-    public void getConfigurations() {
-        Configuration configuration = new Configuration("path", "content");
-        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", singletonList(configuration)));
-
-        List<Configuration> result = configurationService.getConfigurations();
-
-        assertThat(result).containsExactly(configuration);
     }
 
     @Test

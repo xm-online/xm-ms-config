@@ -10,8 +10,10 @@ import static org.mockito.Mockito.when;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,16 +31,19 @@ public class ConfigProxyRepositoryUnitTest {
     private PersistenceConfigRepository persistenceConfigRepository;
     @Mock
     private ConfigTopicProducer configTopicProducer;
+    @Mock
+    private TenantAliasService tenantAliasService;
 
     @Before
     public void before() {
-        configProxyRepository = new ConfigProxyRepository(persistenceConfigRepository, configTopicProducer, emptyList());
+        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorage(emptyList(), emptyList(), tenantAliasService);
+        configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository, configTopicProducer);
     }
 
     @Test
     public void getMap() {
         Configuration configuration1 = new Configuration("path1", "content1");
-        configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getStorage().updateConfig("path1", configuration1);
         configProxyRepository.getVersion().set("commit1");
 
         Map<String, Configuration> result = configProxyRepository.getMap(null);
@@ -53,7 +58,7 @@ public class ConfigProxyRepositoryUnitTest {
     public void getMapWithCommit() {
         Configuration configuration1 = new Configuration("path1", "content1");
         Configuration configuration2 = new Configuration("path2", "content2");
-        configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getStorage().updateConfig("path1", configuration1);
         configProxyRepository.getVersion().set("commit1");
         when(persistenceConfigRepository.hasVersion("commit2")).thenReturn(true);
 
@@ -69,7 +74,7 @@ public class ConfigProxyRepositoryUnitTest {
     public void getMapWithCommitFromGit() {
         Configuration configuration1 = new Configuration("path1", "content1");
         Configuration configuration2 = new Configuration("path2", "content2");
-        configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getStorage().updateConfig("path1", configuration1);
         when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit2", Collections.singletonList(configuration2)));
         when(persistenceConfigRepository.hasVersion("commit2")).thenReturn(false);
 
@@ -84,7 +89,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void findAll() {
         Configuration configuration1 = new Configuration("path1", "content1");
-        configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getStorage().updateConfig("path1", configuration1);
         configProxyRepository.getVersion().set("commit1");
 
         ConfigurationList result = configProxyRepository.findAll();
@@ -97,7 +102,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void find() {
         Configuration configuration1 = new Configuration("path1", "content1");
-        configProxyRepository.getStorage().put("path1", configuration1);
+        configProxyRepository.getStorage().updateConfig("path1", configuration1);
         configProxyRepository.getVersion().set("commit1");
 
         ConfigurationItem result = configProxyRepository.find("path1");
@@ -146,7 +151,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void delete() {
         when(persistenceConfigRepository.delete("path1")).thenReturn("commit1");
-        configProxyRepository.getStorage().put("path1", new Configuration());
+        configProxyRepository.getStorage().updateConfig("path1", new Configuration());
 
         String result = configProxyRepository.delete("path1");
 
@@ -158,7 +163,7 @@ public class ConfigProxyRepositoryUnitTest {
     @Test
     public void deleteAll() {
         when(persistenceConfigRepository.deleteAll(singletonList("path1"))).thenReturn("commit1");
-        configProxyRepository.getStorage().put("path1", new Configuration());
+        configProxyRepository.getStorage().updateConfig("path1", new Configuration());
 
         String result = configProxyRepository.deleteAll(singletonList("path1"));
 
@@ -205,6 +210,7 @@ public class ConfigProxyRepositoryUnitTest {
     public void refreshTenant() {
         Configuration configuration1 = new Configuration("/config/tenants/tenant/path1", "content1");
         when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit1", singletonList(configuration1)));
+        when(tenantAliasService.getTenantAliasTree()).thenReturn(new TenantAliasTree());
         configProxyRepository.getVersion().set("commit0");
 
         configProxyRepository.refreshTenant("tenant");

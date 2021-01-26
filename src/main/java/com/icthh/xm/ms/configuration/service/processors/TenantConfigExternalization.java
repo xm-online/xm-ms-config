@@ -1,11 +1,5 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static com.icthh.xm.commons.config.client.service.TenantConfigService.DEFAULT_TENANT_CONFIG_PATTERN;
-import static java.lang.System.getenv;
-import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang.StringUtils.isBlank;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
@@ -13,6 +7,7 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -22,9 +17,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import static com.icthh.xm.commons.config.client.service.TenantConfigService.DEFAULT_TENANT_CONFIG_PATTERN;
+import static java.lang.System.getenv;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.lang.StringUtils.isBlank;
+import static org.springframework.core.Ordered.LOWEST_PRECEDENCE;
+
 @Slf4j
 @Component
-public class TenantConfigExternalization implements ConfigurationProcessor {
+@Order(LOWEST_PRECEDENCE)
+public class TenantConfigExternalization implements PrivateConfigurationProcessor {
 
     private final AntPathMatcher matcher = new AntPathMatcher();
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -32,11 +37,15 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
     private final Map<String, String> env = getenv();
 
     @Override
+    public boolean isSupported(Configuration configuration) {
+        return matcher.match(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath());
+    }
+
+    @Override
     @SneakyThrows
-    public Configuration processConfiguration(Configuration configuration) {
-        if (!matcher.match(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath())) {
-            return configuration;
-        }
+    public List<Configuration> processConfiguration(Configuration configuration,
+                                                    Map<String, Configuration> originalStorage,
+                                                    Map<String, Configuration> targetStorage) {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         Map<String, Object> configMap = mapper.readValue(configuration.getContent(),
                 new TypeReference<Map<String, Object>>() {
@@ -45,10 +54,10 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
         if (configMap != null && isEnvPresent(tenant + "_")) {
             processConfigMap(tenant, configMap);
         } else {
-            return configuration;
+            return emptyList();
         }
 
-        return new Configuration(configuration.getPath(), mapper.writeValueAsString(configMap));
+        return singletonList(new Configuration(configuration.getPath(), mapper.writeValueAsString(configMap)));
     }
 
     @SuppressWarnings("unchecked")
@@ -64,11 +73,11 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
                 continue;
             }
             if (!isEnvPresent(envVarKey + "_")) {
-                log.trace("{} and not overrode by env variable", envVarKey);
+                log.trace("{} and not overridden by env variable", envVarKey);
                 continue;
             }
             if (oldValue == null) {
-                log.trace("{} is null, and not overrode by env variable", envVarKey);
+                log.trace("{} is null, and not overridden by env variable", envVarKey);
                 continue;
             }
             if (oldValue instanceof Map) {
@@ -78,7 +87,7 @@ public class TenantConfigExternalization implements ConfigurationProcessor {
                 log.error("Unsupported type of config value {}:{}", envVarKey, oldValue.getClass());
             }
 
-            log.warn("Env variables not overrode any configs {}", getEnvKeysStartBy(envVarKey));
+            log.warn("Env variables not overridden any configs {}", getEnvKeysStartBy(envVarKey));
         }
     }
 

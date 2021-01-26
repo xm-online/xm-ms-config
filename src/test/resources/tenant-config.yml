@@ -1,5 +1,7 @@
 inviteExpireTime: 86400
 
+valueForReplace: VALUE_FOR_REPLACE
+
 clientCabinetBaseUrl: someclientCabinetBaseUrlValue
 
 payment:

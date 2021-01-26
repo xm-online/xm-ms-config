@@ -1,15 +1,20 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
@@ -56,6 +61,12 @@ public class TestUtil {
             byteArray[i] = Byte.parseByte(data, 2);
         }
         return byteArray;
+    }
+
+    @SneakyThrows
+    public static String loadFile(String path) {
+        InputStream cfgInputStream = new ClassPathResource(path).getInputStream();
+        return IOUtils.toString(cfgInputStream, UTF_8);
     }
 
     /**
