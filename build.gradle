@@ -173,10 +173,10 @@ configurations {
 }
 
 repositories {
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }//TODO remove
     mavenLocal()
     mavenCentral()
     jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }//TODO remove
     //jhipster-needle-gradle-repositories - JHipster will add additional repositories
 }
 
