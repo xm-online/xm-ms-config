@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.client.api.RefreshableConfiguration;
 import com.icthh.xm.commons.domain.idp.IdpConfigUtils;
-import com.icthh.xm.commons.domain.idp.IdpPublicConfig;
-import com.icthh.xm.commons.domain.idp.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
 import com.icthh.xm.ms.configuration.service.JwksService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -15,8 +15,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN;
@@ -51,11 +53,6 @@ public class IdpConfigRepository implements RefreshableConfiguration {
     private final Map<String, Map<String, IdpPublicClientConfig>> tmpIdpClientPublicConfigs = new ConcurrentHashMap<>();
 
     @Override
-    public void onRefresh(String updatedKey, String config) {
-        updateIdpConfigs(updatedKey, config);
-    }
-
-    @Override
     public boolean isListeningConfiguration(String updatedKey) {
         return matcher.match(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, updatedKey);
     }
@@ -63,6 +60,11 @@ public class IdpConfigRepository implements RefreshableConfiguration {
     @Override
     public void onInit(String configKey, String configValue) {
         updateIdpConfigs(configKey, configValue);
+    }
+
+    @Override
+    public void onRefresh(String updatedKey, String config) {
+        updateIdpConfigs(updatedKey, config);
     }
 
     private void updateIdpConfigs(String configKey, String config) {
@@ -85,23 +87,14 @@ public class IdpConfigRepository implements RefreshableConfiguration {
         if (!matcher.match(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, configKey)) {
             return;
         }
-        IdpPublicConfig idpPublicConfig = parseConfig(tenantKey, config, IdpPublicConfig.class);
 
-        if (idpPublicConfig != null && idpPublicConfig.getConfig() != null) {
-            idpPublicConfig
-                .getConfig()
-                .getClients()
-                .forEach(publicIdpConf -> {
-                        if (IdpConfigUtils.isPublicConfigValid(tenantKey, publicIdpConf)) {
-                            String idpConfKey = publicIdpConf.getKey();
-
-                            Map<String, IdpPublicClientConfig> idpPublicConfigs =
-                                tmpIdpClientPublicConfigs.computeIfAbsent(tenantKey, key -> new HashMap<>());
-                            idpPublicConfigs.put(idpConfKey, publicIdpConf);
-                        }
-                    }
-                );
-        }
+        Optional.ofNullable(parseConfig(tenantKey, config, IdpPublicConfig.class))
+            .map(IdpPublicConfig::getConfig)
+            .map(IdpPublicConfig.IdpConfigContainer::getClients)
+            .orElseGet(Collections::emptyList)
+            .stream()
+            .filter(this::isPublicConfigValid)
+            .forEach(publicIdpConf -> setIdpPublicClientConfig(tenantKey, publicIdpConf));
     }
 
     @SneakyThrows
@@ -115,6 +108,15 @@ public class IdpConfigRepository implements RefreshableConfiguration {
         return parsedConfig;
     }
 
+    private boolean isPublicConfigValid(IdpPublicClientConfig publicClientConfig){
+        return IdpConfigUtils.isPublicConfigValid(null, publicClientConfig);
+    }
+    private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig){
+        tmpIdpClientPublicConfigs
+            .computeIfAbsent(tenantKey, key -> new HashMap<>())
+            .put(publicConfig.getKey(), publicConfig);
+    }
+
     /**
      * <p>
      * Basing on input configuration method removes all previously registered clients for specified tenant
@@ -124,15 +126,13 @@ public class IdpConfigRepository implements RefreshableConfiguration {
      * @param tenantKey tenant key
      */
     private void updateInMemoryConfig(String tenantKey) {
-        idpClientConfigs.put(tenantKey, tmpIdpClientPublicConfigs.get(tenantKey));
-        tmpIdpClientPublicConfigs.remove(tenantKey);
+        idpClientConfigs.put(tenantKey, tmpIdpClientPublicConfigs.remove(tenantKey));
     }
 
     private String extractTenantKeyFromPath(String configKey) {
-        Map<String, String> configKeyParams =
-            matcher.extractUriTemplateVariables(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, configKey);
-
-        return configKeyParams.get(KEY_TENANT);
+        return matcher
+            .extractUriTemplateVariables(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, configKey)
+            .get(KEY_TENANT);
     }
 
     public Map<String, IdpPublicClientConfig> getIdpClientConfigsByTenantKey(String tenantKey) {
