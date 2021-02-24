@@ -1,7 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.commons.domain.idp.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.client.api.RefreshableConfiguration;
 import com.icthh.xm.commons.domain.idp.IdpConfigUtils;
-import com.icthh.xm.commons.domain.idp.IdpPublicConfig;
-import com.icthh.xm.commons.domain.idp.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
 import com.icthh.xm.ms.configuration.service.JwksService;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -108,10 +108,11 @@ public class IdpConfigRepository implements RefreshableConfiguration {
         return parsedConfig;
     }
 
-    private boolean isPublicConfigValid(IdpPublicClientConfig publicClientConfig){
-        return IdpConfigUtils.isPublicConfigValid(null, publicClientConfig);
+    private boolean isPublicConfigValid(IdpPublicClientConfig publicClientConfig) {
+        return IdpConfigUtils.isPublicConfigValid(publicClientConfig);
     }
-    private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig){
+
+    private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig) {
         tmpIdpClientPublicConfigs
             .computeIfAbsent(tenantKey, key -> new HashMap<>())
             .put(publicConfig.getKey(), publicConfig);
