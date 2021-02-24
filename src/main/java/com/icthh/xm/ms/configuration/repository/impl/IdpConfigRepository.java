@@ -103,7 +103,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
         try {
             parsedConfig = objectMapper.readValue(config, configType);
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong during attempt to read {} for tenant:{}", config.getClass(), tenantKey, e);
+            log.error("Something went wrong during attempt to read {} for tenant [{}]", config.getClass(), tenantKey, e);
         }
         return parsedConfig;
     }
