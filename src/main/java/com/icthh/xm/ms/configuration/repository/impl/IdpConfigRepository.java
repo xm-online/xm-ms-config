@@ -93,7 +93,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
             .map(IdpPublicConfig.IdpConfigContainer::getClients)
             .orElseGet(Collections::emptyList)
             .stream()
-            .filter(this::isPublicConfigValid)
+            .filter(IdpConfigUtils::isPublicClientConfigValid)
             .forEach(publicIdpConf -> setIdpPublicClientConfig(tenantKey, publicIdpConf));
     }
 
@@ -106,10 +106,6 @@ public class IdpConfigRepository implements RefreshableConfiguration {
             log.error("Something went wrong during attempt to read {} for tenant:{}", config.getClass(), tenantKey, e);
         }
         return parsedConfig;
-    }
-
-    private boolean isPublicConfigValid(IdpPublicClientConfig publicClientConfig) {
-        return IdpConfigUtils.isPublicConfigValid(publicClientConfig);
     }
 
     private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig) {
