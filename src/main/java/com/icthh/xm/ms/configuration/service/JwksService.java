@@ -8,7 +8,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -22,11 +22,11 @@ import static com.icthh.xm.commons.domain.idp.IdpConstants.JWKS_FILE_NAME_PATTER
 import static com.icthh.xm.commons.domain.idp.IdpConstants.PUBLIC_JWKS_CONFIG_PATH_PATTERN;
 
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class JwksService {
     public static final String TENANT_REPLACE_PATTERN = "{tenant}";
-    public static final String IDP_CLIENT_KEY_REPLACE_PATTENR = "{idpClientKey}";
+    public static final String IDP_CLIENT_KEY_REPLACE_PATTERN = "{idpClientKey}";
 
     private final DistributedConfigRepository repositoryProxy;
 
@@ -42,41 +42,30 @@ public class JwksService {
     }
 
     private Map<String, String> getJwks(Map<String, IdpPublicClientConfig> tenantClientConfigs) {
-
         return getJwkSetEndpoints(tenantClientConfigs).entrySet()
             .stream()
-            .map(entry -> {
-                String keysDefinition = retrieveRawPublicKeysDefinition(entry.getValue());
-                if (StringUtils.isEmpty(keysDefinition)) {
-                    return null;
-                }
-                return Map.entry(entry.getKey(), keysDefinition);
-            })
+            .map(entry -> retrieveRawPublicKeysDefinition(entry.getKey(), entry.getValue()))
             .filter(Objects::nonNull)
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private Map<String, String> getJwkSetEndpoints(Map<String, IdpPublicClientConfig> idpClientConfigs) {
-
         return idpClientConfigs.entrySet()
             .stream()
-            .map(entry -> {
-                IdpPublicClientConfig publicClientConfig = entry.getValue();
-                String uri = publicClientConfig.getOpenIdConfig().getJwksEndpoint().getUri();
-                return Map.entry(entry.getKey(), uri);
-            })
+            .map(entry -> Map.entry(entry.getKey(), entry.getValue().getOpenIdConfig().getJwksEndpoint().getUri()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     @SneakyThrows
-    public String retrieveRawPublicKeysDefinition(String jwksEndpointUri) {
+    private Map.Entry<String, String> retrieveRawPublicKeysDefinition(String key, String jwksEndpointUri) {
         try {
             URL url = new URL(jwksEndpointUri);
             String content = IOUtils.toString(url.openStream(), StandardCharsets.UTF_8.name());
             if (StringUtils.isBlank(content)) {
                 log.error("Received empty public key from url: {}", jwksEndpointUri);
+                return null;
             }
-            return content;
+            return Map.entry(key, content);
         } catch (MalformedURLException ex) {
             log.error("Invalid JWK Set URL: {}, {}", ex.getMessage(), ex);
         }
@@ -85,7 +74,7 @@ public class JwksService {
 
     private Configuration buildPublicJwksConfiguration(String tenantKey, String idpClientKey, String content) {
         String path = PUBLIC_JWKS_CONFIG_PATH_PATTERN.replace(TENANT_REPLACE_PATTERN, tenantKey);
-        String fileName = JWKS_FILE_NAME_PATTERN.replace(IDP_CLIENT_KEY_REPLACE_PATTENR, idpClientKey);
+        String fileName = JWKS_FILE_NAME_PATTERN.replace(IDP_CLIENT_KEY_REPLACE_PATTERN, idpClientKey);
 
         return new Configuration(path + fileName, content);
     }
