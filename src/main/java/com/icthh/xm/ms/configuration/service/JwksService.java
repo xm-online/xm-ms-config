@@ -69,7 +69,7 @@ public class JwksService {
     }
 
     @SneakyThrows
-    public String retrieveRawPublicKeysDefinition(String jwksEndpointUri) {
+    private String retrieveRawPublicKeysDefinition(String jwksEndpointUri) {
         try {
             URL url = new URL(jwksEndpointUri);
             String content = IOUtils.toString(url.openStream(), StandardCharsets.UTF_8.name());
