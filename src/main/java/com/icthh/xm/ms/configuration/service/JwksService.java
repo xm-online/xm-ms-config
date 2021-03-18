@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -39,6 +40,26 @@ public class JwksService {
             .collect(Collectors.toList());
 
         repositoryProxy.saveAll(configurations);
+    }
+
+    public void deletePublicJwksConfigurations(String tenantKey, Map<String, IdpPublicClientConfig> tenantClientConfigs) {
+        //find all tenant jwks
+        List<String> jwksPaths =
+            tenantClientConfigs
+                .keySet()
+                .stream()
+                .map(idpClientKey -> buildPathToJwks(tenantKey, idpClientKey))
+                .collect(Collectors.toList());
+
+        if (CollectionUtils.isEmpty(jwksPaths)) {
+            return;
+        }
+
+        log.info("For tenant [{}] found following jwks paths: {}", tenantKey, jwksPaths);
+
+        //delete all tenant jwks
+        log.info("For tenant [{}] deleting following jwks: {}", tenantKey, jwksPaths);
+        repositoryProxy.deleteAll(jwksPaths);
     }
 
     private Map<String, String> getJwks(Map<String, IdpPublicClientConfig> tenantClientConfigs) {
@@ -73,9 +94,13 @@ public class JwksService {
     }
 
     private Configuration buildPublicJwksConfiguration(String tenantKey, String idpClientKey, String content) {
+        return new Configuration(buildPathToJwks(tenantKey, idpClientKey), content);
+    }
+
+    private String buildPathToJwks(String tenantKey, String idpClientKey) {
         String path = PUBLIC_JWKS_CONFIG_PATH_PATTERN.replace(TENANT_REPLACE_PATTERN, tenantKey);
         String fileName = JWKS_FILE_NAME_PATTERN.replace(IDP_CLIENT_KEY_REPLACE_PATTERN, idpClientKey);
 
-        return new Configuration(path + fileName, content);
+        return path + fileName;
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,7 +33,8 @@ import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_C
 @RequiredArgsConstructor
 public class IdpConfigRepository implements RefreshableConfiguration {
 
-    public static final String KEY_TENANT = "tenant";
+    private static final String KEY_TENANT = "tenant";
+    private static final String IDP_EMPTY_CONFIG = "idp:";
 
     private final JwksService jwksService;
 
@@ -50,7 +52,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
      * <p/>
      * We need to store this information in memory to avoid corruption previously registered in-memory tenant clients config
      */
-    private final Map<String, Map<String, IdpPublicClientConfig>> tmpIdpClientPublicConfigs = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, IdpPublicClientConfig>> tmpValidIdpClientPublicConfigs = new ConcurrentHashMap<>();
 
     @Override
     public boolean isListeningConfiguration(String updatedKey) {
@@ -68,48 +70,73 @@ public class IdpConfigRepository implements RefreshableConfiguration {
     }
 
     private void updateIdpConfigs(String configKey, String config) {
-        String tenantKey = extractTenantKeyFromPath(configKey);
+        try {
+            String tenantKey = extractTenantKeyFromPath(configKey);
 
-        processPublicConfiguration(tenantKey, configKey, config);
+            List<IdpPublicClientConfig> rawIdpPublicClientConfigs =
+                processPublicClientsConfiguration(tenantKey, configKey, config);
 
-        boolean isClientConfigurationEmpty = CollectionUtils.isEmpty(tmpIdpClientPublicConfigs.get(tenantKey));
+            boolean isRawClientsConfigurationEmpty = CollectionUtils.isEmpty(rawIdpPublicClientConfigs);
+            boolean isValidClientsConfigurationEmpty = CollectionUtils.isEmpty(tmpValidIdpClientPublicConfigs.get(tenantKey));
 
-        if (isClientConfigurationEmpty) {
-            log.info("For tenant [{}] provided IDP public client configs not applied.", tenantKey);
-            return;
+            if (isRawClientsConfigurationEmpty && isValidClientsConfigurationEmpty) {
+                log.warn("For tenant [{}] provided IDP public client configs not present." +
+                    "Removing client configs from storage and jwks keys from file system", tenantKey);
+                //remove all previously created jwks keys from storage
+                jwksService.deletePublicJwksConfigurations(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
+                idpClientConfigs.remove(tenantKey);
+                return;
+            }
+
+            if (isValidClientsConfigurationEmpty) {
+                log.info("For tenant [{}] provided IDP public client configs not applied.", tenantKey);
+                return;
+            }
+            //remove all previously created jwks keys from storage
+            jwksService.deletePublicJwksConfigurations(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
+            updateInMemoryConfig(tenantKey);
+            jwksService.createPublicJwksConfiguration(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
+
+        } catch (Exception e) {
+            log.error("Error occurred during processing idp config: {}, {}", e.getMessage(), e);
         }
 
-        updateInMemoryConfig(tenantKey);
-        jwksService.createPublicJwksConfiguration(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
     }
 
-    private void processPublicConfiguration(String tenantKey, String configKey, String config) {
+    private List<IdpPublicClientConfig> processPublicClientsConfiguration(String tenantKey, String configKey, String config) {
         if (!matcher.match(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, configKey)) {
-            return;
+            return Collections.emptyList();
         }
 
-        Optional.ofNullable(parseConfig(tenantKey, config, IdpPublicConfig.class))
+        List<IdpPublicClientConfig> rawIdpPublicClientConfigs =
+            Optional.ofNullable(parseConfig(tenantKey, config, IdpPublicConfig.class))
             .map(IdpPublicConfig::getConfig)
             .map(IdpPublicConfig.IdpConfigContainer::getClients)
-            .orElseGet(Collections::emptyList)
+            .orElseGet(Collections::emptyList);
+
+        rawIdpPublicClientConfigs
             .stream()
             .filter(IdpConfigUtils::isPublicClientConfigValid)
             .forEach(publicIdpConf -> setIdpPublicClientConfig(tenantKey, publicIdpConf));
+
+        return rawIdpPublicClientConfigs;
     }
 
     @SneakyThrows
     private <T> T parseConfig(String tenantKey, String config, Class<T> configType) {
-        T parsedConfig = null;
+        T parsedConfig;
         try {
             parsedConfig = objectMapper.readValue(config, configType);
         } catch (JsonProcessingException e) {
-            log.error("can not to read config {} for tenant [{}]", config.getClass(), tenantKey, e);
+            log.error("Something went wrong during attempt to read config [{}] for tenant [{}]. " +
+                "Creating default config.", config, tenantKey, e);
+            parsedConfig = objectMapper.readValue(IDP_EMPTY_CONFIG, configType);
         }
         return parsedConfig;
     }
 
     private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig) {
-        tmpIdpClientPublicConfigs
+        tmpValidIdpClientPublicConfigs
             .computeIfAbsent(tenantKey, key -> new HashMap<>())
             .put(publicConfig.getKey(), publicConfig);
     }
@@ -123,7 +150,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
      * @param tenantKey tenant key
      */
     private void updateInMemoryConfig(String tenantKey) {
-        idpClientConfigs.put(tenantKey, tmpIdpClientPublicConfigs.remove(tenantKey));
+        idpClientConfigs.put(tenantKey, tmpValidIdpClientPublicConfigs.remove(tenantKey));
     }
 
     private String extractTenantKeyFromPath(String configKey) {
