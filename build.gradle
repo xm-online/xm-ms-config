@@ -176,7 +176,6 @@ repositories {
     mavenLocal()
     mavenCentral()
     jcenter()
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }//TODO remove
     //jhipster-needle-gradle-repositories - JHipster will add additional repositories
 }
 
@@ -281,7 +280,7 @@ task cleanResources(type: Delete) {
 }
 
 wrapper {
-    gradleVersion = "6.0.1"
+    gradleVersion = "6.5"
 }
 
 task stage(dependsOn: 'bootWar') {
