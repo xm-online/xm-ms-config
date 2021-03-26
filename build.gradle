@@ -261,6 +261,7 @@ dependencies {
     implementation "io.dropwizard.metrics:metrics-servlet"
     implementation "io.dropwizard.metrics:metrics-servlets"
 
+    implementation "com.icthh.xm.commons:xm-commons-idp:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-i18n:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-permission:${xm_commons_version}"
@@ -279,7 +280,7 @@ task cleanResources(type: Delete) {
 }
 
 wrapper {
-    gradleVersion = "6.0.1"
+    gradleVersion = "6.5"
 }
 
 task stage(dependsOn: 'bootWar') {
