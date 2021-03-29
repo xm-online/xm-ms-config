@@ -1,0 +1,27 @@
+---
+customer:
+- key: "CUSTOMER.GET"
+  description: {}
+  resources:
+  - "profile"
+  - "id"
+  customDescription: "Privilege to get a customer"
+- key: "CUSTOMER.PATCH"
+  description: {}
+  resources:
+  - "patchOperations"
+  - "id"
+  customDescription: "Privilege to patch a customer"
+paymentcustomer:
+- key: "CUSTOMER.GET"
+  description: {}
+  resources:
+  - "profile"
+  - "id"
+  customDescription: "Privilege to get a customer"
+- key: "CUSTOMER.PATCH"
+  description: {}
+  resources:
+  - "patchOperations"
+  - "id"
+  customDescription: "Privilege to patch a customer"

@@ -1,0 +1,29 @@
+---
+customer:
+  ROLE_SUBSCRIBER:
+    - privilegeKey: "CUSTOMER.GET"
+      disabled: false
+      deleted: false
+      envCondition: null
+      resourceCondition: null
+      reactionStrategy: null
+    - privilegeKey: "CUSTOMER.PATCH"
+      disabled: false
+      deleted: false
+      envCondition: null
+      resourceCondition: null
+      reactionStrategy: null
+paymentcustomer:
+  ROLE_SUBSCRIBER:
+    - privilegeKey: "CUSTOMER.GET"
+      disabled: true
+      deleted: false
+      envCondition: null
+      resourceCondition: null
+      reactionStrategy: null
+    - privilegeKey: "CUSTOMER.PATCH"
+      disabled: true
+      deleted: false
+      envCondition: null
+      resourceCondition: null
+      reactionStrategy: null

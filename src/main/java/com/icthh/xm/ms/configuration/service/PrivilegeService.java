@@ -9,6 +9,7 @@ import com.icthh.xm.commons.permission.domain.Permission;
 import com.icthh.xm.commons.permission.domain.Privilege;
 import com.icthh.xm.commons.permission.domain.mapper.PermissionMapper;
 import com.icthh.xm.commons.permission.domain.mapper.PrivilegeMapper;
+import com.icthh.xm.commons.permission.service.PermissionMappingService;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.tenant.Tenant;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -43,6 +44,7 @@ public class PrivilegeService {
     private final TenantService tenantService;
     private final TenantContextHolder tenantContextHolder;
     private final XmRequestContextHolder requestContextHolder;
+    private final PermissionMappingService permissionMappingService;
 
     /**
      * Update old privileges config with new.
@@ -140,8 +142,8 @@ public class PrivilegeService {
 
         // if yaml text exist and not blank
         oldPermissionsYml.filter(StringUtils::isNotBlank).ifPresent(oldPermissionsYmlData -> {
-            // parse permissions.yml to map
-            Map<String, Permission> oldPermissions = PermissionMapper.ymlToPermissions(oldPermissionsYmlData);
+            // parse permissions.yml to list
+            List<Permission> oldPermissions = permissionMappingService.ymlToPermissionsList(oldPermissionsYmlData);
 
             syncPermissionsWithPrivileges(tenantKey.getValue(), appName, newPrivilegeKeys, oldPermissions);
         });
@@ -151,9 +153,9 @@ public class PrivilegeService {
     private void syncPermissionsWithPrivileges(String tenantKeyValue,
                                                String appName,
                                                List<String> newPrivilegeKeys,
-                                               Map<String, Permission> oldPermissions) {
+                                               List<Permission> oldPermissions) {
         // for each value (permission) perform closure and collect permissions as set
-        Collection<Permission> newPermissions = oldPermissions.values().stream()
+        Set<Permission> newPermissions = oldPermissions.stream()
             .peek(syncPermission(appName, newPrivilegeKeys)).collect(Collectors.toSet());
 
         updateConfig(tenantKeyValue,
