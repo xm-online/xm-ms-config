@@ -11,7 +11,6 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.permission.config.PermissionProperties;
 import com.icthh.xm.commons.permission.domain.Privilege;
 import com.icthh.xm.commons.permission.service.PermissionMappingService;
-import com.icthh.xm.commons.permission.service.filter.EqualsOrNullPermissionMsNameFilter;
 import com.icthh.xm.commons.request.XmRequestContext;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.tenant.TenantContext;
@@ -20,6 +19,7 @@ import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.config.RequestContextKeys;
 import com.icthh.xm.ms.configuration.domain.RequestSourceType;
 import com.icthh.xm.ms.configuration.domain.TenantState;
+import com.icthh.xm.ms.configuration.service.filter.AlwaysTruePermissionMsNameFilter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -58,7 +58,7 @@ public class PrivilegeServiceIntTest {
     @Mock
     private XmRequestContextHolder requestContextHolder;
     @Spy
-    private EqualsOrNullPermissionMsNameFilter permissionMsNameFilter = new EqualsOrNullPermissionMsNameFilter();
+    private AlwaysTruePermissionMsNameFilter permissionMsNameFilter = new AlwaysTruePermissionMsNameFilter();
     @Spy
     private PermissionMappingService permissionMappingService = new PermissionMappingService(permissionMsNameFilter);
 
