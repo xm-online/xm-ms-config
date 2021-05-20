@@ -34,6 +34,7 @@ public class ApplicationProperties {
         private String password;
         private String branchName;
         private Integer maxWaitTimeSecond = 30;
+        private Boolean cloneRepositoryOnUpdate = false;
         private SshProperties ssh = new SshProperties();
 
         @Getter

@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.eclipse.jgit.api.Git.cloneRepository;
 
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
@@ -42,9 +41,9 @@ public class LocalJGitRepositoryConfiguration {
                                   authenticationContextHolder,
                                   requestContextHolder) {
             @Override
-            protected void initRepository() {
+            protected void cloneRepository() {
                 if (isNotBlank(applicationProperties.getGit().getUri())) {
-                    super.initRepository();
+                    super.cloneRepository();
                 }
             }
             @Override
@@ -84,7 +83,7 @@ public class LocalJGitRepositoryConfiguration {
     private static void createBranch(GitProperties gitProperties, TemporaryFolder initTestGitFolder) {
         initTestGitFolder.create();
         File root = initTestGitFolder.getRoot();
-        cloneRepository()
+        Git.cloneRepository()
                 .setURI(gitProperties.getUri())
                 .setDirectory(root)
                 .call().close();

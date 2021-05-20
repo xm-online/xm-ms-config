@@ -25,4 +25,6 @@ public interface PersistenceConfigRepository {
     String deleteAll(List<String> paths);
 
     String delete(String path);
+
+    void recloneConfiguration();
 }

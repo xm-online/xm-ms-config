@@ -122,4 +122,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     public void deleteConfigurationInMemory(List<String> paths) {
         inMemoryRepository.deleteAllInMemory(paths);
     }
+
+    public void recloneConfiguration() {
+        repositoryProxy.recloneConfiguration();
+    }
 }
