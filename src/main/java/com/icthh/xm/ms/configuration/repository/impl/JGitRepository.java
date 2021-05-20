@@ -119,6 +119,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     protected void cloneRepository() {
         File repositoryFolder = createGitWorkDirectory();
+        File oldDirectory = this.rootDirectory;
+        if (oldDirectory == null) {
+            this.rootDirectory = repositoryFolder;
+        }
 
         if (repositoryFolder.exists() && isGitRepository(getGitDir(), FS.DETECTED)) {
             return;
@@ -138,7 +142,6 @@ public class JGitRepository implements PersistenceConfigRepository {
             return null;
         });
 
-        File oldDirectory = this.rootDirectory;
         this.rootDirectory = repositoryFolder;
         if (oldDirectory != null) {
             oldDirectory.delete();
