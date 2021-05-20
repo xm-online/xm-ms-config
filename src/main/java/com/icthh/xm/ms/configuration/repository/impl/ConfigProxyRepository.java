@@ -175,6 +175,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public void recloneConfiguration() {
         persistenceConfigRepository.recloneConfiguration();
+        refreshAll();
     }
 
     @Override

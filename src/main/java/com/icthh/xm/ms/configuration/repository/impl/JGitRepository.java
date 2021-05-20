@@ -125,6 +125,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
 
         if (repositoryFolder.exists() && isGitRepository(getGitDir(), FS.DETECTED)) {
+            log.warn("Folder {} already is git folder", repositoryFolder.getAbsolutePath());
             return;
         }
 

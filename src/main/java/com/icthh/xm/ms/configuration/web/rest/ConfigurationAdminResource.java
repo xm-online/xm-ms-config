@@ -210,7 +210,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = CONFIG + RECLONE + "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @PostMapping(value = CONFIG + RECLONE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.RECLONE')")
     @PrivilegeDescription("Privilege to reclone configuration")
