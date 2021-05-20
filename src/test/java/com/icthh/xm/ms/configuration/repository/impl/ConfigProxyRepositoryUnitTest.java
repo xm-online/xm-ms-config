@@ -195,6 +195,17 @@ public class ConfigProxyRepositoryUnitTest {
     }
 
     @Test
+    public void recloneConfiguration() {
+        Configuration configuration1 = new Configuration("path1", "content1");
+        when(persistenceConfigRepository.findAll()).thenReturn(new ConfigurationList("commit1", singletonList(configuration1)));
+
+        configProxyRepository.recloneConfiguration();
+
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
+        verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("path1"));
+    }
+
+    @Test
     public void refreshPath() {
         Configuration configuration1 = new Configuration("path1", "content1");
         when(persistenceConfigRepository.find("path1")).thenReturn(new ConfigurationItem("commit1", configuration1));

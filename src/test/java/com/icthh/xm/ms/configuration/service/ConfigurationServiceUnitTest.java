@@ -92,6 +92,13 @@ public class ConfigurationServiceUnitTest {
     }
 
     @Test
+    public void recloneConfigurations() {
+        configurationService.recloneConfiguration();
+
+        verify(configProxyRepository).recloneConfiguration();
+    }
+
+    @Test
     public void refreshConfiguration() {
         configurationService.refreshConfiguration("path");
 
