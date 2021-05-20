@@ -124,7 +124,8 @@ public class JGitRepository implements PersistenceConfigRepository {
             this.rootDirectory = repositoryFolder;
         }
 
-        if (repositoryFolder.exists() && isGitRepository(getGitDir(), FS.DETECTED)) {
+        File gitDir = getGitDir(getGitPath(repositoryFolder.getAbsolutePath()));
+        if (repositoryFolder.exists() && isGitRepository(gitDir, FS.DETECTED)) {
             log.warn("Folder {} already is git folder", repositoryFolder.getAbsolutePath());
             return;
         }
@@ -354,12 +355,12 @@ public class JGitRepository implements PersistenceConfigRepository {
         return new UsernamePasswordCredentialsProvider(gitProperties.getLogin(), gitProperties.getPassword());
     }
 
-    private String getGitPath() {
-        return rootDirectory.getAbsolutePath() + separator + GIT_FOLDER;
+    private String getGitPath(String absolutePath) {
+        return absolutePath + separator + GIT_FOLDER;
     }
 
-    private File getGitDir() {
-        return new File(getGitPath());
+    private File getGitDir(String gitPath) {
+        return new File(gitPath);
     }
 
     protected String pull() {
@@ -436,7 +437,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private Repository createRepository() throws IOException {
-        return FileRepositoryBuilder.create(getGitDir());
+        return FileRepositoryBuilder.create(getGitDir(getGitPath(rootDirectory.getAbsolutePath())));
     }
 
     @SneakyThrows
