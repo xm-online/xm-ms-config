@@ -15,7 +15,6 @@ import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
-import static org.eclipse.jgit.api.Git.cloneRepository;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 
@@ -81,7 +80,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     private final Lock lock;
 
-    private final File rootDirectory;
+    private volatile File rootDirectory;
 
     private final TenantContextHolder tenantContextHolder;
 
@@ -97,13 +96,12 @@ public class JGitRepository implements PersistenceConfigRepository {
         this.gitProperties = gitProperties;
         this.lock = lock;
         this.requestContextHolder = requestContextHolder;
-        this.rootDirectory = createGitWorkDirectory();
         this.tenantContextHolder = tenantContextHolder;
         this.authenticationContextHolder = authenticationContextHolder;
 
-        log.info("Git working directory {}", rootDirectory.getAbsolutePath());
         log.info("Git branch to use {}", gitProperties.getBranchName());
-        initRepository();
+        cloneRepository();
+        log.info("Git working directory {}", rootDirectory.getAbsolutePath());
     }
 
     @SneakyThrows
@@ -119,10 +117,16 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    protected void initRepository() {
-        File repositoryFolder = rootDirectory;
+    protected void cloneRepository() {
+        File repositoryFolder = createGitWorkDirectory();
+        File oldDirectory = this.rootDirectory;
+        if (oldDirectory == null) {
+            this.rootDirectory = repositoryFolder;
+        }
 
-        if (repositoryFolder.exists() && isGitRepository(getGitDir(), FS.DETECTED)) {
+        File gitDir = getGitDir(getGitPath(repositoryFolder.getAbsolutePath()));
+        if (repositoryFolder.exists() && isGitRepository(gitDir, FS.DETECTED)) {
+            log.warn("Folder {} already is git folder", repositoryFolder.getAbsolutePath());
             return;
         }
 
@@ -133,13 +137,17 @@ public class JGitRepository implements PersistenceConfigRepository {
         repositoryFolder.deleteOnExit();
 
         executeLoggedAction("cloneRepository", () -> {
-            CloneCommand cloneCommand = cloneRepository().setURI(gitProperties.getUri())
+            CloneCommand cloneCommand = Git.cloneRepository().setURI(gitProperties.getUri())
                                                          .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
             cloneCommand.call().close();
             return null;
         });
 
+        this.rootDirectory = repositoryFolder;
+        if (oldDirectory != null) {
+            oldDirectory.delete();
+        }
     }
 
     @Override
@@ -162,6 +170,11 @@ public class JGitRepository implements PersistenceConfigRepository {
                 .collect(toList());
             return new ConfigurationList(commit, configurations);
         });
+    }
+
+    @Override
+    public void recloneConfiguration() {
+        cloneRepository();
     }
 
     private Predicate<? super File> excludeGitFiles() {
@@ -342,15 +355,19 @@ public class JGitRepository implements PersistenceConfigRepository {
         return new UsernamePasswordCredentialsProvider(gitProperties.getLogin(), gitProperties.getPassword());
     }
 
-    private String getGitPath() {
-        return rootDirectory.getAbsolutePath() + separator + GIT_FOLDER;
+    private String getGitPath(String absolutePath) {
+        return absolutePath + separator + GIT_FOLDER;
     }
 
-    private File getGitDir() {
-        return new File(getGitPath());
+    private File getGitDir(String gitPath) {
+        return new File(gitPath);
     }
 
     protected String pull() {
+        if (gitProperties.getCloneRepositoryOnUpdate()) {
+            cloneRepository();
+        }
+
         return executeGitAction("pull", git -> {
             String branchName = gitProperties.getBranchName();
             log.info("Start to pull branch: {}", branchName);
@@ -420,7 +437,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private Repository createRepository() throws IOException {
-        return FileRepositoryBuilder.create(getGitDir());
+        return FileRepositoryBuilder.create(getGitDir(getGitPath(rootDirectory.getAbsolutePath())));
     }
 
     @SneakyThrows

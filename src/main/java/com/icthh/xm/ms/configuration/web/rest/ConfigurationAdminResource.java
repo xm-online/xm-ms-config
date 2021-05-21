@@ -210,6 +210,15 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping(value = CONFIG + RECLONE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @Timed
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.RECLONE')")
+    @PrivilegeDescription("Privilege to reclone configuration")
+    public ResponseEntity<Void> recloneConfiguration(HttpServletRequest request) {
+        configurationService.recloneConfiguration();
+        return ResponseEntity.ok().build();
+    }
+
     protected String extractPath(HttpServletRequest request) {
         return urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length());
     }

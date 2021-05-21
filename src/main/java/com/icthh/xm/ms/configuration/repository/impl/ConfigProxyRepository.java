@@ -173,6 +173,12 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
+    public void recloneConfiguration() {
+        persistenceConfigRepository.recloneConfiguration();
+        refreshAll();
+    }
+
+    @Override
     public void refreshPath(String path) {
         ConfigurationItem configurationItem = persistenceConfigRepository.find(path);
         Configuration configuration = configurationItem.getData();

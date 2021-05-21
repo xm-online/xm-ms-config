@@ -28,5 +28,6 @@ public final class Constants {
     public static final String PROFILE = "/profile";
     public static final String PUBLIC_KEY_FILE = "/public.cer";
     public static final String REFRESH = "/refresh";
+    public static final String RECLONE = "/reclone";
 
 }

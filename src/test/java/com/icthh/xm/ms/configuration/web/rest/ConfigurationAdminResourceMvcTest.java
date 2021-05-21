@@ -1,5 +1,7 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import com.icthh.xm.commons.tenant.TenantContext;
+import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.SneakyThrows;
 import org.junit.Test;
@@ -12,8 +14,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Optional;
+
 import static com.icthh.xm.ms.configuration.config.Constants.*;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -47,5 +55,16 @@ public class ConfigurationAdminResourceMvcTest {
 
         Mockito.verify(configurationService).refreshConfiguration();
         Mockito.verifyNoMoreInteractions(configurationService);
+    }
+
+
+    @Test
+    @SneakyThrows
+    public void testRecloneConfiguration() {
+        mockMvc.perform(post(API_PREFIX + CONFIG + RECLONE))
+                .andExpect(status().is2xxSuccessful());
+
+        verify(configurationService).recloneConfiguration();
+        verifyNoMoreInteractions(configurationService);
     }
 }

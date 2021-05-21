@@ -24,4 +24,5 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
     void refreshTenant(String tenant);
 
     String getCommitVersion();
+
 }
