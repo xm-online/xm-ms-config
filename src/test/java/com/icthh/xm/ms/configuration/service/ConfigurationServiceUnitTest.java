@@ -10,7 +10,6 @@ import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
-import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,7 +19,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.util.List;
 import java.util.Optional;
 
 @RunWith(MockitoJUnitRunner.class)

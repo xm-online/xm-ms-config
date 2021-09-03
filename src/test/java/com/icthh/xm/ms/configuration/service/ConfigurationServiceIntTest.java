@@ -4,12 +4,16 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -119,6 +123,21 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
             assertEquals(lifetenantExternalizations, privateMap.get(pathInTenant("LIFETENANT")).getContent());
             assertEquals(mainContent, privateMap.get(pathInTenant("ONEMORELIFETENANT")).getContent());
         });
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateFromZipFile() {
+        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file2", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "1\n"));
+        String commit = configurationService.updateConfigurationsFromZip(
+                new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(commit);
+        assertEquals(configurationMap, Map.of(
+                "/config/file1", new Configuration("/config/file1", "1\n"),
+                "/config/file2", new Configuration("/config/file2", "2\n")
+        ));
     }
 
     private Map<String, Configuration> getPromPublicApi() {

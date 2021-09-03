@@ -262,6 +262,15 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
+    public String setRepositoryState(List<Configuration> configurations) {
+        return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
+                () -> {
+                    deleteExistingFile("/config");
+                    configurations.forEach(this::writeConfiguration);
+                });
+    }
+
+    @Override
     public String save(Configuration configuration) {
         return save(configuration, null);
     }

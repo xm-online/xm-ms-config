@@ -117,6 +117,13 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
+    public String setRepositoryState(List<Configuration> configurations) {
+        String commit = persistenceConfigRepository.setRepositoryState(configurations);
+        refreshAll();
+        return commit;
+    }
+
+    @Override
     public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));

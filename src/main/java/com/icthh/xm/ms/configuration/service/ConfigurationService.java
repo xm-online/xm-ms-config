@@ -10,11 +10,15 @@ import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -125,5 +129,33 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     public void recloneConfiguration() {
         repositoryProxy.recloneConfiguration();
+    }
+
+    @SneakyThrows
+    public String updateConfigurationsFromZip(MultipartFile zipFile) {
+        return repositoryProxy.setRepositoryState(unzip(new ZipInputStream(zipFile.getInputStream())));
+    }
+
+    @SneakyThrows
+    public static List<Configuration> unzip(final ZipInputStream zipInputStream) {
+        List<Configuration> configurations = new ArrayList<>();
+
+        ZipEntry entry;
+        while ((entry = zipInputStream.getNextEntry()) != null) {
+            String name = entry.getName();
+            int beginIndex = name.indexOf("config/");
+            if (beginIndex < 0) {
+                log.warn("Skip {} file. It's not under /config folder", name);
+                continue;
+            }
+            if (entry.isDirectory()) {
+                continue;
+            }
+
+            String path = "/" + name.substring(beginIndex);
+            configurations.add(new Configuration(path, IOUtils.toString(zipInputStream, UTF_8)));
+        }
+
+        return configurations;
     }
 }

@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.ZipInputStream;
 
 @Slf4j
 @RestController
@@ -216,6 +217,16 @@ public class ConfigurationAdminResource {
     @PrivilegeDescription("Privilege to reclone configuration")
     public ResponseEntity<Void> recloneConfiguration(HttpServletRequest request) {
         configurationService.recloneConfiguration();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = CONFIG + "/zip", consumes = MULTIPART_FORM_DATA_VALUE)
+    @Timed
+    @SneakyThrows
+    @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_BY_ZIP')")
+    @PrivilegeDescription("Privilege to create list of configurations for admin")
+    public ResponseEntity<Void> updateByZipFile(@RequestParam(value = "file") MultipartFile file) {
+        configurationService.updateConfigurationsFromZip(file);
         return ResponseEntity.ok().build();
     }
 
