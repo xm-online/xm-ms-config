@@ -11,7 +11,6 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +21,6 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.util.Optional;
 
-@Slf4j
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigurationServiceUnitTest {
 
