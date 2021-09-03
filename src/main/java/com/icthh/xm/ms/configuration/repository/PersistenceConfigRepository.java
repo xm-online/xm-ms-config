@@ -18,6 +18,8 @@ public interface PersistenceConfigRepository {
 
     String saveAll(List<Configuration> configurations);
 
+    String setRepositoryState(List<Configuration> configurations);
+
     String save(Configuration configuration);
 
     String save(Configuration configuration, String oldConfigHash);

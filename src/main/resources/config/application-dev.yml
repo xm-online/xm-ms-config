@@ -98,4 +98,8 @@ jhipster:
 
 application:
     git:
+        uri: /home/ssenko/work/CLARITY/config-repo/xm-ms-config-repository.git
+        login:
+        password:
+        branch-name: develop
         max-wait-time-second: 30
