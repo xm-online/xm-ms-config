@@ -25,6 +25,8 @@ public class ApplicationProperties {
     private String kafkaSystemQueue;
     private Integer kafkaMetadataMaxAge;
 
+    private Boolean envConfigExternalizationEnabled;
+
     @Getter
     @Setter
     public static class GitProperties {
