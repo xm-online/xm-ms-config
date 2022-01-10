@@ -1,5 +1,7 @@
 package com.icthh.xm.ms.configuration.config;
 
+import com.icthh.xm.commons.lep.TenantScriptStorage;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -56,4 +58,14 @@ public class ApplicationProperties {
         private long delay;
         private int multiplier;
     }
+
+    private LepProperties lep;
+
+    @Getter
+    @Setter
+    public static class LepProperties {
+        private TenantScriptStorage tenantScriptStorage;
+        private Boolean processorEnabled;
+    }
+
 }
