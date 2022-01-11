@@ -267,6 +267,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-permission:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
+    implementation "com.icthh.xm.commons:xm-commons-lep:${xm_commons_version}"
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
     implementation "com.ryantenney.metrics:metrics-spring:${metrics_spring_version}"
 

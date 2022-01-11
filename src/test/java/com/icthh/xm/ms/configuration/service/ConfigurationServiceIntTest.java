@@ -15,6 +15,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,18 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         environmentVariables.clear("MAIN_valueForReplace", "LIFETENANT__valueForReplace");
         memoryConfigStorage.clear();
         loadTenantAliasConfig();
+    }
+
+    @Test
+    public void testLepProcessorForPrivateApi() {
+        String path = "/config/tenants/LEPTENANT/folder/cool-config.yml";
+        String content = "startContent:" + Instant.now();
+        Configuration mainValue = new Configuration(path, content);
+
+        configurationService.updateConfiguration(mainValue);
+
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(path));
+        assertEquals("processed content of: " + content, privateMap.get(path).getContent());
     }
 
     @Test
