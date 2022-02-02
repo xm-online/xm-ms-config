@@ -226,7 +226,7 @@ public class ConfigProxyRepositoryUnitTest {
 
         configProxyRepository.refreshTenant("tenant");
 
-        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit0");
-        verify(configTopicProducer).notifyConfigurationChanged("commit0", singletonList("/config/tenants/tenant/path1"));
+        assertThat(configProxyRepository.getVersion().get()).isEqualTo("commit1");
+        verify(configTopicProducer).notifyConfigurationChanged("commit1", singletonList("/config/tenants/tenant/path1"));
     }
 }

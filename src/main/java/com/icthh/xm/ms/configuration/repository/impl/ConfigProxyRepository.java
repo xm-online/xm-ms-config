@@ -202,6 +202,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             .collect(toList());
 
         Set<String> updated = storage.refreshStorage(actualConfigs, tenant);
+        updateVersion(configurationList.getCommit());
         notifyChanged(updated);
     }
 
