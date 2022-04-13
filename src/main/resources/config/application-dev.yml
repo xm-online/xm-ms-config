@@ -101,5 +101,5 @@ application:
         uri:
         login:
         password:
-        branch-name: master
+        branch-name:
         max-wait-time-second: 30
