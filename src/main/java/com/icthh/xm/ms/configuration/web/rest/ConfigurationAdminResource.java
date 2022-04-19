@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.zip.ZipInputStream;
 
 @Slf4j
 @RestController
@@ -130,7 +129,8 @@ public class ConfigurationAdminResource {
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         String version = request.getParameter("version");
-        return getConfiguration(request.getParameterMap().containsKey("toJson"), path, version);
+        Optional<Configuration> configuration = configurationService.findConfiguration(path, version);
+        return toResponse(request.getParameterMap().containsKey("toJson"), path, configuration);
     }
 
     @GetMapping(value = "/version")
@@ -142,14 +142,18 @@ public class ConfigurationAdminResource {
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path) {
-        return getConfiguration(toJson, path, null);
+        return getConfiguration(toJson, false, path);
     }
 
-    protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
-        Configuration maybeConfiguration = configurationService.findConfiguration(path, version).orElseThrow(
+    protected ResponseEntity<String> getConfiguration(Boolean toJson, Boolean processed, String path) {
+        return toResponse(toJson, path, configurationService.findProcessedConfiguration(path, processed));
+    }
+
+    protected ResponseEntity<String> toResponse(Boolean toJson, String path, Optional<Configuration> maybeConfiguration) {
+        Configuration configuration = maybeConfiguration.orElseThrow(
             () -> new EntityNotFoundException("Not found configuration.")
         );
-        return createResponse(toJson, path, maybeConfiguration);
+        return createResponse(toJson, path, configuration);
     }
 
     protected ResponseEntity<String> createResponse(Boolean toJson, String path, Configuration maybeConfiguration) {
