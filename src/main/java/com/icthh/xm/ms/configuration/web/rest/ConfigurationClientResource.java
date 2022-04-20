@@ -2,7 +2,6 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -24,6 +23,7 @@ import java.net.URI;
 import static com.icthh.xm.ms.configuration.config.Constants.*;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getBooleanParameter;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -89,7 +89,8 @@ public class ConfigurationClientResource {
     @PrivilegeDescription("Privilege to get private ui settings")
     public ResponseEntity<String> getWebAppPrivateConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
-        Configuration maybeConfiguration = configurationService.findConfiguration(path, null)
+        Boolean processed = request.getParameterMap().containsKey("processed");
+        Configuration maybeConfiguration = configurationService.findProcessedConfiguration(path, processed)
                                                                .orElse(new Configuration(path, EMPTY_YML));
         Boolean toJson = request.getParameterMap().containsKey("toJson");
         return configurationAdminResource.createResponse(toJson, path, maybeConfiguration);
@@ -100,7 +101,9 @@ public class ConfigurationClientResource {
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     public ResponseEntity<String> getWebAppConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
-        return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+        boolean toJson = request.getParameterMap().containsKey("toJson");
+        boolean processed = getBooleanParameter(request, "processed");
+        return configurationAdminResource.getConfiguration(toJson, processed, path);
     }
 
     @GetMapping(value = PROFILE + "/webapp/public/**")
@@ -108,7 +111,9 @@ public class ConfigurationClientResource {
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     public ResponseEntity<String> getPublicWebAppConfigurations(HttpServletRequest request) {
         String path = extractPath(request);
-        return configurationAdminResource.getConfiguration(request.getParameterMap().containsKey("toJson"), path);
+        boolean toJson = request.getParameterMap().containsKey("toJson");
+        boolean processed = getBooleanParameter(request, "processed");
+        return configurationAdminResource.getConfiguration(toJson, processed, path);
     }
 
     @DeleteMapping(PROFILE + "/**")

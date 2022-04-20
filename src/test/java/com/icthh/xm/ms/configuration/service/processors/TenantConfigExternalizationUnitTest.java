@@ -10,11 +10,13 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,6 +26,11 @@ public class TenantConfigExternalizationUnitTest {
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+    @Before
+    public void before() {
+        Locale.setDefault(Locale.US);
+    }
 
     @Test
     public void testConfigOverride() {
