@@ -98,7 +98,7 @@ xm-config:
     kafka-config-topic: config_topic
 
 application:
-    env-config-externalization-enabled: true
+    env-config-externalization-enabled: false
     kafka-enabled: false
     git:
         uri: null
