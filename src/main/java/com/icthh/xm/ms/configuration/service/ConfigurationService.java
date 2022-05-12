@@ -1,13 +1,16 @@
 package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
+import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 import com.icthh.xm.commons.config.client.api.AbstractConfigService;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
 import java.util.ArrayList;
@@ -129,6 +132,18 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     public void recloneConfiguration() {
         repositoryProxy.recloneConfiguration();
+    }
+
+    public List<Map<String, String>> findConfigurationHashSum(String tenant) {
+        ConfigurationList configurationList = repositoryProxy.findAll();
+        List<Configuration> actualConfigs = configurationList.getData();
+
+        List<Map<String, String>> configurationHashSum = actualConfigs.stream()
+            .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
+            .map(config -> Map.of(config.getPath(), sha256Hex(config.getContent())))
+            .collect(toList());
+
+        return configurationHashSum;
     }
 
     @SneakyThrows

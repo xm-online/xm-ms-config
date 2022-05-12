@@ -230,6 +230,15 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping(value = CONFIG + TENANTS + "/{tenant}" + "/hash_sum")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_HASH_SUM')")
+    @PrivilegeDescription("Privilege to get configuration hash sum for admin")
+    public ResponseEntity<List<Map<String, String>>> getConfigurationHashSum(@PathVariable String tenant) {
+        return ResponseEntity.ok(configurationService.findConfigurationHashSum(tenant));
+    }
+
     protected String extractPath(HttpServletRequest request) {
         return urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length());
     }
