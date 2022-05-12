@@ -61,6 +61,13 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return Optional.ofNullable(repositoryProxy.find(path, version).getData());
     }
 
+    public Optional<Configuration> findProcessedConfiguration(String path, Boolean processed) {
+        if (Boolean.TRUE.equals(processed)) {
+            return Optional.ofNullable(getConfigurationMap(null, List.of(path)).get(path));
+        }
+        return findConfiguration(path);
+    }
+
     public Optional<Configuration> findConfiguration(String path) {
         return findConfiguration(path, null);
     }
@@ -173,4 +180,5 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
         return configurations;
     }
+
 }

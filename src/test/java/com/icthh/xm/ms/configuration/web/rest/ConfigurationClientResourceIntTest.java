@@ -21,21 +21,30 @@ import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
+@TestPropertySource(properties = "application.env-config-externalization-enabled=true")
 public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "test75";
 
     @MockBean
     private ConfigTopicProducer configTopicProducer;
+
+    @ClassRule
+    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Autowired
     private ConfigurationClientResource configurationClientResource;
@@ -57,6 +66,11 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .setControllerAdvice(exceptionTranslator)
                 .build();
         TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
+    }
+
+    @BeforeClass
+    public static void beforeClass () {
+        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
     }
 
     @Test
@@ -165,6 +179,48 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testWebappPublicConfigExternalization() {
+        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
+                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-public.yml?toJson&processed=true")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testWebappPrivateConfigExternalization() {
+        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
+                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson&processed=true")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testPublicWebappConfigExternalization() {
+        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/public/config.yml")
+                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/config.yml?toJson&processed=true")
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+                .andExpect(status().is2xxSuccessful());
     }
 
 
