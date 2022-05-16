@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSumDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -141,16 +142,14 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         repositoryProxy.recloneConfiguration();
     }
 
-    public List<Map<String, String>> findConfigurationHashSum(String tenant) {
+    public ConfigurationHashSumDto findConfigurationHashSum(String tenant) {
         ConfigurationList configurationList = repositoryProxy.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
 
-        List<Map<String, String>> configurationHashSum = actualConfigs.stream()
+        return new ConfigurationHashSumDto(actualConfigs.stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .map(config -> Map.of(config.getPath(), sha256Hex(config.getContent())))
-            .collect(toList());
-
-        return configurationHashSum;
+            .collect(toList()));
     }
 
     @SneakyThrows

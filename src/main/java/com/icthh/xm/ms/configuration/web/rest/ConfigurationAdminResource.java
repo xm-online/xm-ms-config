@@ -17,6 +17,7 @@ import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSumDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -239,7 +240,7 @@ public class ConfigurationAdminResource {
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_HASH_SUM')")
     @PrivilegeDescription("Privilege to get configuration hash sum for admin")
-    public ResponseEntity<List<Map<String, String>>> getConfigurationHashSum(@PathVariable String tenant) {
+    public ResponseEntity<ConfigurationHashSumDto> getConfigurationHashSum(@PathVariable String tenant) {
         return ResponseEntity.ok(configurationService.findConfigurationHashSum(tenant));
     }
 

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSumDto;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -340,8 +341,8 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
     public void testGetConfigurationHashSum() {
         String path = "/config/tenants/TENANT2/folder/subfolder/documentname5";
         String content = "some content";
-        List<Map<String, String>> response = new ArrayList<>();
-        response.add(Map.of(path, sha256Hex(content)));
+        ConfigurationHashSumDto response = new ConfigurationHashSumDto();
+        response.setConfigurationHashSum(List.of(Map.of(path, sha256Hex(content))));
 
         mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/TENANT2/folder/subfolder/documentname5")
             .content(content)
