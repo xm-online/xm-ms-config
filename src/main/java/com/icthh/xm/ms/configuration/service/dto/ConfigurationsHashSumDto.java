@@ -5,11 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ConfigurationHashSumDto {
-    private List<Map<String, String>> configurationHashSum;
+public class ConfigurationsHashSumDto {
+    private List<ConfigurationHashSum> configurationsHashSum;
 }
