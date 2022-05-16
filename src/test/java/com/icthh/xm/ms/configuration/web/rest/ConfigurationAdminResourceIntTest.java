@@ -342,7 +342,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         String path = "/config/tenants/TENANT2/folder/subfolder/documentname5";
         String content = "some content";
         ConfigurationsHashSumDto response = new ConfigurationsHashSumDto();
-        ConfigurationHashSum configurationHashSum = new ConfigurationHashSum(Map.of(path, sha256Hex(content)));
+        ConfigurationHashSum configurationHashSum = new ConfigurationHashSum(path, sha256Hex(content));
         response.setConfigurationsHashSum(List.of(configurationHashSum));
 
         mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/TENANT2/folder/subfolder/documentname5")

@@ -149,7 +149,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
         return new ConfigurationsHashSumDto(actualConfigs.stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
-            .map(config -> new ConfigurationHashSum(Map.of(config.getPath(), sha256Hex(config.getContent()))))
+            .map(config -> new ConfigurationHashSum(config.getPath(), sha256Hex(config.getContent())))
             .collect(toList()));
     }
 
