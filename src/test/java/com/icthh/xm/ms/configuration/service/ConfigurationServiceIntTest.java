@@ -9,23 +9,27 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
-import static java.util.Arrays.asList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
@@ -67,8 +71,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
         configurationService.updateConfiguration(mainValue);
 
-        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList());
-        doAssertions(() -> assertAllFromMain(content, privateMap));
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/tenant-config.yml"));
+        doAssertions(() -> assertAllFromMain(content, privateMap, "/tenant-config.yml"));
     }
 
     @Test
@@ -79,7 +83,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(mainValue);
 
         Map<String, Configuration> publicMap = getPromPublicApi();
-        doAssertions(() -> assertAllFromMain(content, publicMap));
+        doAssertions(() -> assertAllFromMain(content, publicMap, "/tenant-config.yml"));
     }
 
     @Test
@@ -92,7 +96,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(submainValue);
         configurationService.updateConfiguration(mainValue);
 
-        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList());
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/tenant-config.yml"));
         doAssertions(() -> assertWithSubmain(mainContent, submainContent, privateMap));
     }
 
@@ -126,16 +130,29 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Map<String, Configuration> publicMap = getPromPublicApi();
         doAssertions(() -> assertWithSubmain(mainContent, submainContent, publicMap));
 
-        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList());
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/tenant-config.yml"));
         doAssertions(() -> {
             String mainExternalizations = mockTenantConfigWithExternalization("mainExternalizations");
             String lifetenantExternalizations = mockTenantConfigWithExternalization("lifetenantExternalizations");
 
-            assertEquals(mainExternalizations, privateMap.get(pathInTenant("MAIN")).getContent());
-            assertEquals(submainContent, privateMap.get(pathInTenant("SUBMAIN")).getContent());
-            assertEquals(lifetenantExternalizations, privateMap.get(pathInTenant("LIFETENANT")).getContent());
-            assertEquals(mainContent, privateMap.get(pathInTenant("ONEMORELIFETENANT")).getContent());
+            assertEquals(mainExternalizations, privateMap.get(pathInTenant("MAIN", "/tenant-config.yml")).getContent());
+            assertEquals(submainContent, privateMap.get(pathInTenant("SUBMAIN", "/tenant-config.yml")).getContent());
+            assertEquals(lifetenantExternalizations, privateMap.get(pathInTenant("LIFETENANT", "/tenant-config.yml")).getContent());
+            assertEquals(mainContent, privateMap.get(pathInTenant("ONEMORELIFETENANT", "/tenant-config.yml")).getContent());
         });
+    }
+
+    @Test
+    public void testSimpleTenantAliasForPrivateApiWhenMemoryUpdate() {
+        Mockito.reset(configTopicProducer);
+        Configuration mainValue = mockConfig("MAIN", "mainValue", "/some-config.yml");
+        String content = mainValue.getContent();
+
+        configurationService.updateConfigurationInMemory(mainValue);
+
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
+        doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
+        verify(configTopicProducer).notifyConfigurationChanged(anyString(), eq(filesList("/some-config.yml")));
     }
 
     @Test
@@ -154,7 +171,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     private Map<String, Configuration> getPromPublicApi() {
-        return filesList().stream().map(configurationService::findConfiguration)
+        return filesList("/tenant-config.yml").stream().map(configurationService::findConfiguration)
                 .filter(Optional::isPresent).map(Optional::get)
                 .collect(toMap(Configuration::getPath, identity()));
     }
@@ -173,18 +190,19 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         assertion.run();
     }
 
-    private void assertAllFromMain(String content, Map<String, Configuration> existsMap) {
-        assertEquals(content, existsMap.get(pathInTenant("MAIN")).getContent());
-        assertEquals(content, existsMap.get(pathInTenant("SUBMAIN")).getContent());
-        assertEquals(content, existsMap.get(pathInTenant("LIFETENANT")).getContent());
-        assertEquals(content, existsMap.get(pathInTenant("ONEMORELIFETENANT")).getContent());
+    private void assertAllFromMain(String content, Map<String, Configuration> existsMap, String name) {
+        assertEquals(content, existsMap.get(pathInTenant("MAIN", name)).getContent());
+        assertEquals(content, existsMap.get(pathInTenant("SUBMAIN", name)).getContent());
+        assertEquals(content, existsMap.get(pathInTenant("LIFETENANT", name)).getContent());
+        assertEquals(content, existsMap.get(pathInTenant("ONEMORELIFETENANT", name)).getContent());
     }
 
     private void assertWithSubmain(String mainContent, String submainContent, Map<String, Configuration> existsMap) {
-        assertEquals(mainContent, existsMap.get(pathInTenant("MAIN")).getContent());
-        assertEquals(submainContent, existsMap.get(pathInTenant("SUBMAIN")).getContent());
-        assertEquals(submainContent, existsMap.get(pathInTenant("LIFETENANT")).getContent());
-        assertEquals(mainContent, existsMap.get(pathInTenant("ONEMORELIFETENANT")).getContent());
+        String name = "/tenant-config.yml";
+        assertEquals(mainContent, existsMap.get(pathInTenant("MAIN", name)).getContent());
+        assertEquals(submainContent, existsMap.get(pathInTenant("SUBMAIN", name)).getContent());
+        assertEquals(submainContent, existsMap.get(pathInTenant("LIFETENANT", name)).getContent());
+        assertEquals(mainContent, existsMap.get(pathInTenant("ONEMORELIFETENANT", name)).getContent());
     }
 
     private void loadTenantAliasConfig() {
@@ -198,22 +216,32 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         return new Configuration("/config/tenants/" + tenant + "/tenant-config.yml", tenantContent);
     }
 
+    private Configuration mockConfig(String tenant, String specialValue, String name) {
+        String tenantContent = loadFile("some-config.yml");
+        tenantContent = tenantContent.replace("VALUE_FOR_REPLACE", specialValue);
+        return new Configuration("/config/tenants/" + tenant + name, tenantContent);
+    }
+
     private String mockTenantConfigWithExternalization(String specialValue) {
         String tenantContent = loadFile("tenant-config-expected.yml");
         tenantContent = tenantContent.replace("VALUE_FOR_REPLACE", specialValue);
         return tenantContent;
     }
 
-    private List<String> filesList() {
-        return asList(
-                pathInTenant("MAIN"),
-                pathInTenant("SUBMAIN"),
-                pathInTenant("LIFETENANT"),
-                pathInTenant("ONEMORELIFETENANT")
-        );
+    private List<String> filesList(String name) {
+        // hash set for correct order in list
+        return new ArrayList<>(new HashSet<>(
+                List.of(
+                        pathInTenant("MAIN", name),
+                        pathInTenant("SUBMAIN", name),
+                        pathInTenant("LIFETENANT", name),
+                        pathInTenant("ONEMORELIFETENANT", name)
+                )
+        ));
     }
 
-    private String pathInTenant(String tenant) {
-        return "/config/tenants/" + tenant + "/tenant-config.yml";
+    private String pathInTenant(String tenant, String name) {
+        return "/config/tenants/" + tenant + name;
     }
+
 }
