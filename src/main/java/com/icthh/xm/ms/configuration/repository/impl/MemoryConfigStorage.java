@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
@@ -97,9 +96,9 @@ public class MemoryConfigStorage {
         return keys;
     }
 
-    public void updateConfig(String path, Configuration config) {
+    public Set<String> updateConfig(String path, Configuration config) {
         storage.put(path, config);
-        process(config);
+        return process(config);
     }
 
     public Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant) {
@@ -148,10 +147,11 @@ public class MemoryConfigStorage {
     }
 
     @SuppressWarnings("ConstantConditions")
-    private void process(Configuration configuration) {
+    private Set<String> process(Configuration configuration) {
         Set<Configuration> configurations = singletonSet(configuration);
         configurations = processConfiguration(configurations, publicConfigurationProcessors, processedStorage);
-        processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
+        configurations = processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
+        return configurations.stream().map(Configuration::getPath).collect(toSet());
     }
 
     private Set<Configuration> processConfiguration(Set<Configuration> configurations,
@@ -184,8 +184,12 @@ public class MemoryConfigStorage {
         };
     }
 
-    public void updateConfigs(Map<String, Configuration> map) {
-        map.forEach(this::updateConfig);
+    public Set<String> updateConfigs(Map<String, Configuration> map) {
+        Set<String> updated = new HashSet<>();
+        map.forEach((path, config) -> {
+            updated.addAll(this.updateConfig(path, config));
+        });
+        return updated;
     }
 
     public Set<String> processedPaths() {
