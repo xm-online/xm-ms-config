@@ -1,7 +1,7 @@
 Some text,
 and in this text ${variable}
-but substituted will be only ${environment.variable}
+but substituted will be only ENV_VALUE
 because that started with environment.
 ${environment.variableThatNotDefined}
-${environment.variableThatDefined}
-${variableFromFile}
+ENV_DEF_VALUE
+VALUE_FROM_FILE
