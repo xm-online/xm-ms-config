@@ -31,7 +31,6 @@ import static java.util.Collections.singletonList;
 public class EnvConfigExternalizationFromFile implements PrivateConfigurationProcessor {
 
     private final Map<String, String> environment;
-    private final ApplicationProperties applicationProperties;
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     private final Map<String, TenantProfileEntry> tenantProfileCash = new ConcurrentHashMap<>();
     private final AntPathMatcher matcher = new AntPathMatcher();
@@ -40,8 +39,7 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     public static final String TENANT_PREFIX = "/config/tenants/";
     private final String TENANT_ENV_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**";
 
-    public EnvConfigExternalizationFromFile(ApplicationProperties applicationProperties) {
-        this.applicationProperties = applicationProperties;
+    public EnvConfigExternalizationFromFile() {
         Map<String, String> env = new HashMap<>();
         getenv().forEach((key, value) -> env.put("environment." + key, value));
         this.environment = env;
@@ -97,13 +95,6 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         return tenantProfile;
     }
 
-    @RequiredArgsConstructor
-    @EqualsAndHashCode
-    public static class TenantProfileEntry {
-        private final String tenantProfileContent;
-        private final Map<String, String> tenantProfile;
-    }
-
     private void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
         if (jsonNode.isObject()) {
             ObjectNode objectNode = (ObjectNode) jsonNode;
@@ -123,5 +114,12 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
             ValueNode valueNode = (ValueNode) jsonNode;
             map.put(currentPath, valueNode.asText());
         }
+    }
+
+    @RequiredArgsConstructor
+    @EqualsAndHashCode
+    public static class TenantProfileEntry {
+        private final String tenantProfileContent;
+        private final Map<String, String> tenantProfile;
     }
 }

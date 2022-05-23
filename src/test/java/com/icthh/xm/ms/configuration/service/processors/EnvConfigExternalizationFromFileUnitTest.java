@@ -35,7 +35,7 @@ public class EnvConfigExternalizationFromFileUnitTest {
         ApplicationProperties applicationProperties = new ApplicationProperties();
         applicationProperties.setEnvConfigExternalizationEnabled(true);
 
-        List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile(applicationProperties)
+        List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile()
             .processConfiguration(configuration, originalStorage, emptyMap());
         assertEquals(TestUtil.loadFile("someConfigFromFileExpected"), processedConfigurations.get(0).getContent());
     }
