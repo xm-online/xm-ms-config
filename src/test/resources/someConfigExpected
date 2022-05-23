@@ -4,4 +4,4 @@ but substituted will be only ENV_VALUE
 because that started with environment.
 ${environment.variableThatNotDefined}
 ENV_DEF_VALUE
-${variableFromFile}
+${environment.variableFromFile}
