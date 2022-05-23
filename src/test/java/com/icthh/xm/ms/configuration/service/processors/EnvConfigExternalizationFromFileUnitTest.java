@@ -28,8 +28,8 @@ public class EnvConfigExternalizationFromFileUnitTest {
 
         Configuration configuration = new Configuration("/config/tenants/XM/someConfig", TestUtil.loadFile("someConfig"));
         Map<String, Configuration> originalStorage = new HashMap<>();
-        String tenantEnvValuePath = "/config/tenants/XM/tenant-env-value.yml";
-        Configuration originalStorageConfiguration = new Configuration(tenantEnvValuePath, TestUtil.loadFile("tenant-env-value.yml"));
+        String tenantEnvValuePath = "/config/tenants/XM/tenant-profile.yml";
+        Configuration originalStorageConfiguration = new Configuration(tenantEnvValuePath, TestUtil.loadFile("/tenant-profile.yml"));
         originalStorage.put(tenantEnvValuePath, originalStorageConfiguration);
 
         ApplicationProperties applicationProperties = new ApplicationProperties();

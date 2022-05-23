@@ -198,14 +198,14 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testWebappPublicConfigExternalizationFromTenantProfile() {
-        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
-                        .content("varForReplaceFromTenantProfile: ${environment.VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE}")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
-        mockMvc.perform(post(API_PREFIX + PROFILE + "/tenant-env-value.yml")
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/tenant-profile.yml")
                         .content("---\nenvironment:\n  VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE: expectedValue")
                         .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
+            .content("varForReplaceFromTenantProfile: ${environment.VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE}")
+            .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-public.yml?toJson&processed=true")
                         .contentType(MediaType.TEXT_PLAIN))
                 .andExpect(content().string("{\"varForReplaceFromTenantProfile\":\"expectedValue\"}"))
