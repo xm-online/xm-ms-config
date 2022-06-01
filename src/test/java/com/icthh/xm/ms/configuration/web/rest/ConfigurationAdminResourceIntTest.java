@@ -12,10 +12,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,6 +30,9 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
+import java.util.Map;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
@@ -327,5 +334,26 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT1/folder/subfolder/documentname31")
                             .contentType(MediaType.TEXT_PLAIN))
                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testGetConfigurationHashSum() {
+        String path = "/config/tenants/TENANT2/folder/subfolder/documentname5";
+        String content = "some content";
+        ConfigurationsHashSumDto response = new ConfigurationsHashSumDto();
+        ConfigurationHashSum configurationHashSum = new ConfigurationHashSum(path, sha256Hex(content));
+        response.setConfigurationsHashSum(List.of(configurationHashSum));
+
+        mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/TENANT2/folder/subfolder/documentname5")
+            .content(content)
+            .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT2/hash")
+            .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().json(new ObjectMapper().writeValueAsString(response)))
+            .andExpect(status().is2xxSuccessful());
     }
 }
