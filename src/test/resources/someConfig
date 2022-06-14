@@ -4,3 +4,4 @@ but substituted will be only ${environment.variable}
 because that started with environment.
 ${environment.variableThatNotDefined}
 ${environment.variableThatDefined}
+${environment.variableFromFile}
