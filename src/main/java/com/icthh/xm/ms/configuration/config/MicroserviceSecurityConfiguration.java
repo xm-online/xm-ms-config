@@ -89,20 +89,4 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
         return new ConfigSignatureVerifierClient(oAuth2Properties, restTemplate);
     }
 
-    private String getKeyFromConfigServer(TokenKeyService tokenKeyService) throws CertificateException, IOException {
-        String content = tokenKeyService.getKey();
-
-        if (StringUtils.isBlank(content)) {
-            throw new CertificateException("Certificate not found.");
-        }
-
-        try (InputStream fin = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
-
-            CertificateFactory f = CertificateFactory.getInstance(CERTIFICATE);
-            X509Certificate certificate = (X509Certificate) f.generateCertificate(fin);
-            PublicKey pk = certificate.getPublicKey();
-            return String.format(PUBLIC_KEY, Base64.encodeBase64String(pk.getEncoded()));
-        }
-    }
-
 }
