@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.config;
 
 import com.icthh.xm.commons.permission.constants.RoleConstant;
+import com.icthh.xm.commons.security.oauth2.ConfigSignatureVerifierClient;
 import com.icthh.xm.commons.security.oauth2.OAuth2JwtAccessTokenConverter;
 import com.icthh.xm.commons.security.oauth2.OAuth2Properties;
 import com.icthh.xm.commons.security.oauth2.OAuth2SignatureVerifierClient;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.client.loadbalancer.RestTemplateCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -79,6 +81,12 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
         RestTemplate restTemplate = new RestTemplate();
         customizer.customize(restTemplate);
         return restTemplate;
+    }
+
+    @Bean
+    public ConfigSignatureVerifierClient configSignatureVerifierClient(
+        @Qualifier("loadBalancedRestTemplate") RestTemplate restTemplate) {
+        return new ConfigSignatureVerifierClient(oAuth2Properties, restTemplate);
     }
 
     private String getKeyFromConfigServer(TokenKeyService tokenKeyService) throws CertificateException, IOException {
