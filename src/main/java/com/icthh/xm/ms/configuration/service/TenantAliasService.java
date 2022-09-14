@@ -64,6 +64,8 @@ public class TenantAliasService implements PublicConfigurationProcessor {
             allTenants.addAll(newTenants.keySet());
 
             allTenants.stream().filter(it -> isTenantChanged(oldTenants, newTenants, it))
+                    .distinct()
+                    .peek(configurationService::refreshTenantConfigurations)
                     .map(newTenants::get)
                     .map(this::getParentKey)
                     .filter(Optional::isPresent)
@@ -71,19 +73,15 @@ public class TenantAliasService implements PublicConfigurationProcessor {
                     .distinct()
                     .forEach(memoryConfigStorage::reprocess);
 
-            allTenants.stream().filter(it -> isTenantChanged(oldTenants, newTenants, it))
-                    .distinct()
-                    .forEach(configurationService::refreshTenantConfigurations);
-
         } catch (IOException e) {
             log.error("Error parse tenant alias config", e);
         }
         return Collections.emptyList();
     }
 
-    private boolean isTenantChanged(Map<String, TenantAlias> oldTenants, Map<String, TenantAlias> newTenants, String it) {
-        var oldParentKey = getParentKey(oldTenants.get(it));
-        var newParentKey = getParentKey(newTenants.get(it));
+    private boolean isTenantChanged(Map<String, TenantAlias> oldTenants, Map<String, TenantAlias> newTenants, String tenantKey) {
+        var oldParentKey = getParentKey(oldTenants.get(tenantKey));
+        var newParentKey = getParentKey(newTenants.get(tenantKey));
         return !oldParentKey.equals(newParentKey);
     }
 
