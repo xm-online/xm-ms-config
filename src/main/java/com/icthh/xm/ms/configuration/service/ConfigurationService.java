@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -72,6 +74,14 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     public Optional<Configuration> findConfiguration(String path) {
         return findConfiguration(path, null);
+    }
+
+    public Map<String, Configuration> findConfigurations(List<String> paths) {
+        return paths.stream()
+            .map(this::findConfiguration)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toMap(Configuration::getPath, Function.identity()));
     }
 
     @Override
