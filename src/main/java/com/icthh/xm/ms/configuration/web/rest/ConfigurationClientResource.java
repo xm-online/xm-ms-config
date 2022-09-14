@@ -146,7 +146,7 @@ public class ConfigurationClientResource {
     @PostMapping(value = PROFILE + "/configs_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths){
+    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths) {
         List<String> nonNullPaths = Optional.ofNullable(paths)
             .orElseGet(Collections::emptyList);
 
