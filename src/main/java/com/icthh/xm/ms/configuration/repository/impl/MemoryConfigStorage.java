@@ -102,14 +102,18 @@ public class MemoryConfigStorage {
     }
 
     public Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant) {
-        List<TenantAlias> parents = tenantAliasService.getTenantAliasTree().getParents(tenant);
         Set<String> oldKeys = getConfigPathsList(tenant);
         Set<String> updated = refreshStorage(actualConfigs, oldKeys);
-        parents.stream().map(TenantAlias::getKey).forEach(this::reprocess);
+        reprocess(tenant);
         return updated;
     }
 
     public void reprocess(String tenant) {
+        List<TenantAlias> parents = tenantAliasService.getTenantAliasTree().getParents(tenant);
+        parents.stream().map(TenantAlias::getKey).forEach(this::reprocessTenant);
+    }
+
+    private void reprocessTenant(String tenant) {
         String tenantPathPrefix = getTenantPathPrefix(tenant);
         storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
