@@ -2,7 +2,11 @@ package com.icthh.xm.ms.configuration.service;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -19,6 +23,9 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -108,5 +115,33 @@ public class ConfigurationServiceUnitTest {
         configurationService.refreshTenantConfigurations();
 
         verify(configProxyRepository).refreshTenant("tenant");
+    }
+
+    @Test
+    public void findConfigurations() {
+        String firstPath = "firstPath";
+        String secondPath = "secondPath";
+        Configuration firstConfig = new Configuration(firstPath, "firstContent");
+        Configuration secondConfig = new Configuration(secondPath, "secondContent");
+        when(configProxyRepository.find(firstPath, null)).thenReturn(new ConfigurationItem("firstCommit", firstConfig));
+        when(configProxyRepository.find(secondPath, null)).thenReturn(new ConfigurationItem("secondCommit", secondConfig));
+
+        Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath));
+
+        assertThat(actual).hasSize(2);
+        assertThat(actual.get(firstPath)).isEqualTo(firstConfig);
+        assertThat(actual.get(secondPath)).isEqualTo(secondConfig);
+
+        verify(configProxyRepository, times(2)).find(any(), any());
+        verifyNoMoreInteractions(configProxyRepository);
+    }
+
+    @Test
+    public void findConfigurationsIfPathsEmpty() {
+        Map<String, Configuration> actual = configurationService.findConfigurations(Collections.emptyList());
+
+        assertThat(actual).hasSize(0);
+
+        verifyZeroInteractions(configProxyRepository);
     }
 }

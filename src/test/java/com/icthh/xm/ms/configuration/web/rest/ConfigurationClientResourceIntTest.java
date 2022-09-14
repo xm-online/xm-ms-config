@@ -14,12 +14,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -33,6 +35,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
@@ -240,6 +244,32 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .andExpect(status().is2xxSuccessful());
     }
 
+    @Test
+    @SneakyThrows
+    public void testGetConfigurationsByPaths() {
+        String firstPath = CONFIG + TENANTS + "/TENANT1/documentname1";
+        String secondPath = CONFIG + TENANTS + "/TENANT1/documentname2";
+        String firstContent = "first content";
+        String secondContent = "second content";
+
+        mockMvc.perform(post(API_PREFIX + firstPath)
+                .content(firstContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(post(API_PREFIX + secondPath)
+                .content(secondContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
+            .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath)))
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
+            .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,secondContent)));
+    }
 
     @Test
     @SneakyThrows

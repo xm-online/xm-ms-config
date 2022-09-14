@@ -19,6 +19,10 @@ import org.springframework.web.util.UrlPathHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.icthh.xm.ms.configuration.config.Constants.*;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
@@ -137,6 +141,17 @@ public class ConfigurationClientResource {
             configurationService.refreshConfiguration(getAbsolutePath(path));
         }
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping(value = PROFILE + "/configs_map")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths){
+        List<String> nonNullPaths = Optional.ofNullable(paths)
+            .orElseGet(Collections::emptyList);
+
+        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths);
+        return ResponseEntity.ok(configurations);
     }
 
     private String extractPath(HttpServletRequest request) {
