@@ -109,7 +109,7 @@ public class MemoryConfigStorage {
         return updated;
     }
 
-    private void reprocess(String tenant) {
+    public void reprocess(String tenant) {
         String tenantPathPrefix = getTenantPathPrefix(tenant);
         storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
