@@ -147,9 +147,7 @@ public class ConfigurationClientResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths) {
-        List<String> nonNullPaths = Optional.ofNullable(paths)
-            .orElseGet(Collections::emptyList);
-
+        List<String> nonNullPaths = Optional.ofNullable(paths).orElseGet(Collections::emptyList);
         Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths);
         return ResponseEntity.ok(configurations);
     }

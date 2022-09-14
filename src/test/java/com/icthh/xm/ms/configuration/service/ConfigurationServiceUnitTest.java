@@ -2,8 +2,8 @@ package com.icthh.xm.ms.configuration.service;
 
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -132,7 +132,8 @@ public class ConfigurationServiceUnitTest {
         assertThat(actual.get(firstPath)).isEqualTo(firstConfig);
         assertThat(actual.get(secondPath)).isEqualTo(secondConfig);
 
-        verify(configProxyRepository, times(2)).find(any(), any());
+        verify(configProxyRepository).find(eq(firstPath), isNull());
+        verify(configProxyRepository).find(eq(secondPath), isNull());
         verifyNoMoreInteractions(configProxyRepository);
     }
 
