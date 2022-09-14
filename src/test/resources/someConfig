@@ -3,5 +3,6 @@ and in this text ${variable}
 but substituted will be only ${environment.variable}
 because that started with environment.
 ${environment.variableThatNotDefined}
+${environment.variableThatNotDefinedWithDefault:-DEFAULT_VALUE}
 ${environment.variableThatDefined}
 ${environment.variableFromFile}
