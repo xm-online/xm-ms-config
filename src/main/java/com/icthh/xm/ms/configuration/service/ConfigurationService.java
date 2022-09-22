@@ -2,6 +2,8 @@ package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantName;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
@@ -11,6 +13,7 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
 import java.util.ArrayList;
@@ -45,6 +48,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
     private final DistributedConfigRepository inMemoryRepository;
+    private final TenantAliasService tenantAliasService;
 
     @Override
     @LoggingAspectConfig(resultDetails = false)
@@ -76,12 +80,24 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return findConfiguration(path, null);
     }
 
-    public Map<String, Configuration> findConfigurations(List<String> paths) {
-        return paths.stream()
+    public Map<String, Configuration> findParentConfigurations(String path) {
+        List<TenantAliasTree.TenantAlias> parents = tenantAliasService.getTenantAliasTree().getParents(getTenantName(path).orElse(""));
+        return parents.stream()
+            .map(it -> getPathInTenant(path, it.getKey()))
             .map(this::findConfiguration)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toMap(Configuration::getPath, Function.identity()));
+    }
+
+    public Map<String, Configuration> findConfigurations(List<String> paths) {
+        Map<String, Configuration> resMap = new HashMap<>();
+        paths.forEach(path -> {
+            resMap.putAll(findParentConfigurations(path));
+            findConfiguration(path).map(it -> resMap.put(it.getPath(), it));
+        });
+
+        return resMap;
     }
 
     @Override
