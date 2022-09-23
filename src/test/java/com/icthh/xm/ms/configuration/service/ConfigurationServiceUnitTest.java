@@ -126,7 +126,7 @@ public class ConfigurationServiceUnitTest {
         when(configProxyRepository.find(firstPath, null)).thenReturn(new ConfigurationItem("firstCommit", firstConfig));
         when(configProxyRepository.find(secondPath, null)).thenReturn(new ConfigurationItem("secondCommit", secondConfig));
 
-        Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath));
+        Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath), false);
 
         assertThat(actual).hasSize(2);
         assertThat(actual.get(firstPath)).isEqualTo(firstConfig);
@@ -139,7 +139,7 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void findConfigurationsIfPathsEmpty() {
-        Map<String, Configuration> actual = configurationService.findConfigurations(Collections.emptyList());
+        Map<String, Configuration> actual = configurationService.findConfigurations(Collections.emptyList(), false);
 
         assertThat(actual).hasSize(0);
 

@@ -7,6 +7,7 @@ import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +31,7 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getBooleanParameter;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
+import static org.springframework.http.MediaType.*;
 
 @Slf4j
 @RestController
@@ -146,10 +146,27 @@ public class ConfigurationClientResource {
     @PostMapping(value = PROFILE + "/configs_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths) {
+    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths,
+                                                                               @RequestParam(name = "fetchAll", required = false, defaultValue = "false") Boolean fetchAll) {
         List<String> nonNullPaths = Optional.ofNullable(paths).orElseGet(Collections::emptyList);
-        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths);
+        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths, fetchAll);
         return ResponseEntity.ok(configurations);
+    }
+
+    @GetMapping(value = PROFILE + "/configs_hash")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<ConfigurationsHashSumDto> getConfigurationsHashSum() {
+        return ResponseEntity.ok(configurationService.findConfigurationsHashSum());
+    }
+
+    @PostMapping(value = PROFILE + "/configs_update", consumes = {APPLICATION_JSON_VALUE})
+    @Timed
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.UPDATE.FROM.LIST')")
+    @PrivilegeDescription("Privilege to refresh config for client")
+    public ResponseEntity<Void> updateFromList(@RequestBody List<Configuration> configs, HttpServletRequest request) {
+        configurationService.updateConfigurationsFromList(configs);
+        return ResponseEntity.ok().build();
     }
 
     private String extractPath(HttpServletRequest request) {
