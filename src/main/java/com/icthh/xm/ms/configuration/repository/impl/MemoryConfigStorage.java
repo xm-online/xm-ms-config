@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,7 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathP
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -131,7 +133,7 @@ public class MemoryConfigStorage {
         Set<String> updated = getUpdatePaths(actualConfigs, oldKeys);
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(this::removeConfig);
-        actualConfigs.forEach(configuration -> updateConfig(configuration.getPath(), configuration));
+        updateConfigs(actualConfigs);
         return updated;
     }
 
@@ -188,12 +190,17 @@ public class MemoryConfigStorage {
         };
     }
 
+    public Set<String> updateConfigs(List<Configuration> configs) {
+        Map<String, Configuration> configsByPath = configs.stream()
+            .collect(toMap(Configuration::getPath, identity()));
+        return updateConfigs(configsByPath);
+    }
+
     public Set<String> updateConfigs(Map<String, Configuration> map) {
-        Set<String> updated = new HashSet<>();
-        map.forEach((path, config) -> {
-            updated.addAll(this.updateConfig(path, config));
-        });
-        return updated;
+        storage.putAll(map);
+        return map.values().stream()
+            .map(this::process)
+            .collect(flatMapping(Collection::stream, toSet()));
     }
 
     public Set<String> processedPaths() {
