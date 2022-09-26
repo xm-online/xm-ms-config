@@ -131,7 +131,7 @@ public class MemoryConfigStorage {
         Set<String> updated = getUpdatePaths(actualConfigs, oldKeys);
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(this::removeConfig);
-        actualConfigs.forEach(configuration -> updateConfig(configuration.getPath(), configuration));
+        updateConfigs(actualConfigs);
         return updated;
     }
 
@@ -188,8 +188,15 @@ public class MemoryConfigStorage {
         };
     }
 
+    public Set<String> updateConfigs(List<Configuration> configs) {
+        Map<String, Configuration> configsByPath = configs.stream()
+            .collect(toMap(Configuration::getPath, identity()));
+        return updateConfigs(configsByPath);
+    }
+
     public Set<String> updateConfigs(Map<String, Configuration> map) {
         Set<String> updated = new HashSet<>();
+        storage.putAll(map);
         map.forEach((path, config) -> {
             updated.addAll(this.updateConfig(path, config));
         });
