@@ -79,6 +79,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public Map<String, Configuration> findConfigurations(List<String> paths, Boolean fetchAll) {
+        if (!fetchAll && paths.isEmpty()) {
+            return Map.of();
+        }
         List<Configuration> actualConfigs = getActualConfigs();
         Set<String> pathsSet = new HashSet<>(paths);
         return actualConfigs.stream()
@@ -168,9 +171,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return findConfigurationsHashSum(getRequiredTenantKeyValue(tenantContextHolder));
     }
 
-    public void updateConfigurationsFromList(List<Configuration> configs) {
-        repositoryProxy.saveOrDeleteEmpty(configs);
-        refreshTenantConfigurations();
+    public String updateConfigurationsFromList(List<Configuration> configs) {
+        String commit = repositoryProxy.saveOrDeleteEmpty(configs);
+        refreshConfiguration();
+        return commit;
     }
 
     @SneakyThrows

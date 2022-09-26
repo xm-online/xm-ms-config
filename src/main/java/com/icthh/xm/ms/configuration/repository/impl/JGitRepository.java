@@ -324,7 +324,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths and delete empty"),
                 () -> configurations.forEach(it -> {
                     if (it.getContent().isEmpty()) {
-                        deleteExistingFile(getPathname(it.getPath()));
+                        deleteExistingFile(it.getPath());
                     } else {
                         writeConfiguration(it);
                     }
