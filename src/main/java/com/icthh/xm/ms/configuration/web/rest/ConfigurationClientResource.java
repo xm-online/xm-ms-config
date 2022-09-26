@@ -31,7 +31,8 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getBooleanParameter;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.http.HttpStatus.CONFLICT;
-import static org.springframework.http.MediaType.*;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @Slf4j
 @RestController

@@ -314,6 +314,26 @@ public class JGitRepository implements PersistenceConfigRepository {
                  getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> deleteExistingFile(path));
     }
+    @Override
+    public String saveOrDeleteEmpty(List<Configuration> configurations) {
+        List<String> paths = configurations.stream().map(Configuration::getPath).collect(toList());
+
+        if (!paths.isEmpty()) {
+            log.info("[{}] Save or delete empty configurations to git by paths {}",
+                getRequestSourceTypeLogName(requestContextHolder), paths);
+            return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths and delete empty"),
+                () -> configurations.forEach(it -> {
+                    if (it.getContent().isEmpty()) {
+                        deleteExistingFile(getPathname(it.getPath()));
+                    } else {
+                        writeConfiguration(it);
+                    }
+                }));
+        }
+        log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
+        return "undefined";
+
+    }
 
     private void deleteExistingFile(final String path) {
         File file = Paths.get(rootDirectory.getAbsolutePath(), path).toFile();

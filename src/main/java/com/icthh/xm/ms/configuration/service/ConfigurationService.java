@@ -16,9 +16,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -78,9 +80,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     public Map<String, Configuration> findConfigurations(List<String> paths, Boolean fetchAll) {
         List<Configuration> actualConfigs = getActualConfigs();
-
+        Set<String> pathsSet = new HashSet<>(paths);
         return actualConfigs.stream()
-            .filter(config -> fetchAll || paths.contains(config.getPath()))
+            .filter(config -> fetchAll || pathsSet.contains(config.getPath()))
             .collect(Collectors.toMap(Configuration::getPath, Function.identity()));
     }
 
@@ -157,17 +159,18 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         List<Configuration> actualConfigs = getActualConfigs();
 
         return new ConfigurationsHashSumDto(actualConfigs.stream()
-            .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
+            .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant) + "/"))
             .map(config -> new ConfigurationHashSum(config.getPath(), sha256Hex(config.getContent())))
             .collect(toList()));
     }
 
     public ConfigurationsHashSumDto findConfigurationsHashSum() {
-        return findConfigurationsHashSum(tenantContextHolder.getTenantKey());
+        return findConfigurationsHashSum(getRequiredTenantKeyValue(tenantContextHolder));
     }
 
-    public String updateConfigurationsFromList(List<Configuration> configs) {
-        return repositoryProxy.setRepositoryState(configs);
+    public void updateConfigurationsFromList(List<Configuration> configs) {
+        repositoryProxy.saveOrDeleteEmpty(configs);
+        refreshTenantConfigurations();
     }
 
     @SneakyThrows
