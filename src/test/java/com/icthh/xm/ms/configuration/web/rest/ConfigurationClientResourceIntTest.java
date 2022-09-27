@@ -10,12 +10,10 @@ import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -318,7 +316,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_hash")
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful())
-            .andDo(print())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
             .andExpect(jsonPath("$..hashSum").value(Matchers.notNullValue()));
     }
@@ -332,7 +329,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         String contentToDelete = "very cool content to delete";
         String updatedContent = "very cool updated content";
         Configuration updatedConfiguration = new Configuration(path, updatedContent);
-        Configuration wrongConfiguration = new Configuration(path, "wrong content");
 
         configurationService.updateConfiguration(new Configuration(path, contentToUpdate));
         configurationService.updateConfiguration(new Configuration(path2, contentToDelete));
@@ -343,7 +339,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful());
 
         Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
-        assertTrue(configurationMap.get(path).getContent().equals(updatedContent));
+        assertEquals(updatedContent, configurationMap.get(path).getContent());
         assertFalse(configurationMap.containsKey(path2));
     }
 
