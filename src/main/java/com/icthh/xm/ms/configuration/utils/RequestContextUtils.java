@@ -5,6 +5,9 @@ import com.icthh.xm.ms.configuration.config.RequestContextKeys;
 import com.icthh.xm.ms.configuration.domain.RequestSourceType;
 import lombok.experimental.UtilityClass;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -43,6 +46,14 @@ public class RequestContextUtils {
 
     public static boolean isRequestSourceNameExist(XmRequestContextHolder holder) {
         return getRequestSourceName(holder).isPresent();
+    }
+
+    public static boolean getBooleanParameter(HttpServletRequest request, String paramName) {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        if (parameterMap.containsKey(paramName) && parameterMap.get("processed").length > 0) {
+            return Boolean.parseBoolean(parameterMap.get("processed")[0]);
+        }
+        return false;
     }
 
 }

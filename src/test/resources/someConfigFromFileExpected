@@ -5,4 +5,4 @@ because that started with environment.
 ${environment.variableThatNotDefined}
 DEFAULT_VALUE
 ENV_DEF_VALUE
-${environment.variableFromFile}
+VALUE_FROM_FILE

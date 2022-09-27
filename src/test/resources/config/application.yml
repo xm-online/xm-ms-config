@@ -98,6 +98,7 @@ xm-config:
     kafka-config-topic: config_topic
 
 application:
+    env-config-externalization-enabled: false
     kafka-enabled: false
     git:
         uri: null
@@ -105,4 +106,6 @@ application:
         password: null
         max-wait-time-second: 30
     kafka-system-queue: system_queue
-
+    lep:
+        tenant-script-storage: XM_MS_CONFIG
+        processor-enabled: true

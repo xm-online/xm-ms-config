@@ -17,6 +17,7 @@ import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.zip.ZipInputStream;
 
 @Slf4j
 @RestController
@@ -130,7 +130,8 @@ public class ConfigurationAdminResource {
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         String version = request.getParameter("version");
-        return getConfiguration(request.getParameterMap().containsKey("toJson"), path, version);
+        Optional<Configuration> configuration = configurationService.findConfiguration(path, version);
+        return toResponse(request.getParameterMap().containsKey("toJson"), path, configuration);
     }
 
     @GetMapping(value = "/version")
@@ -142,14 +143,18 @@ public class ConfigurationAdminResource {
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path) {
-        return getConfiguration(toJson, path, null);
+        return getConfiguration(toJson, false, path);
     }
 
-    protected ResponseEntity<String> getConfiguration(Boolean toJson, String path, String version) {
-        Configuration maybeConfiguration = configurationService.findConfiguration(path, version).orElseThrow(
+    protected ResponseEntity<String> getConfiguration(Boolean toJson, Boolean processed, String path) {
+        return toResponse(toJson, path, configurationService.findProcessedConfiguration(path, processed));
+    }
+
+    protected ResponseEntity<String> toResponse(Boolean toJson, String path, Optional<Configuration> maybeConfiguration) {
+        Configuration configuration = maybeConfiguration.orElseThrow(
             () -> new EntityNotFoundException("Not found configuration.")
         );
-        return createResponse(toJson, path, maybeConfiguration);
+        return createResponse(toJson, path, configuration);
     }
 
     protected ResponseEntity<String> createResponse(Boolean toJson, String path, Configuration maybeConfiguration) {
@@ -228,6 +233,15 @@ public class ConfigurationAdminResource {
     public ResponseEntity<Void> updateByZipFile(@RequestParam(value = "file") MultipartFile file) {
         configurationService.updateConfigurationsFromZip(file);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = CONFIG + TENANTS + "/{tenant}" + "/hash")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_HASH_SUM')")
+    @PrivilegeDescription("Privilege to get configuration hash sum for admin")
+    public ResponseEntity<ConfigurationsHashSumDto> getConfigurationsHashSum(@PathVariable String tenant) {
+        return ResponseEntity.ok(configurationService.findConfigurationsHashSum(tenant));
     }
 
     protected String extractPath(HttpServletRequest request) {

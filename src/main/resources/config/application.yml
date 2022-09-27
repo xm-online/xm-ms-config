@@ -148,6 +148,9 @@ application:
         delay: 10000 #in milliseconds
         multiplier: 2
     env-config-externalization-enabled: false
+    lep:
+        tenant-script-storage: XM_MS_CONFIG
+        processor-enabled: false
 
 gracefulShutdown:
     enabled: false

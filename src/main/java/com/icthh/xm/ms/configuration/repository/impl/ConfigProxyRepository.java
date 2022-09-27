@@ -104,9 +104,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public void updateConfigurationInMemory(Configuration configuration, String commit) {
-        storage.updateConfig(configuration.getPath(), configuration);
+        Set<String> updated = storage.updateConfig(configuration.getPath(), configuration);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, singletonList(configuration.getPath()));
+        configTopicProducer.notifyConfigurationChanged(commit, new ArrayList<>(updated));
     }
 
     @Override
@@ -127,10 +127,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
         Map<String, Configuration> map = new HashMap<>();
         configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
-        storage.updateConfigs(map);
+        Set<String> updated = storage.updateConfigs(map);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, configurations.stream()
-            .map(Configuration::getPath).collect(toList()));
+        configTopicProducer.notifyConfigurationChanged(commit, new ArrayList<>(updated));
     }
 
     @Override
@@ -202,6 +201,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             .collect(toList());
 
         Set<String> updated = storage.refreshStorage(actualConfigs, tenant);
+        storage.reprocess(tenant);
+        updated.addAll(storage.getConfigPathsList(tenant));
+        updateVersion(configurationList.getCommit());
         notifyChanged(updated);
     }
 

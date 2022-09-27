@@ -181,7 +181,9 @@ repositories {
 
 dependencies {
     // import JHipster dependencies BOM
-    implementation platform("io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}" )
+    implementation platform("io.github.jhipster:jhipster-dependencies:${jhipster_dependencies_version}" ) {
+        exclude group: 'com.jcraft', module: 'jsch'
+    }
 
     // Use ", version: jhipster_dependencies_version, changing: true" if you want
     // to use a SNAPSHOT release instead of a stable release
@@ -267,7 +269,11 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-permission:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
-    implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
+    implementation "com.icthh.xm.commons:xm-commons-lep:${xm_commons_version}"
+    implementation ("org.eclipse.jgit:org.eclipse.jgit:${jgit_version}") {
+        exclude group: 'com.jcraft', module: 'jsch'
+    }
+    implementation 'com.github.mwiede:jsch:0.2.0'
     implementation "com.ryantenney.metrics:metrics-spring:${metrics_spring_version}"
 
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"

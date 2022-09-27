@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
@@ -13,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +27,7 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathP
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -97,20 +98,24 @@ public class MemoryConfigStorage {
         return keys;
     }
 
-    public void updateConfig(String path, Configuration config) {
+    public Set<String> updateConfig(String path, Configuration config) {
         storage.put(path, config);
-        process(config);
+        return process(config);
     }
 
     public Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant) {
-        List<TenantAlias> parents = tenantAliasService.getTenantAliasTree().getParents(tenant);
         Set<String> oldKeys = getConfigPathsList(tenant);
         Set<String> updated = refreshStorage(actualConfigs, oldKeys);
-        parents.stream().map(TenantAlias::getKey).forEach(this::reprocess);
+        reprocess(tenant);
         return updated;
     }
 
-    private void reprocess(String tenant) {
+    public void reprocess(String tenant) {
+        List<TenantAlias> parents = tenantAliasService.getTenantAliasTree().getParents(tenant);
+        parents.stream().map(TenantAlias::getKey).forEach(this::reprocessTenant);
+    }
+
+    private void reprocessTenant(String tenant) {
         String tenantPathPrefix = getTenantPathPrefix(tenant);
         storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
@@ -128,7 +133,7 @@ public class MemoryConfigStorage {
         Set<String> updated = getUpdatePaths(actualConfigs, oldKeys);
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(this::removeConfig);
-        actualConfigs.forEach(configuration -> updateConfig(configuration.getPath(), configuration));
+        updateConfigs(actualConfigs);
         return updated;
     }
 
@@ -148,10 +153,11 @@ public class MemoryConfigStorage {
     }
 
     @SuppressWarnings("ConstantConditions")
-    private void process(Configuration configuration) {
+    private Set<String> process(Configuration configuration) {
         Set<Configuration> configurations = singletonSet(configuration);
         configurations = processConfiguration(configurations, publicConfigurationProcessors, processedStorage);
-        processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
+        configurations = processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
+        return configurations.stream().map(Configuration::getPath).collect(toSet());
     }
 
     private Set<Configuration> processConfiguration(Set<Configuration> configurations,
@@ -184,8 +190,17 @@ public class MemoryConfigStorage {
         };
     }
 
-    public void updateConfigs(Map<String, Configuration> map) {
-        map.forEach(this::updateConfig);
+    public Set<String> updateConfigs(List<Configuration> configs) {
+        Map<String, Configuration> configsByPath = configs.stream()
+            .collect(toMap(Configuration::getPath, identity()));
+        return updateConfigs(configsByPath);
+    }
+
+    public Set<String> updateConfigs(Map<String, Configuration> map) {
+        storage.putAll(map);
+        return map.values().stream()
+            .map(this::process)
+            .collect(flatMapping(Collection::stream, toSet()));
     }
 
     public Set<String> processedPaths() {

@@ -9,6 +9,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.AntPathMatcher;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,7 +57,7 @@ public final class ConfigPathUtils {
         return matcher.match(PATTERN, path);
     }
 
-    public String printPathsWithLimit(List<String> paths) {
+    public String printPathsWithLimit(Collection<String> paths) {
         if (paths != null) {
             List<String> result = paths.stream().limit(MAX_PATHS_TO_PRINT).collect(Collectors.toList());
             if (paths.size() > MAX_PATHS_TO_PRINT) {

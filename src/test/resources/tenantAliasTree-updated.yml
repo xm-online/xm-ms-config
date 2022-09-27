@@ -1,0 +1,13 @@
+---
+tenantAliasTree:
+  - key: MAIN
+    children:
+      - key: MAINCHILDTENANT
+      - key: SUBMAIN
+      - key: ONEMORELIFETENANT
+        children:
+          - key: LIFETENANT
+  - key: NEWPARENTTENANT
+  - key: NEWPARENTTENANTSECOND
+    children:
+        - key: CHILDTENANT

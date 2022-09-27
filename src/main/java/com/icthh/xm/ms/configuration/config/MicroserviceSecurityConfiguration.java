@@ -1,12 +1,16 @@
 package com.icthh.xm.ms.configuration.config;
 
 import com.icthh.xm.commons.permission.constants.RoleConstant;
-import com.icthh.xm.ms.configuration.security.DomainJwtAccessTokenConverter;
+import com.icthh.xm.commons.security.oauth2.ConfigSignatureVerifierClient;
+import com.icthh.xm.commons.security.oauth2.OAuth2JwtAccessTokenConverter;
+import com.icthh.xm.commons.security.oauth2.OAuth2Properties;
+import com.icthh.xm.commons.security.oauth2.OAuth2SignatureVerifierClient;
 import com.icthh.xm.ms.configuration.service.TokenKeyService;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.client.loadbalancer.RestTemplateCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +39,12 @@ import static com.icthh.xm.ms.configuration.config.Constants.PUBLIC_KEY;
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerAdapter {
 
+    private final OAuth2Properties oAuth2Properties;
+
+    public MicroserviceSecurityConfiguration(OAuth2Properties oAuth2Properties) {
+        this.oAuth2Properties = oAuth2Properties;
+    }
+
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http
@@ -62,11 +72,8 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
     }
 
     @Bean
-    public JwtAccessTokenConverter jwtAccessTokenConverter(TokenKeyService tokenKeyService)
-            throws CertificateException, IOException {
-        DomainJwtAccessTokenConverter converter = new DomainJwtAccessTokenConverter();
-        converter.setVerifierKey(getKeyFromConfigServer(tokenKeyService));
-        return converter;
+    public JwtAccessTokenConverter jwtAccessTokenConverter(OAuth2SignatureVerifierClient signatureVerifierClient) {
+        return new OAuth2JwtAccessTokenConverter(oAuth2Properties, signatureVerifierClient);
     }
 
     @Bean
@@ -76,20 +83,10 @@ public class MicroserviceSecurityConfiguration extends ResourceServerConfigurerA
         return restTemplate;
     }
 
-    private String getKeyFromConfigServer(TokenKeyService tokenKeyService) throws CertificateException, IOException {
-        String content = tokenKeyService.getKey();
-
-        if (StringUtils.isBlank(content)) {
-            throw new CertificateException("Certificate not found.");
-        }
-
-        try (InputStream fin = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8))) {
-
-            CertificateFactory f = CertificateFactory.getInstance(CERTIFICATE);
-            X509Certificate certificate = (X509Certificate) f.generateCertificate(fin);
-            PublicKey pk = certificate.getPublicKey();
-            return String.format(PUBLIC_KEY, Base64.encodeBase64String(pk.getEncoded()));
-        }
+    @Bean
+    public ConfigSignatureVerifierClient configSignatureVerifierClient(
+        @Qualifier("loadBalancedRestTemplate") RestTemplate restTemplate) {
+        return new ConfigSignatureVerifierClient(oAuth2Properties, restTemplate);
     }
 
 }

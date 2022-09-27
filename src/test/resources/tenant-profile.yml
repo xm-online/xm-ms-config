@@ -1,0 +1,3 @@
+---
+environment:
+  variableFromFile: VALUE_FROM_FILE
