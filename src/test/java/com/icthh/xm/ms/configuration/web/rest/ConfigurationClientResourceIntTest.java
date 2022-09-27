@@ -9,10 +9,13 @@ import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -307,15 +310,17 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testGetConfigurationsHashSum() {
-        String path = CONFIG + TENANTS + "/"+TENANT_NAME+"/my-config.yml";
+        String path = CONFIG + TENANTS + "/"+TENANT_NAME+"/folder/subfolder/documentname";
         String content = "very cool content";
 
         configurationService.updateConfiguration(new Configuration(path, content));
 
         mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_hash")
-                .contentType(MediaType.TEXT_PLAIN))
+                .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful())
-            .andExpect(jsonPath("$..path").value(Matchers.contains(path)));
+            .andDo(print())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$..hashSum").value(Matchers.notNullValue()));
     }
 
     @Test
@@ -327,6 +332,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         String contentToDelete = "very cool content to delete";
         String updatedContent = "very cool updated content";
         Configuration updatedConfiguration = new Configuration(path, updatedContent);
+        Configuration wrongConfiguration = new Configuration(path, "wrong content");
 
         configurationService.updateConfiguration(new Configuration(path, contentToUpdate));
         configurationService.updateConfiguration(new Configuration(path2, contentToDelete));
@@ -337,8 +343,8 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful());
 
         Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
-        assertEquals(configurationMap, Map.of(path, updatedConfiguration));
-
+        assertTrue(configurationMap.get(path).getContent().equals(updatedContent));
+        assertFalse(configurationMap.containsKey(path2));
     }
 
     @Test

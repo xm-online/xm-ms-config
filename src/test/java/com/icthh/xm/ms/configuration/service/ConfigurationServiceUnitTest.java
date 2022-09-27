@@ -14,6 +14,7 @@ import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
 import org.junit.Before;
 import org.junit.Test;
@@ -121,10 +122,11 @@ public class ConfigurationServiceUnitTest {
     public void findConfigurations() {
         String firstPath = "firstPath";
         String secondPath = "secondPath";
+        String thirdPath = "thirdPath";
         Configuration firstConfig = new Configuration(firstPath, "firstContent");
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
-        when(configProxyRepository.find(firstPath, null)).thenReturn(new ConfigurationItem("firstCommit", firstConfig));
-        when(configProxyRepository.find(secondPath, null)).thenReturn(new ConfigurationItem("secondCommit", secondConfig));
+        Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig)));
 
         Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath), false);
 
@@ -132,8 +134,28 @@ public class ConfigurationServiceUnitTest {
         assertThat(actual.get(firstPath)).isEqualTo(firstConfig);
         assertThat(actual.get(secondPath)).isEqualTo(secondConfig);
 
-        verify(configProxyRepository).find(eq(firstPath), isNull());
-        verify(configProxyRepository).find(eq(secondPath), isNull());
+        verify(configProxyRepository).findAll();
+        verifyNoMoreInteractions(configProxyRepository);
+    }
+
+    @Test
+    public void findConfigurationsAll() {
+        String firstPath = "firstPath";
+        String secondPath = "secondPath";
+        String thirdPath = "thirdPath";
+        Configuration firstConfig = new Configuration(firstPath, "firstContent");
+        Configuration secondConfig = new Configuration(secondPath, "secondContent");
+        Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig)));
+
+        Map<String, Configuration> actual = configurationService.findConfigurations(List.of(), true);
+
+        assertThat(actual).hasSize(3);
+        assertThat(actual.get(firstPath)).isEqualTo(firstConfig);
+        assertThat(actual.get(secondPath)).isEqualTo(secondConfig);
+        assertThat(actual.get(thirdPath)).isEqualTo(thirdConfig);
+
+        verify(configProxyRepository).findAll();
         verifyNoMoreInteractions(configProxyRepository);
     }
 
