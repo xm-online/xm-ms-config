@@ -308,7 +308,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testGetConfigurationsHashSum() {
-        String path = CONFIG + TENANTS + "/"+TENANT_NAME+"/folder/subfolder/documentname";
+        String path = CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/subfolder/documentname";
         String content = "very cool content";
 
         configurationService.updateConfiguration(new Configuration(path, content));
