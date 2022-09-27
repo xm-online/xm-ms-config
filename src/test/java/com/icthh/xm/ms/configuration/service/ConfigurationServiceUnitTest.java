@@ -127,6 +127,7 @@ public class ConfigurationServiceUnitTest {
         Configuration firstConfig = new Configuration(firstPath, "firstContent");
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
+
         when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig)));
 
         Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath), false);
@@ -144,10 +145,12 @@ public class ConfigurationServiceUnitTest {
         String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc1";
         String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc2";
         String thirdPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc3";
+        String fourthPath = CONFIG + TENANTS + "/ANOTHERTENANT/doc4";
         Configuration firstConfig = new Configuration(firstPath, "firstContent");
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
-        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig)));
+        Configuration fourthConfig = new Configuration(fourthPath, "fourthContent");
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
 
         Map<String, Configuration> actual = configurationService.findConfigurations(List.of(), true);
 
