@@ -1,5 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
+import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
@@ -30,6 +32,7 @@ import java.util.Optional;
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigurationServiceUnitTest {
 
+    public static final String TENANT_NAME = "tenant";
     @InjectMocks
     private ConfigurationService configurationService;
     @Mock
@@ -41,7 +44,7 @@ public class ConfigurationServiceUnitTest {
 
     @Before
     public void before() {
-        when(tenantContext.getTenantKey()).thenReturn(Optional.of(TenantKey.valueOf("tenant")));
+        when(tenantContext.getTenantKey()).thenReturn(Optional.of(TenantKey.valueOf(TENANT_NAME)));
         when(tenantContextHolder.getContext()).thenReturn(tenantContext);
     }
 
@@ -113,14 +116,14 @@ public class ConfigurationServiceUnitTest {
     public void refreshTenantConfigurations() {
         configurationService.refreshTenantConfigurations();
 
-        verify(configProxyRepository).refreshTenant("tenant");
+        verify(configProxyRepository).refreshTenant(TENANT_NAME);
     }
 
     @Test
     public void findConfigurations() {
-        String firstPath = "firstPath";
-        String secondPath = "secondPath";
-        String thirdPath = "thirdPath";
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc2";
+        String thirdPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc3";
         Configuration firstConfig = new Configuration(firstPath, "firstContent");
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
@@ -138,9 +141,9 @@ public class ConfigurationServiceUnitTest {
 
     @Test
     public void findConfigurationsAll() {
-        String firstPath = "firstPath";
-        String secondPath = "secondPath";
-        String thirdPath = "thirdPath";
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc2";
+        String thirdPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc3";
         Configuration firstConfig = new Configuration(firstPath, "firstContent");
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");

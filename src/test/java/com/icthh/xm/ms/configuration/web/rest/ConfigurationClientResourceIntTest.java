@@ -49,7 +49,7 @@ import java.util.Map;
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
 public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
-    public static final String TENANT_NAME = "test75";
+    public static final String TENANT_NAME = "LIFETENANT";
 
     @MockBean
     private ConfigTopicProducer configTopicProducer;
@@ -260,8 +260,8 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testGetConfigurationsByPaths() {
-        String firstPath = CONFIG + TENANTS + "/TENANT1/documentname1";
-        String secondPath = CONFIG + TENANTS + "/TENANT1/documentname2";
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname2";
         String firstContent = "first content";
         String secondContent = "second content";
 
@@ -291,7 +291,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         tenantAliasService.processConfiguration(config, Map.of(), Map.of());
 
         String path = CONFIG + TENANTS + "/MAIN/my-config.yml";
-        String path2 = CONFIG + TENANTS + "/LIFETENANT/my-config.yml";
+        String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
         String content = "my cool config";
         Configuration mainValue = new Configuration(path, content);
 
@@ -323,8 +323,8 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void updateTenantsFromJson() {
-        String path = CONFIG + TENANTS + "/TENANT1/my-config.yml";
-        String path2 = CONFIG + TENANTS + "/TENANT2/my-config.yml";
+        String path = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
+        String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config2.yml";
         String contentToUpdate = "very cool content to update";
         String contentToDelete = "very cool content to delete";
         String updatedContent = "very cool updated content";

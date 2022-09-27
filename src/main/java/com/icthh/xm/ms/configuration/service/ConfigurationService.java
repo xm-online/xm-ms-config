@@ -28,6 +28,7 @@ import java.util.zip.ZipInputStream;
 
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
+import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -84,8 +85,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         }
         List<Configuration> actualConfigs = getActualConfigs();
         Set<String> pathsSet = new HashSet<>(paths);
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
         return actualConfigs.stream()
-            .filter(config -> fetchAll || pathsSet.contains(config.getPath()))
+            .filter(config -> isConfigUnderTenant(config, tenant) && (fetchAll || pathsSet.contains(config.getPath())))
             .collect(Collectors.toMap(Configuration::getPath, Function.identity()));
     }
 
@@ -162,7 +164,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         List<Configuration> actualConfigs = getActualConfigs();
 
         return new ConfigurationsHashSumDto(actualConfigs.stream()
-            .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant) + "/"))
+            .filter(config -> isConfigUnderTenant(config, tenant))
             .map(config -> new ConfigurationHashSum(config.getPath(), sha256Hex(config.getContent())))
             .collect(toList()));
     }
@@ -172,8 +174,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public String updateConfigurationsFromList(List<Configuration> configs) {
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
+        configs = configs.stream().filter(it -> isConfigUnderTenant(it, tenant)).collect(Collectors.toList());
         String commit = repositoryProxy.saveOrDeleteEmpty(configs);
-        refreshConfiguration();
+        refreshTenantConfigurations();
         return commit;
     }
 
@@ -208,6 +212,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private List<Configuration> getActualConfigs() {
         ConfigurationList configurationList = repositoryProxy.findAll();
         return configurationList.getData();
+    }
+
+    private Boolean isConfigUnderTenant(Configuration config, String tenant) {
+        return config.getPath().startsWith(getTenantPathPrefix(tenant) + "/");
     }
 
 }
