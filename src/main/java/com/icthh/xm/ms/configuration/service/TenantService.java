@@ -100,7 +100,10 @@ public class TenantService {
 
     public Set<String> getServices(String tenantKey) {
         Map<String, Set<TenantState>> tenantsList = getTenantsList();
-        return tenantsList.entrySet().stream().filter(it -> containsTenant(it.getValue(), tenantKey)).map(Map.Entry::getKey).collect(Collectors.toSet());
+        return tenantsList.entrySet().stream()
+                    .filter(it -> containsTenant(it.getValue(), tenantKey))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
     }
 
     private Boolean containsTenant(Set<TenantState> tenants, String tenantKey) {
