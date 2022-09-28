@@ -16,6 +16,7 @@ import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -170,5 +171,48 @@ public class ConfigurationServiceUnitTest {
         assertThat(actual).hasSize(0);
 
         verifyZeroInteractions(configProxyRepository);
+    }
+
+    @Test
+    public void findConfigurationsHashSum() {
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc2";
+        String thirdPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc3";
+        String fourthPath = CONFIG + TENANTS + "/ANOTHERTENANT/doc4";
+        Configuration firstConfig = new Configuration(firstPath, "firstContent");
+        Configuration secondConfig = new Configuration(secondPath, "secondContent");
+        Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
+        Configuration fourthConfig = new Configuration(fourthPath, "fourthContent");
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
+
+        List<ConfigurationHashSum> configurationsHashSum = configurationService.findConfigurationsHashSum().getConfigurationsHashSum();
+
+        assertThat(configurationsHashSum).hasSize(3)
+            .extracting(ConfigurationHashSum::getPath)
+            .containsExactlyInAnyOrder(firstPath, secondPath, thirdPath);
+
+        assertThat(configurationsHashSum).extracting(ConfigurationHashSum::getHashSum).isNotEmpty();
+
+        verify(configProxyRepository).findAll();
+        verifyNoMoreInteractions(configProxyRepository);
+    }
+
+    @Test
+    public void updateConfigurationsFromList() {
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc2";
+        String thirdPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/doc3";
+        String fourthPath = CONFIG + TENANTS + "/ANOTHERTENANT/doc4";
+        Configuration firstConfig = new Configuration(firstPath, "updateContent");
+        Configuration secondConfig = new Configuration(secondPath, "");
+        Configuration thirdConfig = new Configuration(thirdPath, "updateContent");
+        Configuration fourthConfig = new Configuration(fourthPath, "updateContent");
+
+        configurationService.updateConfigurationsFromList(List.of(firstConfig, secondConfig, thirdConfig, fourthConfig));
+
+        verify(configProxyRepository).saveOrDeleteEmpty(List.of(firstConfig, secondConfig, thirdConfig));
+        verify(configProxyRepository).refreshTenant(TENANT_NAME);
+        verifyNoMoreInteractions(configProxyRepository);
+
     }
 }
