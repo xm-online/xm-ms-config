@@ -154,7 +154,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
         ObjectMapper mapper = new ObjectMapper();
 
-        mockMvc.perform(get("/api/services/tenant")
+        mockMvc.perform(get("/api/tenants/tenant/services")
             .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))

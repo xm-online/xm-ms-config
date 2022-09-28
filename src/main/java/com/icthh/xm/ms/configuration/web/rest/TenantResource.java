@@ -65,7 +65,7 @@ public class TenantResource {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping(value = "/services/{tenantKey}")
+    @GetMapping(value = "/tenants/{tenantKey}/services")
     @Timed
     @PostFilter("hasPermission({'returnObject': filterObject, 'log': false}, 'CONFIG.SERVICES.GET_LIST')")
     @PrivilegeDescription("Privilege to get all config services")
