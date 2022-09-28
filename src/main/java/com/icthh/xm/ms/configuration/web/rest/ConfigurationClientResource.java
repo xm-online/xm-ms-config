@@ -163,9 +163,9 @@ public class ConfigurationClientResource {
 
     @PostMapping(value = PROFILE + "/configs_update", consumes = {APPLICATION_JSON_VALUE})
     @Timed
-    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.UPDATE.FROM.LIST')")
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.UPDATE_LIST')")
     @PrivilegeDescription("Privilege to refresh config for client")
-    public ResponseEntity<Void> updateFromList(@RequestBody List<Configuration> configs, HttpServletRequest request) {
+    public ResponseEntity<Void> updateFromList(@RequestBody List<Configuration> configs) {
         configurationService.updateConfigurationsFromList(configs);
         return ResponseEntity.ok().build();
     }
