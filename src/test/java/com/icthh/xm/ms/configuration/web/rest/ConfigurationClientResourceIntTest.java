@@ -4,8 +4,12 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
+import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
+import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,17 +19,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,12 +43,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.Map;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
 public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
-    public static final String TENANT_NAME = "test75";
+    public static final String TENANT_NAME = "LIFETENANT";
 
     @MockBean
     private ConfigTopicProducer configTopicProducer;
@@ -63,6 +70,12 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     private TenantContextHolder tenantContextHolder;
 
     private MockMvc mockMvc;
+
+    @Autowired
+    private TenantAliasService tenantAliasService;
+
+    @Autowired
+    ConfigurationService configurationService;
 
     @Before
     public void setup() {
@@ -247,8 +260,8 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testGetConfigurationsByPaths() {
-        String firstPath = CONFIG + TENANTS + "/TENANT1/documentname1";
-        String secondPath = CONFIG + TENANTS + "/TENANT1/documentname2";
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname2";
         String firstContent = "first content";
         String secondContent = "second content";
 
@@ -269,6 +282,65 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
             .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
             .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,secondContent)));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testGetTreeConfigurationsByPaths() {
+        Configuration config = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
+        tenantAliasService.processConfiguration(config, Map.of(), Map.of());
+
+        String path = CONFIG + TENANTS + "/MAIN/my-config.yml";
+        String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
+        String content = "my cool config";
+        Configuration mainValue = new Configuration(path, content);
+
+        configurationService.updateConfiguration(mainValue);
+
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
+                .param("fetchAll", "false")
+                .content(new ObjectMapper().writeValueAsString(List.of(path2)))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(jsonPath("$..content").value(Matchers.contains(content)));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testGetConfigurationsHashSum() {
+        String path = CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/subfolder/documentname";
+        String content = "very cool content";
+
+        configurationService.updateConfiguration(new Configuration(path, content));
+
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_hash")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$..hashSum").value(Matchers.notNullValue()));
+    }
+
+    @Test
+    @SneakyThrows
+    public void updateTenantsFromJson() {
+        String path = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
+        String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config2.yml";
+        String contentToUpdate = "very cool content to update";
+        String contentToDelete = "very cool content to delete";
+        String updatedContent = "very cool updated content";
+        Configuration updatedConfiguration = new Configuration(path, updatedContent);
+
+        configurationService.updateConfiguration(new Configuration(path, contentToUpdate));
+        configurationService.updateConfiguration(new Configuration(path2, contentToDelete));
+
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_update")
+                .content(new ObjectMapper().writeValueAsString(List.of(updatedConfiguration, new Configuration(path2, ""))))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().is2xxSuccessful());
+
+        Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
+        assertEquals(updatedContent, configurationMap.get(path).getContent());
+        assertFalse(configurationMap.containsKey(path2));
     }
 
     @Test

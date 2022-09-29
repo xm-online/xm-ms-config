@@ -11,11 +11,9 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.processors.ConfigurationProcessor;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -205,6 +202,11 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         updated.addAll(storage.getConfigPathsList(tenant));
         updateVersion(configurationList.getCommit());
         notifyChanged(updated);
+    }
+
+    @Override
+    public String saveOrDeleteEmpty(List<Configuration> configurations) {
+        return persistenceConfigRepository.saveOrDeleteEmpty(configurations);
     }
 
     @Override
