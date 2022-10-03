@@ -16,9 +16,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -76,11 +78,15 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return findConfiguration(path, null);
     }
 
-    public Map<String, Configuration> findConfigurations(List<String> paths) {
-        return paths.stream()
-            .map(this::findConfiguration)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+    public Map<String, Configuration> findConfigurations(List<String> paths, Boolean fetchAll) {
+        if (!fetchAll && paths.isEmpty()) {
+            return Map.of();
+        }
+        List<Configuration> actualConfigs = getActualConfigs();
+        Set<String> pathsSet = new HashSet<>(paths);
+        return actualConfigs.stream()
+            .filter(this::isConfigUnderTenant)
+            .filter(config -> fetchAll || pathsSet.contains(config.getPath()))
             .collect(Collectors.toMap(Configuration::getPath, Function.identity()));
     }
 
@@ -154,13 +160,23 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public ConfigurationsHashSumDto findConfigurationsHashSum(String tenant) {
-        ConfigurationList configurationList = repositoryProxy.findAll();
-        List<Configuration> actualConfigs = configurationList.getData();
+        List<Configuration> actualConfigs = getActualConfigs();
 
         return new ConfigurationsHashSumDto(actualConfigs.stream()
-            .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
+            .filter(config -> isConfigUnderTenant(config, tenant))
             .map(config -> new ConfigurationHashSum(config.getPath(), sha256Hex(config.getContent())))
             .collect(toList()));
+    }
+
+    public ConfigurationsHashSumDto findConfigurationsHashSum() {
+        return findConfigurationsHashSum(getRequiredTenantKeyValue(tenantContextHolder));
+    }
+
+    public String updateConfigurationsFromList(List<Configuration> configs) {
+        configs = configs.stream().filter(this::isConfigUnderTenant).collect(toList());
+        String commit = repositoryProxy.saveOrDeleteEmpty(configs);
+        refreshTenantConfigurations();
+        return commit;
     }
 
     @SneakyThrows
@@ -189,6 +205,19 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         }
 
         return configurations;
+    }
+
+    private List<Configuration> getActualConfigs() {
+        ConfigurationList configurationList = repositoryProxy.findAll();
+        return configurationList.getData();
+    }
+
+    private Boolean isConfigUnderTenant(Configuration config, String tenant) {
+        return config.getPath().startsWith(getTenantPathPrefix(tenant) + "/");
+    }
+
+    private Boolean isConfigUnderTenant(Configuration config) {
+        return isConfigUnderTenant(config, getRequiredTenantKeyValue(tenantContextHolder));
     }
 
 }

@@ -28,5 +28,7 @@ public interface PersistenceConfigRepository {
 
     String delete(String path);
 
+    String saveOrDeleteEmpty(List<Configuration> configurations);
+
     void recloneConfiguration();
 }

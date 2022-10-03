@@ -7,6 +7,7 @@ import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -146,10 +147,27 @@ public class ConfigurationClientResource {
     @PostMapping(value = PROFILE + "/configs_map")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths) {
+    public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths,
+                                                                               @RequestParam(name = "fetchAll", required = false, defaultValue = "false") Boolean fetchAll) {
         List<String> nonNullPaths = Optional.ofNullable(paths).orElseGet(Collections::emptyList);
-        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths);
+        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths, fetchAll);
         return ResponseEntity.ok(configurations);
+    }
+
+    @GetMapping(value = PROFILE + "/configs_hash")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<ConfigurationsHashSumDto> getConfigurationsHashSum() {
+        return ResponseEntity.ok(configurationService.findConfigurationsHashSum());
+    }
+
+    @PostMapping(value = PROFILE + "/configs_update", consumes = {APPLICATION_JSON_VALUE})
+    @Timed
+    @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.UPDATE_LIST')")
+    @PrivilegeDescription("Privilege to refresh config for client")
+    public ResponseEntity<Void> updateFromList(@RequestBody List<Configuration> configs) {
+        configurationService.updateConfigurationsFromList(configs);
+        return ResponseEntity.ok().build();
     }
 
     private String extractPath(HttpServletRequest request) {
