@@ -1,10 +1,13 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +17,7 @@ import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,5 +132,38 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
                 });
     }
 
+    @Test
+    @SneakyThrows
+    public void testGetServices() {
+        mockMvc.perform(post("/api/tenants/entity")
+                .content("tenant")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post("/api/tenants/uaa")
+                .content("tenant")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post("/api/tenants/dashboard")
+                .content("tenant")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post("/api/tenants/entity")
+                .content("tenant2")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        mockMvc.perform(get("/api/tenants/tenant/services")
+            .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andDo(result -> {
+                CollectionType stringSet = mapper.getTypeFactory().constructCollectionType(Set.class, String.class);
+                Set<String> services = mapper.readValue(result.getResponse().getContentAsString(), stringSet);
+
+                assertThat(services).hasSize(3).containsExactlyInAnyOrder("entity", "uaa", "dashboard");
+            });
+    }
 
 }

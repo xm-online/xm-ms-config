@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -97,4 +98,15 @@ public class TenantService {
         return getTenantsList().getOrDefault(serviceName, emptySet());
     }
 
+    public Set<String> getServices(String tenantKey) {
+        Map<String, Set<TenantState>> tenantsList = getTenantsList();
+        return tenantsList.entrySet().stream()
+                    .filter(it -> containsTenant(it.getValue(), tenantKey))
+                    .map(Map.Entry::getKey)
+                    .collect(Collectors.toSet());
+    }
+
+    private Boolean containsTenant(Set<TenantState> tenants, String tenantKey) {
+        return tenants.stream().anyMatch(it -> it.getName().equals(tenantKey));
+    }
 }
