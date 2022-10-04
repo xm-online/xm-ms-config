@@ -1,5 +1,7 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,7 +9,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +18,6 @@ import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import lombok.SneakyThrows;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,6 +164,21 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
                 assertThat(services).hasSize(3).containsExactlyInAnyOrder("entity", "uaa", "dashboard");
             });
+    }
+
+    @Test
+    @SneakyThrows
+    public void testAddParent() {
+        mockMvc.perform(post(TENANT_ALIAS_CONFIG)
+                .content(loadFile("tenantAliasTreeToUpdateParent.yml"))
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(get("/api/tenants/SUBMAIN/add_parent")
+                .content("NEWPARENTTENANT")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
     }
 
 }
