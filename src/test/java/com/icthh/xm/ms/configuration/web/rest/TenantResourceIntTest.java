@@ -25,6 +25,7 @@ import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import lombok.SneakyThrows;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,11 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
                 .setControllerAdvice(exceptionTranslator)
                 .build();
         TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
+    }
+
+    @After
+    public void tearDown() {
+        tenantContextHolder.getPrivilegedContext().destroyCurrentContext();
     }
 
     @Test
