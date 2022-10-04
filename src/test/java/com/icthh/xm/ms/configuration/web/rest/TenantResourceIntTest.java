@@ -13,10 +13,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,6 +29,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Map;
 import java.util.Set;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
@@ -43,6 +46,9 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
     @Autowired
     private ExceptionTranslator exceptionTranslator;
+
+    @Autowired
+    private TenantAliasService tenantAliasService;
 
     private MockMvc mockMvc;
 
@@ -169,12 +175,10 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testAddParent() {
-        mockMvc.perform(post(TENANT_ALIAS_CONFIG)
-                .content(loadFile("tenantAliasTreeToUpdateParent.yml"))
-                .contentType(MediaType.TEXT_PLAIN))
-            .andExpect(status().is2xxSuccessful());
+        Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTreeToUpdateParent.yml"));
+        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
 
-        mockMvc.perform(get("/api/tenants/SUBMAIN/add_parent")
+        mockMvc.perform(post("/api/tenants/SUBMAIN/add_parent")
                 .content("NEWPARENTTENANT")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
