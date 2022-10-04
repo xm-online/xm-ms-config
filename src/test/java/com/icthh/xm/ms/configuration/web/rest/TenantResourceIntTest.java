@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,9 +14,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
@@ -175,13 +178,26 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testAddParent() {
-        Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTreeToUpdateParent.yml"));
+        Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
         tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
 
         mockMvc.perform(post("/api/tenants/SUBMAIN/add_parent")
-                .content("NEWPARENTTENANT")
+                .content("ONEMORELIFETENANT")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
+
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        TenantAliasTree tenantAliasTreeExpected = mapper.readValue(loadFile("tenantAliasTreeUpdatedParent.yml"), TenantAliasTree.class);
+
+        mockMvc.perform(get(API_PREFIX + TENANT_ALIAS_CONFIG)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful())
+            .andDo(result -> {
+                TenantAliasTree tenantAliasTree = mapper.readValue(result.getResponse().getContentAsString(), TenantAliasTree.class);
+
+                assertThat(tenantAliasTree.getTenantAliasTree()).isEqualTo(tenantAliasTreeExpected.getTenantAliasTree());
+            });
 
     }
 

@@ -1,8 +1,13 @@
 package com.icthh.xm.ms.configuration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import java.util.Map;
+
+import lombok.SneakyThrows;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -61,8 +66,9 @@ public class TenantAliasServiceUnitTest {
     }
 
     @Test
+    @SneakyThrows
     public void testAddParent() {
-        Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTreeToUpdateParent.yml"));
+        Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
         tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
@@ -77,14 +83,20 @@ public class TenantAliasServiceUnitTest {
         reset(memoryConfigStorage);
         reset(configurationService);
 
-        tenantAliasService.addParent("NEWPARENTTENANT", "SUBMAIN");
+        tenantAliasService.addParent("ONEMORELIFETENANT", "SUBMAIN");
 
         ArgumentCaptor<Configuration> argumentCaptor = ArgumentCaptor.forClass(Configuration.class);
         verify(configurationService).updateConfiguration(argumentCaptor.capture());
         Configuration configuration = argumentCaptor.getValue();
-       // System.out.print(configuration.getContent());
-        assertThat(configuration.getPath()).isEqualTo(TENANT_ALIAS_CONFIG);
+        System.out.print(configuration.getContent());
 
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+
+        TenantAliasTree tenantAliasTree = mapper.readValue(configuration.getContent(), TenantAliasTree.class);
+        TenantAliasTree tenantAliasTreeExpected = mapper.readValue(loadFile("tenantAliasTreeUpdatedParent.yml"), TenantAliasTree.class);
+
+        assertThat(configuration.getPath()).isEqualTo(TENANT_ALIAS_CONFIG);
+        assertThat(tenantAliasTree.getTenantAliasTree()).isEqualTo(tenantAliasTreeExpected.getTenantAliasTree());
 
         verifyNoMoreInteractions(memoryConfigStorage);
         verifyNoMoreInteractions(configurationService);
