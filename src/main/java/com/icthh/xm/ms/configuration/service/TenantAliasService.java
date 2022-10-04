@@ -1,24 +1,20 @@
 package com.icthh.xm.ms.configuration.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
-import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -105,6 +101,9 @@ public class TenantAliasService implements PublicConfigurationProcessor {
                 foundChildTenant.setParent(foundParentTenant);
                 children.add(foundChildTenant);
                 foundParentTenant.setChildren(children);
+            } else {
+                log.error("Parent {} and child {} can not be on the same branch", foundParentTenant.getKey(), foundChildTenant.getKey());
+                throw new TenantAliasTree.WrongTenantAliasConfiguration("Parent " + foundParentTenant.getKey() + " and child " + foundChildTenant.getKey() + " can not be on the same branch");
             }
         } else {
             List<TenantAliasTree.TenantAlias> tenantAliasTreeUpdated = new ArrayList<>(tenantAliasTree.getTenantAliasTree());

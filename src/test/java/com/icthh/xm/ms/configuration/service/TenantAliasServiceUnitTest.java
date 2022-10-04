@@ -88,7 +88,6 @@ public class TenantAliasServiceUnitTest {
         ArgumentCaptor<Configuration> argumentCaptor = ArgumentCaptor.forClass(Configuration.class);
         verify(configurationService).updateConfiguration(argumentCaptor.capture());
         Configuration configuration = argumentCaptor.getValue();
-        System.out.print(configuration.getContent());
 
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
