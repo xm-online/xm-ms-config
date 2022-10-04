@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
@@ -22,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
+import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
 
@@ -37,14 +39,17 @@ public class TenantAliasService implements PublicConfigurationProcessor {
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final ConfigurationService configurationService;
     private final MemoryConfigStorage memoryConfigStorage;
+    private final TenantContextHolder tenantContextHolder;
 
     @Getter
     private volatile TenantAliasTree tenantAliasTree = new TenantAliasTree();
 
     public TenantAliasService(@Lazy ConfigurationService configurationService,
-                              @Lazy MemoryConfigStorage memoryConfigStorage) {
+                              @Lazy MemoryConfigStorage memoryConfigStorage,
+                              @Lazy TenantContextHolder tenantContextHolder) {
         this.configurationService = configurationService;
         this.memoryConfigStorage = memoryConfigStorage;
+        this.tenantContextHolder = tenantContextHolder;
     }
 
     @Override
@@ -86,7 +91,8 @@ public class TenantAliasService implements PublicConfigurationProcessor {
         return Collections.emptyList();
     }
 
-    public void addParent(String parentTenantKey, String tenantKey) {
+    public void setParent(String parentTenantKey) {
+        String tenantKey = getRequiredTenantKeyValue(tenantContextHolder);
         TenantAliasTree.TenantAlias foundParentTenant = findTenantAlias(parentTenantKey, tenantAliasTree.getTenantAliasTree());
         TenantAliasTree.TenantAlias foundChildTenant = findTenantAlias(tenantKey, tenantAliasTree.getTenantAliasTree());
         if (foundChildTenant == null) {

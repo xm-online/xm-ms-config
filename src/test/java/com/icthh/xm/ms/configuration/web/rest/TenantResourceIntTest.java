@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantState;
@@ -38,6 +40,8 @@ import java.util.Set;
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class TenantResourceIntTest extends AbstractSpringBootTest {
 
+    public static final String TENANT_NAME = "SUBMAIN";
+
     @MockBean
     private ConfigTopicProducer configTopicProducer;
 
@@ -53,6 +57,9 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @Autowired
     private TenantAliasService tenantAliasService;
 
+    @Autowired
+    TenantContextHolder tenantContextHolder;
+
     private MockMvc mockMvc;
 
     @Before
@@ -60,6 +67,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
         mockMvc = MockMvcBuilders.standaloneSetup(tenantResource, configurationAdminResource)
                 .setControllerAdvice(exceptionTranslator)
                 .build();
+        TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
     }
 
     @Test
@@ -177,11 +185,11 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    public void testAddParent() {
+    public void testSetParent() {
         Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
         tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
 
-        mockMvc.perform(post("/api/tenants/SUBMAIN/add_parent")
+        mockMvc.perform(post("/api/tenants/set_parent")
                 .content("ONEMORELIFETENANT")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
@@ -198,7 +206,6 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
                 assertThat(tenantAliasTree.getTenantAliasTree()).isEqualTo(tenantAliasTreeExpected.getTenantAliasTree());
             });
-
     }
 
 }

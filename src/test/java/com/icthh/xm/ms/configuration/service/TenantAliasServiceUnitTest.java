@@ -3,9 +3,13 @@ package com.icthh.xm.ms.configuration.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.tenant.TenantContext;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import java.util.Map;
+import java.util.Optional;
 
 import lombok.SneakyThrows;
 import org.junit.Test;
@@ -19,9 +23,11 @@ import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_AL
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TenantAliasServiceUnitTest {
@@ -30,6 +36,8 @@ public class TenantAliasServiceUnitTest {
     ConfigurationService configurationService;
     @Mock
     MemoryConfigStorage memoryConfigStorage;
+    @Mock
+    TenantContextHolder tenantContextHolder;
     @InjectMocks
     TenantAliasService tenantAliasService;
 
@@ -83,7 +91,11 @@ public class TenantAliasServiceUnitTest {
         reset(memoryConfigStorage);
         reset(configurationService);
 
-        tenantAliasService.addParent("ONEMORELIFETENANT", "SUBMAIN");
+        TenantContext context = mock(TenantContext.class);
+        when(context.getTenantKey()).thenReturn(Optional.ofNullable(TenantKey.valueOf("SUBMAIN")));
+        when(tenantContextHolder.getContext()).thenReturn(context);
+
+        tenantAliasService.setParent("ONEMORELIFETENANT");
 
         ArgumentCaptor<Configuration> argumentCaptor = ArgumentCaptor.forClass(Configuration.class);
         verify(configurationService).updateConfiguration(argumentCaptor.capture());

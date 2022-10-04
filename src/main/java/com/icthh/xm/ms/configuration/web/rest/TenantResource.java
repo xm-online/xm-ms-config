@@ -76,12 +76,12 @@ public class TenantResource {
         return tenantService.getServices(tenantKey);
     }
 
-    @PostMapping(value = "/tenants/{tenantKey}/add_parent")
+    @PostMapping(value = "/tenants/set_parent")
     @Timed
-    @PreAuthorize("hasPermission({'tenant':#tenant}, 'CONFIG.TENANT.ADD_PARENT')")
+    @PreAuthorize("hasPermission({'tenant':#tenant}, 'CONFIG.TENANT.SET_PARENT')")
     @PrivilegeDescription("Privilege to add a new parent to tenant")
-    public ResponseEntity<Void> addParent(@PathVariable String tenantKey, @RequestBody String parentTenantKey) {
-        tenantAliasService.addParent(parentTenantKey, tenantKey);
+    public ResponseEntity<Void> setParent(@RequestBody String parentTenantKey) {
+        tenantAliasService.setParent(parentTenantKey);
         return ResponseEntity.ok().build();
     }
 
