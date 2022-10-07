@@ -5,6 +5,7 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.ms.configuration.domain.TenantState;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import java.util.Set;
 public class TenantResource {
 
     private final TenantService tenantService;
+
+    private final TenantAliasService tenantAliasService;
 
     @PostMapping(value = "/tenants/{serviceName}")
     @Timed
@@ -71,6 +74,15 @@ public class TenantResource {
     @PrivilegeDescription("Privilege to get all config services")
     public Set<String> getServices(@PathVariable String tenantKey) {
         return tenantService.getServices(tenantKey);
+    }
+
+    @PostMapping(value = "/tenants/set_parent")
+    @Timed
+    @PreAuthorize("hasPermission({'tenant':#tenant}, 'CONFIG.TENANT.SET_PARENT')")
+    @PrivilegeDescription("Privilege to add a new parent to tenant")
+    public ResponseEntity<Void> setParent(@RequestBody String parentTenantKey) {
+        tenantAliasService.setParent(parentTenantKey);
+        return ResponseEntity.ok().build();
     }
 
 }

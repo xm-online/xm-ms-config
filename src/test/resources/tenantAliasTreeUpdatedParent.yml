@@ -1,0 +1,10 @@
+---
+tenantAliasTree:
+    - key: "MAIN"
+      children:
+          - key: "ONEMORELIFETENANT"
+            children:
+                - key: "SUBMAIN"
+                  children:
+                      - key: "LIFETENANT"
+                        children: null
