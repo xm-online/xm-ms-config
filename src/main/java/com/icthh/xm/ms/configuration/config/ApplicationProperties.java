@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
 import com.icthh.xm.commons.lep.TenantScriptStorage;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -67,5 +66,7 @@ public class ApplicationProperties {
         private TenantScriptStorage tenantScriptStorage;
         private Boolean processorEnabled;
     }
+
+    private List<String> excludeConfigPatterns;
 
 }

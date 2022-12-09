@@ -6,6 +6,13 @@ import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
+import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
+import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
+import com.icthh.xm.ms.configuration.service.TenantAliasService;
+import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
+import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,5 +41,20 @@ public class BeanConfiguration {
     @Qualifier(TENANT_CONFIGURATION_LOCK)
     public Lock gitRepositoryLock() {
         return new ReentrantLock();
+    }
+
+    @Bean
+    public MemoryConfigStorage memoryConfigStorage(List<PrivateConfigurationProcessor> privateConfigurationProcessors,
+                                                   List<PublicConfigurationProcessor> publicConfigurationProcessors,
+                                                   TenantAliasService tenantAliasService,
+                                                   ApplicationProperties applicationProperties) {
+        return new MemoryConfigStorageExcludeConfigDecorator(
+                new MemoryConfigStorageImpl(
+                        privateConfigurationProcessors,
+                        publicConfigurationProcessors,
+                        tenantAliasService
+                ),
+                applicationProperties
+        );
     }
 }

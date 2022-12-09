@@ -156,6 +156,22 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     @Test
+    public void testExcludeFileFromNotifications() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+
+        Mockito.reset(configTopicProducer);
+
+        configurationService.refreshConfiguration();
+
+        verify(configTopicProducer).notifyConfigurationChanged(anyString(), eq(List.of(
+                "/config/file2", "/config/file1"
+        )));
+    }
+
+    @Test
     @SneakyThrows
     public void testUpdateFromZipFile() {
         configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
@@ -164,6 +180,21 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         String commit = configurationService.updateConfigurationsFromZip(
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(commit);
+        assertEquals(configurationMap, Map.of(
+                "/config/file1", new Configuration("/config/file1", "1\n"),
+                "/config/file2", new Configuration("/config/file2", "2\n")
+        ));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testExcludeConfig() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
                 "/config/file1", new Configuration("/config/file1", "1\n"),
                 "/config/file2", new Configuration("/config/file2", "2\n")
