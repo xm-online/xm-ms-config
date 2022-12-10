@@ -2,8 +2,17 @@ package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -15,16 +24,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -44,6 +47,9 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @Autowired
     MemoryConfigStorage memoryConfigStorage;
+
+    @Autowired
+    PersistenceConfigRepository repositoryProxy;
 
     @Before
     public void before() {
@@ -157,7 +163,15 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @Test
     public void testExcludeFileFromNotifications() {
+        List<String> paths = repositoryProxy.findAll()
+                .getData()
+                .stream()
+                .map(Configuration::getPath)
+                .collect(toList());
+
+        configurationService.deleteConfigurations(paths);
         memoryConfigStorage.clear();
+
         configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
         configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
         configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
@@ -165,7 +179,6 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Mockito.reset(configTopicProducer);
 
         configurationService.refreshConfiguration();
-
         verify(configTopicProducer).notifyConfigurationChanged(anyString(), eq(List.of(
                 "/config/file2", "/config/file1"
         )));
