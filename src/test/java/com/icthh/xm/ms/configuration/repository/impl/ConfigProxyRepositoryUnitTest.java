@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
@@ -36,7 +37,7 @@ public class ConfigProxyRepositoryUnitTest {
 
     @Before
     public void before() {
-        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorage(emptyList(), emptyList(), tenantAliasService);
+        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorageImpl(emptyList(), emptyList(), tenantAliasService);
         configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository, configTopicProducer);
     }
 

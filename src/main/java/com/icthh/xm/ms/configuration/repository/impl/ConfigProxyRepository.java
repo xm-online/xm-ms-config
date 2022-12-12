@@ -1,16 +1,17 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,13 +20,10 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 @Component
@@ -103,7 +101,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public void updateConfigurationInMemory(Configuration configuration, String commit) {
         Set<String> updated = storage.updateConfig(configuration.getPath(), configuration);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, new ArrayList<>(updated));
+        notifyChanged(commit, updated);
     }
 
     @Override
@@ -122,11 +120,9 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
-        Map<String, Configuration> map = new HashMap<>();
-        configurations.forEach(configuration -> map.put(configuration.getPath(), configuration));
-        Set<String> updated = storage.updateConfigs(map);
+        Set<String> updated = storage.updateConfigs(configurations);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, new ArrayList<>(updated));
+        notifyChanged(commit, updated);
     }
 
     @Override
@@ -134,7 +130,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         String commit = persistenceConfigRepository.delete(path);
         List<String> removedPaths = storage.removeExactOrByPrefix(path);
         version.set(commit);
-        configTopicProducer.notifyConfigurationChanged(commit, removedPaths);
+        notifyChanged(commit, removedPaths);
         return commit;
     }
 
@@ -155,7 +151,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
                                    .map(storage::removeExactOrByPrefix)
                                    .flatMap(List::stream)
                                    .collect(toSet());
-        configTopicProducer.notifyConfigurationChanged(commit, new LinkedList<>(removed));
+        notifyChanged(commit, removed);
     }
 
     @Override
@@ -186,7 +182,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         ConfigurationItem configurationItem = persistenceConfigRepository.find(path);
         Configuration configuration = configurationItem.getData();
         storage.updateConfig(configuration.getPath(), configuration);
-        configTopicProducer.notifyConfigurationChanged(configurationItem.getCommit(), singletonList(configuration.getPath()));
+        notifyChanged(configurationItem.getCommit(), singletonList(configuration.getPath()));
     }
 
     @Override
@@ -219,6 +215,10 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private void notifyChanged(Set<String> updated) {
-        configTopicProducer.notifyConfigurationChanged(version.get(), new ArrayList<>(updated));
+        notifyChanged(version.get(), updated);
+    }
+
+    private void notifyChanged(String commit, Collection<String> updated) {
+        configTopicProducer.notifyConfigurationChanged(commit, new ArrayList<>(updated));
     }
 }
