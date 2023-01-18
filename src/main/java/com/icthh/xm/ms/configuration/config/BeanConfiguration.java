@@ -13,6 +13,7 @@ import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Import;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+@Slf4j
 @Configuration
 @Import(XmRequestContextConfiguration.class)
 public class BeanConfiguration {
@@ -48,6 +50,9 @@ public class BeanConfiguration {
                                                    List<PublicConfigurationProcessor> publicConfigurationProcessors,
                                                    TenantAliasService tenantAliasService,
                                                    ApplicationProperties applicationProperties) {
+        log.info("PrivateConfigurationProcessor {}", privateConfigurationProcessors);
+        log.info("PublicConfigurationProcessor {}", publicConfigurationProcessors);
+
         return new MemoryConfigStorageExcludeConfigDecorator(
                 new MemoryConfigStorageImpl(
                         privateConfigurationProcessors,
