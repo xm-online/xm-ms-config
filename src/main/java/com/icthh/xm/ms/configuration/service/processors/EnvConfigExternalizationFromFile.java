@@ -56,6 +56,7 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
                                                     Map<String, Configuration> targetStorage) {
         String configurationPath = configuration.getPath();
         if (!configurationPath.contains(TENANT_PREFIX)) {
+            log.trace("Config {} is not under tenant folder. It will not be processed by externalization.", configurationPath);
             return emptyList();
         }
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
@@ -63,6 +64,7 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         Configuration tenantEnvValue = originalStorage.get(tenantEnvValuePath);
 
         if (tenantEnvValue == null) {
+            log.trace("Tenant profile not found for by {}", tenantEnvValuePath);
             return emptyList();
         }
         Map<String, String> tenantEnvs = new ConcurrentHashMap<>();
@@ -72,7 +74,10 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
 
         tenantEnvs.putAll(configMap);
         tenantEnvs.putAll(environment);
+        log.trace("Config before replace {}", configuration.getContent());
+        log.trace("Variables for replace {}", tenantEnvs);
         String content = StrSubstitutor.replace(configuration.getContent(), tenantEnvs);
+        log.trace("Config after replace {}", content);
         return singletonList(new Configuration(configuration.getPath(), content));
     }
 
