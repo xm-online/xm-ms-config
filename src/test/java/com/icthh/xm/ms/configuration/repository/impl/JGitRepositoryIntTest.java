@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
-import static org.eclipse.jgit.api.Git.cloneRepository;
 import static org.junit.Assert.assertEquals;
 
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -13,11 +12,8 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.SneakyThrows;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,8 +55,6 @@ public class JGitRepositoryIntTest {
         };
     }
 
-
-
     @Test
     public void testGetByVersion() {
         String path = "/config/test.file";
@@ -69,5 +63,13 @@ public class JGitRepositoryIntTest {
         jGitRepository.save(new Configuration(path, "3"));
         assertEquals("3", jGitRepository.find(path).getData().getContent());
         assertEquals("2", jGitRepository.find(path, ref).getData().getContent());
+    }
+
+    @Test
+    public void testSave_shouldReturnLastCommitWhenNoFilesChanged() {
+        String path = "/config/dummy";
+        String commit1 = jGitRepository.save(new Configuration(path, "unchanged_content"));
+        String commit2 = jGitRepository.save(new Configuration(path, "unchanged_content"));
+        assertEquals("Expected then save return last commit when no files changed", commit1, commit2);
     }
 }

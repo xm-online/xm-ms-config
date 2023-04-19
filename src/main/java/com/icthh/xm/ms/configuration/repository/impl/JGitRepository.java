@@ -75,6 +75,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     private static final String GIT_COMMIT_MSG_DELETE_TPL = "Delete [%s] by user [%s] from tenant [%s]. %s";
     private static final String SUB_MSG_TPL_OPERATION_SRC = "Operation src [%s]";
     private static final String SUB_MSG_TPL_OPERATION_SRC_AND_APP = SUB_MSG_TPL_OPERATION_SRC + ", app name [%s]";
+    public static final String UNDEFINED_COMMIT = "undefined";
 
     private final GitProperties gitProperties;
 
@@ -257,8 +258,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                                      () -> configurations.forEach(this::writeConfiguration));
         }
         log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
-        return "undefined";
-
+        return UNDEFINED_COMMIT;
     }
 
     @Override
@@ -331,8 +331,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                 }));
         }
         log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
-        return "undefined";
-
+        return UNDEFINED_COMMIT;
     }
 
     private void deleteExistingFile(final String path) {
@@ -431,8 +430,9 @@ public class JGitRepository implements PersistenceConfigRepository {
     protected String commitAndPush(String commitMsg) {
         return executeGitAction("commitAndPush", git -> {
             if (git.status().call().isClean()) {
-                log.info("Skip commit to git as working directory is clean after performing: {}", commitMsg);
-                return "undefined";
+                String lastCommit = findLastCommit(git);
+                log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
+                return lastCommit;
             }
             git.add().addFilepattern(".").call();
             RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
