@@ -6,12 +6,6 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.util.Collections.singletonList;
@@ -45,6 +42,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
      */
     @Override
     public Map<String, Configuration> getMap(String commit) {
+        log.debug("getMap: commit: {}", commit);
         if (StringUtils.isEmpty(commit)
             || (version.get() != null && commit.equals(version.get()))
             || persistenceConfigRepository.hasVersion(commit)) {
@@ -148,18 +146,21 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     private void deleteAllInMemory(List<String> paths, String commit) {
         Set<String> removed = paths.stream()
-                                   .map(storage::removeExactOrByPrefix)
-                                   .flatMap(List::stream)
-                                   .collect(toSet());
+            .map(storage::removeExactOrByPrefix)
+            .flatMap(List::stream)
+            .collect(toSet());
         notifyChanged(commit, removed);
     }
 
     @Override
     public void refreshInternal() {
+        log.info("refreshInternal: start");
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
+        log.info("refreshInternal: version: {}", configurationList.getCommit());
         List<Configuration> actualConfigs = configurationList.getData();
         storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getCommit());
+        log.info("refreshInternal: end");
     }
 
     @Override
@@ -211,6 +212,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private void updateVersion(String commit) {
+        log.info("updateVersion: commit: {}", commit);
         version.set(commit);
     }
 

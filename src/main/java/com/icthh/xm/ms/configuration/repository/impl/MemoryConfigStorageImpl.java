@@ -109,6 +109,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant) {
+        log.info("refreshStorage: tenant: {}", tenant);
         Set<String> oldKeys = getConfigPathsList(tenant);
         Set<String> updated = refreshStorage(actualConfigs, oldKeys);
         reprocess(tenant);
@@ -131,6 +132,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> refreshStorage(List<Configuration> actualConfigs) {
+        log.info("refreshStorage: started");
         Set<String> oldKeys = getConfigPathsList();
         return refreshStorage(actualConfigs, oldKeys);
     }

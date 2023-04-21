@@ -273,7 +273,8 @@ dependencies {
     implementation ("org.eclipse.jgit:org.eclipse.jgit:${jgit_version}") {
         exclude group: 'com.jcraft', module: 'jsch'
     }
-    implementation 'com.github.mwiede:jsch:0.2.0'
+    implementation "org.eclipse.jgit:org.eclipse.jgit.ssh.apache:${jgit_version}"
+    implementation 'com.github.mwiede:jsch:0.2.8'
     implementation "com.ryantenney.metrics:metrics-spring:${metrics_spring_version}"
 
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"

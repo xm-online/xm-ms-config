@@ -25,12 +25,13 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
-import com.icthh.xm.ms.configuration.config.SshTransportConfigCallback;
+//import com.icthh.xm.ms.configuration.config.SshTransportConfigCallback;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,17 +41,12 @@ import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.eclipse.jgit.api.CloneCommand;
-import org.eclipse.jgit.api.FetchCommand;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.GitCommand;
-import org.eclipse.jgit.api.PullCommand;
-import org.eclipse.jgit.api.PushCommand;
-import org.eclipse.jgit.api.TransportCommand;
+import org.eclipse.jgit.api.*;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
@@ -61,7 +57,13 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshTransport;
+import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.transport.sshd.JGitKeyCache;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactory;
+import org.eclipse.jgit.transport.sshd.SshdSessionFactoryBuilder;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.FS;
@@ -138,8 +140,10 @@ public class JGitRepository implements PersistenceConfigRepository {
         repositoryFolder.deleteOnExit();
 
         executeLoggedAction("cloneRepository", () -> {
-            CloneCommand cloneCommand = Git.cloneRepository().setURI(gitProperties.getUri())
-                                                         .setDirectory(repositoryFolder);
+            CloneCommand cloneCommand = Git.cloneRepository()
+                .setURI(gitProperties.getUri())
+                .setBranch(gitProperties.getBranchName())
+                .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
             cloneCommand.call().close();
             return null;
@@ -208,7 +212,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     public ConfigurationItem find(String path, String version) {
         log.info("[{}] Find configuration by path: {} and version: {}",
-                 getRequestSourceTypeLogName(requestContextHolder), path, version);
+            getRequestSourceTypeLogName(requestContextHolder), path, version);
 
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             if (!hasVersion(version)) {
@@ -253,9 +257,9 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         if (!paths.isEmpty()) {
             log.info("[{}] Save configurations to git by paths {}",
-                     getRequestSourceTypeLogName(requestContextHolder), paths);
+                getRequestSourceTypeLogName(requestContextHolder), paths);
             return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
-                                     () -> configurations.forEach(this::writeConfiguration));
+                () -> configurations.forEach(this::writeConfiguration));
         }
         log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
         return UNDEFINED_COMMIT;
@@ -264,10 +268,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public String setRepositoryState(List<Configuration> configurations) {
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
-                () -> {
-                    deleteExistingFile("/config");
-                    configurations.forEach(this::writeConfiguration);
-                });
+            () -> {
+                deleteExistingFile("/config");
+                configurations.forEach(this::writeConfiguration);
+            });
     }
 
     @Override
@@ -278,7 +282,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public String save(Configuration configuration, String oldConfigHash) {
         log.info("[src: {}] Save configuration to git with path {}", getRequestSourceTypeLogName(requestContextHolder),
-                 configuration.getPath());
+            configuration.getPath());
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
             assertConfigHash(configuration, oldConfigHash);
             writeConfiguration(configuration);
@@ -303,17 +307,18 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public String deleteAll(List<String> paths) {
         log.info("[{}] Delete configurations from git by paths {}",
-                 getRequestSourceTypeLogName(requestContextHolder), paths);
+            getRequestSourceTypeLogName(requestContextHolder), paths);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, paths.size()),
-                                 () -> paths.forEach(this::deleteExistingFile));
+            () -> paths.forEach(this::deleteExistingFile));
     }
 
     @Override
     public String delete(String path) {
         log.info("[{}] Delete configuration from git by path {}",
-                 getRequestSourceTypeLogName(requestContextHolder), path);
+            getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> deleteExistingFile(path));
     }
+
     @Override
     public String saveOrDeleteEmpty(List<Configuration> configurations) {
         List<String> paths = configurations.stream().map(Configuration::getPath).collect(toList());
@@ -356,18 +361,18 @@ public class JGitRepository implements PersistenceConfigRepository {
         String operationSourceMsg;
         if (isRequestSourceNameExist(requestContextHolder)) {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC_AND_APP,
-                                               getRequestSourceTypeLogName(requestContextHolder),
-                                               getRequestSourceLogName(requestContextHolder));
+                getRequestSourceTypeLogName(requestContextHolder),
+                getRequestSourceLogName(requestContextHolder));
         } else {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC,
-                                               getRequestSourceTypeLogName(requestContextHolder));
+                getRequestSourceTypeLogName(requestContextHolder));
         }
 
         return String.format(template,
-                             path,
-                             authenticationContextHolder.getContext().getLogin().orElse("unknown"),
-                             TenantContextUtils.getTenantKey(tenantContextHolder).map(TenantKey::getValue).orElse("no tenant"),
-                             operationSourceMsg);
+            path,
+            authenticationContextHolder.getContext().getLogin().orElse("unknown"),
+            TenantContextUtils.getTenantKey(tenantContextHolder).map(TenantKey::getValue).orElse("no tenant"),
+            operationSourceMsg);
     }
 
     private String getPathname(String path) {
@@ -402,8 +407,8 @@ public class JGitRepository implements PersistenceConfigRepository {
             try {
                 git.clean().setForce(true);
                 git.checkout()
-                   .setName(branchName)
-                   .setForce(true).call();
+                    .setName(branchName)
+                    .setForce(true).call();
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
                 pull.call();
@@ -414,10 +419,10 @@ public class JGitRepository implements PersistenceConfigRepository {
                 fetch = setAuthorizationConfig(fetch);
                 fetch.call();
                 git.checkout()
-                   .setCreateBranch(true)
-                   .setName(branchName)
-                   .setUpstreamMode(TRACK)
-                   .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName).call();
+                    .setCreateBranch(true)
+                    .setName(branchName)
+                    .setUpstreamMode(TRACK)
+                    .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName).call();
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
                 pull.call();
@@ -454,8 +459,8 @@ public class JGitRepository implements PersistenceConfigRepository {
                 // TODO there should be better way to get commit from Git like:
                 //      git.log().setRevFilter(...).call()
                 Optional<RevCommit> targetCommit = StreamSupport.stream(refs.spliterator(), false)
-                                                                .filter(revCommit -> revCommit.getName().equals(commit))
-                                                                .findFirst();
+                    .filter(revCommit -> revCommit.getName().equals(commit))
+                    .findFirst();
                 log.info("Commit {} found in local repository", targetCommit);
                 return targetCommit.isPresent();
             } catch (RefNotFoundException e) {
@@ -472,10 +477,12 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     private String findLastCommit(Git git) {
         Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
-        return StreamSupport.stream(refs.spliterator(), false)
-                            .findFirst()
-                            .map(AnyObjectId::getName)
-                            .orElse("[N/A]");
+        String lastCommit = StreamSupport.stream(refs.spliterator(), false)
+            .findFirst()
+            .map(AnyObjectId::getName)
+            .orElse("[N/A]");
+        log.debug("findLastCommit: lastCommit: {}", lastCommit);
+        return lastCommit;
     }
 
     @SneakyThrows
@@ -489,7 +496,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action){
+    private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action) {
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             return action.get();
@@ -521,7 +528,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     private <T extends GitCommand> T setAuthorizationConfig(TransportCommand<T, ?> cloneCommand) {
         if (gitProperties.getSsh().isEnabled()) {
-            return cloneCommand.setTransportConfigCallback(new SshTransportConfigCallback(gitProperties.getSsh()));
+//            return cloneCommand.setTransportConfigCallback(new SshTransportConfigCallback(gitProperties.getSsh()));
         }
         return cloneCommand.setCredentialsProvider(createCredentialsProvider());
     }

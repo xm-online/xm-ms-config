@@ -32,8 +32,8 @@
     <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
-    
-    <logger name="com.icthh.xm.ms.configuration" level="#logback.loglevel#"/>
+
+    <logger name="com.icthh.xm.ms.configuration" level="DEBUG"/>
 
     <logger name="io.github.jhipster" level="#logback.loglevel#"/>
 
