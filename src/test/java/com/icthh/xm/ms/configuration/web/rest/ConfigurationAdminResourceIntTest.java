@@ -128,6 +128,9 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testInMemoryUpdate() {
+        tenantContextHolder.getPrivilegedContext().destroyCurrentContext();
+        TenantContextUtils.setTenant(tenantContextHolder, "XM");
+
         mockMvc.perform(post(API_PREFIX + CONFIG + TENANTS + "/test/version/file")
                                 .content("1")
                                 .contentType(MediaType.TEXT_PLAIN))
