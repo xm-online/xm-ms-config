@@ -98,8 +98,8 @@ jhipster:
 
 application:
     git:
-        uri:
+        uri: /home/ssenko/work/xm-ms-config-repository
         login:
         password:
-        branch-name:
+        branch-name: ee-test
         max-wait-time-second: 30

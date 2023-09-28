@@ -10,11 +10,13 @@ import com.icthh.xm.commons.config.client.api.AbstractConfigService;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +49,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
     private final DistributedConfigRepository inMemoryRepository;
+    private final ApplicationProperties applicationProperties;
 
     @Override
     @LoggingAspectConfig(resultDetails = false)
@@ -218,6 +221,12 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     private Boolean isConfigUnderTenant(Configuration config) {
         return isConfigUnderTenant(config, getRequiredTenantKeyValue(tenantContextHolder));
+    }
+
+    public boolean isAdminRefreshAvailable() {
+        List<String> superTenantsList = applicationProperties.getSuperTenantsList();
+        superTenantsList = superTenantsList != null ? superTenantsList : Collections.emptyList();
+        return superTenantsList.contains(tenantContextHolder.getTenantKey().toUpperCase());
     }
 
 }

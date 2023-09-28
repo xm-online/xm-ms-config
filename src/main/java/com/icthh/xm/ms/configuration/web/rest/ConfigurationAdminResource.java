@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -214,6 +215,14 @@ public class ConfigurationAdminResource {
             configurationService.refreshConfiguration(path);
         }
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping(value = CONFIG + REFRESH + "/available")
+    @Timed
+    @PreAuthorize("hasPermission({}, 'CONFIG.ADMIN.REFRESH')")
+    @PrivilegeDescription("Privilege to check admin refresh availability")
+    public ResponseEntity<Map<String, Boolean>> isAdminRefreshAvailable() {
+        return ResponseEntity.ok().body(Map.of("available", configurationService.isAdminRefreshAvailable()));
     }
 
     @PostMapping(value = CONFIG + RECLONE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
