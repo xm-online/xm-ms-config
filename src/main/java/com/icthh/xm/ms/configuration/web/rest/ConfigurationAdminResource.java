@@ -208,6 +208,7 @@ public class ConfigurationAdminResource {
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")
     @PrivilegeDescription("Privilege to refresh configuration for admin")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
+        configurationService.assertAdminRefreshAvailable();
         String path = extractPath(request).substring(CONFIG.length() + REFRESH.length());
         if (isBlank(path)) {
             configurationService.refreshConfiguration();

@@ -37,6 +37,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -229,4 +230,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return superTenantsList.contains(tenantContextHolder.getTenantKey().toUpperCase());
     }
 
+    public void assertAdminRefreshAvailable() {
+        if (!isAdminRefreshAvailable()) {
+            throw new AccessDeniedException("Admin refresh config not available for tenant " + tenantContextHolder.getTenantKey());
+        }
+    }
 }

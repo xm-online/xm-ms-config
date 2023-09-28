@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.INMEMORY;
+import static com.icthh.xm.ms.configuration.config.Constants.REFRESH;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -16,11 +17,14 @@ import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.SneakyThrows;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +51,9 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
     @Autowired
     private ExceptionTranslator exceptionTranslator;
+
+    @Autowired
+    private TenantContextHolder tenantContextHolder;
 
     private MockMvc mockMvc;
 
@@ -354,6 +361,29 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
             .contentType(MediaType.TEXT_PLAIN))
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
             .andExpect(content().json(new ObjectMapper().writeValueAsString(response)))
+            .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testCheckAdminRefreshAvailable() {
+
+        tenantContextHolder.getPrivilegedContext().destroyCurrentContext();
+        TenantContextUtils.setTenant(tenantContextHolder, "SOME_TENANT");
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$.available").value("false"))
+            .andExpect(status().is2xxSuccessful());
+
+        tenantContextHolder.getPrivilegedContext().destroyCurrentContext();
+        TenantContextUtils.setTenant(tenantContextHolder, "XM");
+
+        mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$.available").value("true"))
             .andExpect(status().is2xxSuccessful());
     }
 }
