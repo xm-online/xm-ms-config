@@ -21,6 +21,7 @@ public class ApplicationProperties {
     private GitProperties git;
     private final Retry retry = new Retry();
 
+    private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;

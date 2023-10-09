@@ -10,11 +10,13 @@ import com.icthh.xm.commons.config.client.api.AbstractConfigService;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +37,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +50,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
     private final DistributedConfigRepository inMemoryRepository;
+    private final ApplicationProperties applicationProperties;
 
     @Override
     @LoggingAspectConfig(resultDetails = false)
@@ -220,4 +224,15 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return isConfigUnderTenant(config, getRequiredTenantKeyValue(tenantContextHolder));
     }
 
+    public boolean isAdminRefreshAvailable() {
+        List<String> superTenantsList = applicationProperties.getSuperTenantsList();
+        superTenantsList = superTenantsList != null ? superTenantsList : Collections.emptyList();
+        return superTenantsList.contains(tenantContextHolder.getTenantKey().toUpperCase());
+    }
+
+    public void assertAdminRefreshAvailable() {
+        if (!isAdminRefreshAvailable()) {
+            throw new AccessDeniedException("Admin refresh config not available for tenant " + tenantContextHolder.getTenantKey());
+        }
+    }
 }
