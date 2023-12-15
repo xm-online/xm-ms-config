@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.text.StrSubstitutor;
+import org.apache.commons.text.StringSubstitutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 
 @Slf4j
@@ -54,48 +55,57 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage) {
-        String configurationPath = configuration.getPath();
-        if (!configurationPath.contains(TENANT_PREFIX)) {
-            log.trace("Config {} is not under tenant folder. It will not be processed by externalization.", configurationPath);
-            return emptyList();
-        }
-        String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
-        String tenantEnvValuePath = TENANT_PREFIX + tenantKey + "/tenant-profile.yml";
-        Configuration tenantEnvValue = originalStorage.get(tenantEnvValuePath);
 
-        if (tenantEnvValue == null) {
-            log.trace("Tenant profile not found for by {}", tenantEnvValuePath);
-            return emptyList();
-        }
-        Map<String, String> tenantEnvs = new ConcurrentHashMap<>();
-        TenantProfileEntry tenantProfileEntry = tenantProfileCash.computeIfAbsent(tenantEnvValuePath,
-            key -> new TenantProfileEntry(tenantEnvValue.getContent(), getConfigMap(tenantEnvValue)));
-        Map<String, String> configMap = getMap(tenantEnvValuePath, tenantEnvValue, tenantProfileEntry);
-
-        tenantEnvs.putAll(configMap);
+        Map<String, String> tenantEnvs = new HashMap<>();
+        Map<String, String> tenantProfile = buildTenantProfile(configuration, originalStorage);
+        tenantEnvs.putAll(tenantProfile);
         tenantEnvs.putAll(environment);
-        log.trace("Config before replace {}", configuration.getContent());
         log.trace("Variables for replace {}", tenantEnvs);
-        String content = StrSubstitutor.replace(configuration.getContent(), tenantEnvs);
+
+        log.trace("Config before replace {}", configuration.getContent());
+        String content = StringSubstitutor.replace(configuration.getContent(), tenantEnvs);
         log.trace("Config after replace {}", content);
-        return singletonList(new Configuration(configuration.getPath(), content));
+        if (!content.equals(configuration.getContent())) {
+            return singletonList(new Configuration(configuration.getPath(), content));
+        } else {
+            return emptyList();
+        }
     }
 
-    private Map<String, String> getMap(String tenantEnvValuePath, Configuration tenantEnvValue, TenantProfileEntry tenantProfileEntry) {
+    private Map<String, String> buildTenantProfile(Configuration configuration, Map<String, Configuration> originalStorage) {
+        if (!configuration.getPath().contains(TENANT_PREFIX)) {
+            log.trace("Config {} is not under tenant folder. It will not be processed by externalization.", configuration.getPath());
+            return new HashMap<>();
+        }
+
+        String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
+        String tenantProfilePath = TENANT_PREFIX + tenantKey + "/tenant-profile.yml";
+        Configuration tenantProfileConfig = originalStorage.get(tenantProfilePath);
+        if (tenantProfileConfig == null) {
+            return emptyMap();
+        }
+
+        String tenantProfileContent = tenantProfileConfig.getContent();
+        TenantProfileEntry tenantProfileEntry = tenantProfileCash.computeIfAbsent(tenantProfilePath,
+            key -> new TenantProfileEntry(tenantProfileContent, getConfigMap(tenantProfileContent)));
+        return getMap(tenantProfilePath, tenantProfileEntry, tenantProfileContent);
+    }
+
+    private Map<String, String> getMap(String tenantEnvValuePath, TenantProfileEntry tenantProfileEntry, String tenantProfileContent) {
         Map<String, String> configMap;
-        if (tenantProfileEntry.tenantProfileContent.equals(tenantEnvValue.getContent())) {
+        if (tenantProfileEntry.tenantProfileContent.equals(tenantProfileContent)) {
             configMap = tenantProfileEntry.tenantProfile;
         } else {
-            configMap = getConfigMap(tenantEnvValue);
-            tenantProfileCash.put(tenantEnvValuePath, new TenantProfileEntry(tenantEnvValue.getContent(), configMap));
+            configMap = getConfigMap(tenantProfileContent);
+            tenantProfileCash.put(tenantEnvValuePath, new TenantProfileEntry(tenantProfileContent, configMap));
         }
         return configMap;
     }
 
     @SneakyThrows
-    private Map<String, String> getConfigMap(Configuration tenantEnvValue) {
+    private Map<String, String> getConfigMap(String tenantProfileBody) {
         Map<String, String> tenantProfile = new ConcurrentHashMap<>();
-        addKeys("", objectMapper.readTree(tenantEnvValue.getContent()), tenantProfile);
+        addKeys("", objectMapper.readTree(tenantProfileBody), tenantProfile);
         return tenantProfile;
     }
 

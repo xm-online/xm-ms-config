@@ -48,9 +48,10 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         if (StringUtils.isEmpty(commit)
             || (version.get() != null && commit.equals(version.get()))
             || persistenceConfigRepository.hasVersion(commit)) {
-            log.debug("Get configuration from memory by commit: {}", commit);
+            log.info("Get configuration from memory by commit: {}", commit);
             return storage.getPrivateConfigs();
         } else {
+            log.info("Load actual configuration from git by commit: {}", commit);
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
             storage.refreshStorage(actualConfigs);
@@ -100,7 +101,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public void updateConfigurationInMemory(Configuration configuration, String commit) {
         Set<String> updated = storage.updateConfig(configuration.getPath(), configuration);
-        version.set(commit);
+        updateVersion(commit);
         notifyChanged(commit, updated);
     }
 
@@ -121,7 +122,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public void updateConfigurationsInMemory(List<Configuration> configurations, String commit) {
         Set<String> updated = storage.updateConfigs(configurations);
-        version.set(commit);
+        updateVersion(commit);
         notifyChanged(commit, updated);
     }
 
@@ -129,7 +130,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public String delete(String path) {
         String commit = persistenceConfigRepository.delete(path);
         List<String> removedPaths = storage.removeExactOrByPrefix(path);
-        version.set(commit);
+        updateVersion(commit);
         notifyChanged(commit, removedPaths);
         return commit;
     }
@@ -137,7 +138,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public String deleteAll(List<String> paths) {
         String commit = persistenceConfigRepository.deleteAll(paths);
-        version.set(commit);
+        updateVersion(commit);
         deleteAllInMemory(paths, commit);
         return commit;
     }
