@@ -75,7 +75,7 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     private Map<String, String> buildTenantProfile(Configuration configuration, Map<String, Configuration> originalStorage) {
         if (!configuration.getPath().contains(TENANT_PREFIX)) {
             log.trace("Config {} is not under tenant folder. It will not be processed by externalization.", configuration.getPath());
-            return new HashMap<>();
+            return emptyMap();
         }
 
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
