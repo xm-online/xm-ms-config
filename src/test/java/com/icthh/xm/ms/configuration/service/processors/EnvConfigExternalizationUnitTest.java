@@ -26,22 +26,9 @@ public class EnvConfigExternalizationUnitTest {
         environmentVariables.set("variableThatDefined", "ENV_DEF_VALUE");
 
         Configuration configuration = new Configuration("/config/someConfig", TestUtil.loadFile("someConfig"));
-        ApplicationProperties applicationProperties = new ApplicationProperties();
-        applicationProperties.setEnvConfigExternalizationEnabled(true);
-        List<Configuration> processedConfigurations = new EnvConfigExternalization(applicationProperties)
+        List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile()
                 .processConfiguration(configuration, emptyMap(), emptyMap());
         assertEquals(TestUtil.loadFile("someConfigExpected"), processedConfigurations.get(0).getContent());
-    }
-
-    @Test
-    @SneakyThrows
-    public void testConfigExternalizationWhenDisabled() {
-        Configuration configuration = new Configuration("/config/someConfig", TestUtil.loadFile("someConfig"));
-        ApplicationProperties applicationProperties = new ApplicationProperties();
-        applicationProperties.setEnvConfigExternalizationEnabled(false);
-        List<Configuration> processedConfigurations = new EnvConfigExternalization(applicationProperties)
-                .processConfiguration(configuration, emptyMap(), emptyMap());
-        assertTrue(processedConfigurations.isEmpty());
     }
 
 }
