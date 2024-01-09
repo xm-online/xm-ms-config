@@ -28,6 +28,7 @@ public class ApplicationProperties {
     private Integer kafkaMetadataMaxAge;
 
     private Boolean envConfigExternalizationEnabled;
+    private Integer updateConfigWaitTimeSecond = 120;
 
     @Getter
     @Setter

@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
@@ -12,14 +13,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+
+import com.icthh.xm.ms.configuration.utils.LockUtils;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
+import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_BY_COMMIT_LOCK;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -27,7 +34,6 @@ import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ConfigProxyRepository implements DistributedConfigRepository {
     @Getter(AccessLevel.PACKAGE)
     private final AtomicReference<String> version = new AtomicReference<>();
@@ -35,6 +41,22 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     private final MemoryConfigStorage storage;
     private final PersistenceConfigRepository persistenceConfigRepository;
     private final ConfigTopicProducer configTopicProducer;
+    private final Lock lock;
+    ApplicationProperties applicationProperties;
+
+    public ConfigProxyRepository(MemoryConfigStorage storage,
+                                 PersistenceConfigRepository persistenceConfigRepository,
+                                 ConfigTopicProducer configTopicProducer,
+                                 ApplicationProperties applicationProperties,
+                                 @Qualifier(UPDATE_BY_COMMIT_LOCK)
+                                 Lock lock) {
+        this.storage = storage;
+        this.persistenceConfigRepository = persistenceConfigRepository;
+        this.configTopicProducer = configTopicProducer;
+        this.applicationProperties = applicationProperties;
+        this.lock = lock;
+    }
+
 
     /**
      * Get internal map config. If commit is not specified, or commit is the same as inmemory,
@@ -45,19 +67,33 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
      */
     @Override
     public Map<String, Configuration> getMap(String commit) {
-        if (StringUtils.isEmpty(commit)
-            || (version.get() != null && commit.equals(version.get()))
-            || persistenceConfigRepository.hasVersion(commit)) {
+        if (isOnCommit(commit)) {
             log.info("Get configuration from memory by commit: {}", commit);
-            return storage.getPrivateConfigs();
         } else {
+            updateConfig(commit);
+        }
+        return storage.getPrivateConfigs();
+    }
+
+    private boolean isOnCommit(String commit) {
+        return StringUtils.isEmpty(commit)
+            || (version.get() != null && commit.equals(version.get()))
+            || persistenceConfigRepository.hasVersion(commit);
+    }
+
+    private void updateConfig(String commit) {
+        LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), () -> {
+            if (isOnCommit(commit)) {
+                log.info("Configuration already actual by commit: {}", commit);
+                return;
+            }
+
             log.info("Load actual configuration from git by commit: {}", commit);
             ConfigurationList configurationList = persistenceConfigRepository.findAll();
             List<Configuration> actualConfigs = configurationList.getData();
             storage.refreshStorage(actualConfigs);
             updateVersion(configurationList.getCommit());
-            return storage.getPrivateConfigs();
-        }
+        });
     }
 
     @Override

@@ -29,6 +29,8 @@ public class BeanConfiguration {
 
     public static final String TENANT_CONFIGURATION_LOCK = "tenant-configuration-lock";
 
+    public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
+
     @Bean(destroyMethod = "destroy")
     public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
                                                       @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
@@ -42,6 +44,12 @@ public class BeanConfiguration {
     @Bean
     @Qualifier(TENANT_CONFIGURATION_LOCK)
     public Lock gitRepositoryLock() {
+        return new ReentrantLock();
+    }
+
+    @Bean
+    @Qualifier(UPDATE_BY_COMMIT_LOCK)
+    public Lock updateByCommitLock() {
         return new ReentrantLock();
     }
 

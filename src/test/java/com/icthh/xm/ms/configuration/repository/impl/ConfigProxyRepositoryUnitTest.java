@@ -23,6 +23,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigProxyRepositoryUnitTest {
@@ -38,7 +39,9 @@ public class ConfigProxyRepositoryUnitTest {
     @Before
     public void before() {
         MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorageImpl(emptyList(), emptyList(), tenantAliasService);
-        configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository, configTopicProducer);
+        ApplicationProperties applicationProperties = new ApplicationProperties();
+        configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository,
+            configTopicProducer, applicationProperties, new ReentrantLock());
     }
 
     @Test

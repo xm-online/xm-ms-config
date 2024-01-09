@@ -11,7 +11,6 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringSubstitutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -25,6 +24,7 @@ import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static org.apache.commons.text.StringSubstitutor.replace;
 
 @Slf4j
 @Component
@@ -62,10 +62,11 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         tenantEnvs.putAll(environment);
         log.trace("Variables for replace {}", tenantEnvs);
 
-        log.trace("Config before replace {}", configuration.getContent());
-        String content = StringSubstitutor.replace(configuration.getContent(), tenantEnvs);
+        String originalContent = configuration.getContent();
+        log.trace("Config before replace {}", originalContent);
+        String content = originalContent.contains("${") ? replace(originalContent, tenantEnvs) : originalContent ;
         log.trace("Config after replace {}", content);
-        if (!content.equals(configuration.getContent())) {
+        if (!content.equals(originalContent)) {
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
             return emptyList();
