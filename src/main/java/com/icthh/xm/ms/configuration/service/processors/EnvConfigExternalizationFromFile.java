@@ -18,12 +18,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.text.StringSubstitutor.replace;
 
 @Slf4j
@@ -54,13 +56,16 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     @Override
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage) {
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess) {
 
         Map<String, String> tenantEnvs = new HashMap<>();
         Map<String, String> tenantProfile = buildTenantProfile(configuration, originalStorage);
         tenantEnvs.putAll(tenantProfile);
         tenantEnvs.putAll(environment);
         log.trace("Variables for replace {}", tenantEnvs);
+
+        addToReprocessIfTenantProfile(configuration, originalStorage, configToReprocess);
 
         String originalContent = configuration.getContent();
         log.trace("Config before replace {}", originalContent);
@@ -69,7 +74,28 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         if (!content.equals(originalContent)) {
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
+            targetStorage.remove(configuration.getPath());
             return emptyList();
+        }
+    }
+
+    private void addToReprocessIfTenantProfile(Configuration configuration,
+                                               Map<String, Configuration> originalStorage,
+                                               Set<Configuration> configToReprocess) {
+        String path = configuration.getPath();
+        if (!path.contains(TENANT_PREFIX)) {
+            return;
+        }
+        String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
+        String tenantProfilePath = getTenantProfilePath(tenantKey);
+        String tenantFolderPath = tenantFolderPath(tenantKey);
+
+        if (path.equals(tenantProfilePath)) {
+            List<Configuration> toReprocess = originalStorage.values().stream()
+                .filter(config -> config.getPath().startsWith(tenantFolderPath))
+                .filter(config -> !config.getPath().equals(tenantProfilePath))
+                .collect(toList());
+            configToReprocess.addAll(toReprocess);
         }
     }
 
@@ -80,7 +106,7 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         }
 
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
-        String tenantProfilePath = TENANT_PREFIX + tenantKey + "/tenant-profile.yml";
+        String tenantProfilePath = getTenantProfilePath(tenantKey);
         Configuration tenantProfileConfig = originalStorage.get(tenantProfilePath);
         if (tenantProfileConfig == null) {
             return emptyMap();
@@ -90,6 +116,14 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         TenantProfileEntry tenantProfileEntry = tenantProfileCash.computeIfAbsent(tenantProfilePath,
             key -> new TenantProfileEntry(tenantProfileContent, getConfigMap(tenantProfileContent)));
         return getMap(tenantProfilePath, tenantProfileEntry, tenantProfileContent);
+    }
+
+    private static String getTenantProfilePath(String tenantKey) {
+        return tenantFolderPath(tenantKey) + "/tenant-profile.yml";
+    }
+
+    private static String tenantFolderPath(String tenantKey) {
+        return TENANT_PREFIX + tenantKey;
     }
 
     private Map<String, String> getMap(String tenantEnvValuePath, TenantProfileEntry tenantProfileEntry, String tenantProfileContent) {

@@ -10,6 +10,7 @@ import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import lombok.SneakyThrows;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class TenantAliasServiceUnitTest {
     @Test
     public void testUpdateChangedTenantsDuringProcessConfiguration() {
         Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
+        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of(), Set.of());
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("SUBMAIN"));
@@ -59,7 +60,7 @@ public class TenantAliasServiceUnitTest {
         reset(configurationService);
 
         Configuration newConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree-updated.yml"));
-        tenantAliasService.processConfiguration(newConfig, Map.of(), Map.of());
+        tenantAliasService.processConfiguration(newConfig, Map.of(), Map.of(), Set.of());
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("ONEMORELIFETENANT"));
@@ -77,7 +78,7 @@ public class TenantAliasServiceUnitTest {
     @SneakyThrows
     public void testAddParent() {
         Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of());
+        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of(), Set.of());
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("SUBMAIN"));

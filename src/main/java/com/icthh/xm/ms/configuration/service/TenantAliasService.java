@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -60,7 +61,8 @@ public class TenantAliasService implements PublicConfigurationProcessor {
     @Override
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage) {
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess) {
         try {
             TenantAliasTree tenantAliasTree = mapper.readValue(configuration.getContent(), TenantAliasTree.class);
             tenantAliasTree.init();

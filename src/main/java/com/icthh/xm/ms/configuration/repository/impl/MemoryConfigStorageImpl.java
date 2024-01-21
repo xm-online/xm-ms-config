@@ -17,10 +17,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
 import lombok.RequiredArgsConstructor;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.util.Collections.singletonList;
@@ -163,6 +163,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     @SuppressWarnings("ConstantConditions")
     private Set<String> process(Configuration configuration) {
         Set<Configuration> configurations = singletonSet(configuration);
+        return processAll(configurations);
+    }
+
+    private Set<String> processAll(Set<Configuration> configurations) {
         configurations = processConfiguration(configurations, publicConfigurationProcessors, processedStorage);
         configurations = processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
         return configurations.stream().map(Configuration::getPath).collect(toSet());
@@ -172,23 +176,30 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                                                     List<? extends ConfigurationProcessor> configurationProcessors,
                                                     Map<String, Configuration> processedStorage) {
         Set<Configuration> currentConfigurations = new HashSet<>(configurations);
+        Set<Configuration> configToReprocess = new HashSet<>();
         for (var processor: configurationProcessors) {
             Set<Configuration> processedConfiguration = currentConfigurations.stream()
-                    .filter(processor::isSupported)
-                    .flatMap(runProcessor(processor, processedStorage))
-                    .collect(toSet());
+                .filter(processor::isSupported)
+                .flatMap(runProcessor(processor, processedStorage, configToReprocess))
+                .collect(toSet());
 
             currentConfigurations.addAll(processedConfiguration);
+        }
+        log.trace("Configs to reprocess: {}", configToReprocess);
+        if (!configToReprocess.isEmpty()) {
+            log.info("Need to reprocess {} configs", configToReprocess.size());
+            processAll(configToReprocess);
         }
         return currentConfigurations;
     }
 
     private Function<Configuration, Stream<Configuration>> runProcessor(ConfigurationProcessor processor,
-                                                                        Map<String, Configuration> processedStorage) {
+                                                                        Map<String, Configuration> processedStorage,
+                                                                        Set<Configuration> configToReprocess) {
         var storage = unmodifiableMap(this.storage);
         return configuration -> {
             try {
-                List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage);
+                List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage, configToReprocess);
                 processedStorage.putAll(configurations.stream().collect(toMap(Configuration::getPath, identity())));
                 return configurations.stream();
             } catch (Exception e) {

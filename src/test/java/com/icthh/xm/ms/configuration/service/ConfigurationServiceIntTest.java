@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -212,6 +214,45 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
                 "/config/file1", new Configuration("/config/file1", "1\n"),
                 "/config/file2", new Configuration("/config/file2", "2\n")
         ));
+    }
+
+    @Test
+    public void testExternalizationWhenOnlyTenantProfileUpdated() {
+        memoryConfigStorage.clear();
+
+        Configuration mainValue = mockConfig("XM", "${environment.variableFromFile}", "/some-config.yml");
+        String tenantEnvValuePath = "/config/tenants/XM/tenant-profile.yml";
+        Configuration tenantProfile = new Configuration(tenantEnvValuePath, TestUtil.loadFile("/tenant-profile.yml"));
+
+        configurationService.updateConfigurationInMemory(mainValue);
+        // update tenant profile after main value
+        configurationService.updateConfigurationInMemory(tenantProfile);
+
+        String content = mockConfig("XM", "VALUE_FROM_FILE", "/some-config.yml").getContent();
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(mainValue.getPath()));
+        assertEquals(content, privateMap.get(pathInTenant("XM", "/some-config.yml")).getContent());
+    }
+
+    @Test
+    public void testUpdateWhenExternalizationRemoved() {
+        memoryConfigStorage.clear();
+
+        Configuration mainValue = mockConfig("MAIN", "${environment.variableFromFile}", "/some-config.yml");
+        String tenantEnvValuePath = "/config/tenants/MAIN/tenant-profile.yml";
+        Configuration tenantProfile = new Configuration(tenantEnvValuePath, TestUtil.loadFile("/tenant-profile.yml"));
+
+        configurationService.updateConfigurationInMemory(tenantProfile);
+        configurationService.updateConfigurationInMemory(mainValue);
+
+        String content = mockConfig("MAIN", "VALUE_FROM_FILE", "/some-config.yml").getContent();
+
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
+        assertEquals(content, privateMap.get(pathInTenant("MAIN", "/some-config.yml")).getContent());
+
+        Configuration configWithoutVariables = mockConfig("MAIN", "SOME_MOCK_VALUE", "/some-config.yml");
+        configurationService.updateConfigurationInMemory(configWithoutVariables);
+        Map<String, Configuration> newPrivateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
+        assertEquals(configWithoutVariables.getContent(), newPrivateMap.get(pathInTenant("MAIN", "/some-config.yml")).getContent());
     }
 
     private Map<String, Configuration> getPromPublicApi() {

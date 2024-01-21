@@ -15,6 +15,7 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static com.icthh.xm.commons.config.client.service.TenantConfigService.DEFAULT_TENANT_CONFIG_PATTERN;
@@ -45,7 +46,8 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
     @SneakyThrows
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage) {
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess) {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         Map<String, Object> configMap = mapper.readValue(configuration.getContent(),
                 new TypeReference<Map<String, Object>>() {

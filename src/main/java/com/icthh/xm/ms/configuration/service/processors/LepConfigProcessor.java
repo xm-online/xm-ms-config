@@ -18,6 +18,7 @@ import org.springframework.util.AntPathMatcher;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static com.icthh.xm.commons.lep.XmLepConstants.THREAD_CONTEXT_KEY_AUTH_CONTEXT;
@@ -50,7 +51,8 @@ public class LepConfigProcessor implements PrivateConfigurationProcessor {
     @Override
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage) {
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess) {
         return runWithLepContext(configuration,
                 () -> self.processConfigurationWithResolver(configuration, originalStorage, targetStorage),
                 emptyList());

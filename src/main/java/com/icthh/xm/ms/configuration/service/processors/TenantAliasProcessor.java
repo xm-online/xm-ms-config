@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.icthh.xm.ms.configuration.domain.TenantAliasTree.TraverseRule.BREAK;
 import static com.icthh.xm.ms.configuration.domain.TenantAliasTree.TraverseRule.CONTINUE;
@@ -43,7 +44,8 @@ public class TenantAliasProcessor implements PublicConfigurationProcessor {
     @Override
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage) {
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess) {
         List<Configuration> resultConfigurations = new ArrayList<>();
         String path = configuration.getPath();
         targetStorage.remove(path);

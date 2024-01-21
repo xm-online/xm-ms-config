@@ -44,6 +44,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
@@ -288,7 +289,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testGetTreeConfigurationsByPaths() {
         Configuration config = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(config, Map.of(), Map.of());
+        tenantAliasService.processConfiguration(config, Map.of(), Map.of(), Set.of());
 
         String path = CONFIG + TENANTS + "/MAIN/my-config.yml";
         String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";

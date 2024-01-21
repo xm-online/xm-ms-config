@@ -8,6 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
+import java.util.HashSet;
 import java.util.List;
 
 import static java.util.Collections.emptyMap;
@@ -27,7 +28,7 @@ public class EnvConfigExternalizationUnitTest {
 
         Configuration configuration = new Configuration("/config/someConfig", TestUtil.loadFile("someConfig"));
         List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile()
-                .processConfiguration(configuration, emptyMap(), emptyMap());
+                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>());
         assertEquals(TestUtil.loadFile("someConfigExpected"), processedConfigurations.get(0).getContent());
     }
 
