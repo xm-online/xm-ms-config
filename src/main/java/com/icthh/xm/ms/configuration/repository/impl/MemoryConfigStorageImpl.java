@@ -170,7 +170,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private Set<String> processAll(Set<Configuration> configurations) {
         configurations = processConfiguration(configurations, publicConfigurationProcessors, processedStorage);
         configurations = processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
-        return configurations.stream().map(Configuration::getPath).collect(toSet());
+        return configurations.stream().filter(Objects::nonNull).map(Configuration::getPath).collect(toSet());
     }
 
     private Set<Configuration> processConfiguration(Set<Configuration> configurations,
