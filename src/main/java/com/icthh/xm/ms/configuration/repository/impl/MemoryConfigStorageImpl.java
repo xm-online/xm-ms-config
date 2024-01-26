@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -179,6 +180,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         Set<Configuration> configToReprocess = new HashSet<>();
         for (var processor: configurationProcessors) {
             Set<Configuration> processedConfiguration = currentConfigurations.stream()
+                .filter(Objects::nonNull)
                 .filter(processor::isSupported)
                 .flatMap(runProcessor(processor, processedStorage, configToReprocess))
                 .collect(toSet());
