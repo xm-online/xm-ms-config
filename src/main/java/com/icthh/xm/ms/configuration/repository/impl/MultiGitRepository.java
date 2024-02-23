@@ -5,6 +5,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.AntPathMatcher;
@@ -58,6 +59,7 @@ public class MultiGitRepository implements PersistenceConfigRepository {
             resultList.addExternalTenantVersion(tenantKey, externalList.getVersion());
         });
         ConfigurationList mainList = mainRepository.findAll();
+        resultList.getData().addAll(mainList.getData());
         resultList.setMainVersion(mainList.getVersion());
         version.set(resultList.getVersion());
         return resultList;
@@ -196,6 +198,7 @@ public class MultiGitRepository implements PersistenceConfigRepository {
         return pathMatcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, path).get(TENANT_NAME);
     }
 
+    @EqualsAndHashCode
     private static class TenantRepository {
 
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType")

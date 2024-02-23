@@ -43,18 +43,19 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
+
 @Slf4j
 @RequiredArgsConstructor
 @Primary
 @Service
 public class ConfigurationService extends AbstractConfigService implements InitializingBean {
 
-    private final DistributedConfigRepository repositoryProxy;
+    private final DistributedConfigRepository repositoryProxy; // TODO two same fields?
     private final TenantContextHolder tenantContextHolder;
-    private final DistributedConfigRepository inMemoryRepository;
+    private final DistributedConfigRepository inMemoryRepository; // TODO two same fields?
     private final ApplicationProperties applicationProperties;
     private final ConfigVersionDeserializer configVersionDeserializer;
-
 
     @Override
     @LoggingAspectConfig(resultDetails = false)

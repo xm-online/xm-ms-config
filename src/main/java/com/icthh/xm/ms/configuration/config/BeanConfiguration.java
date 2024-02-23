@@ -9,6 +9,7 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
+import com.icthh.xm.ms.configuration.repository.impl.MultiGitRepository;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
@@ -32,6 +33,7 @@ public class BeanConfiguration {
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
 
     @Bean(destroyMethod = "destroy")
+    @Qualifier("jGitRepository")
     public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
                                                       @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
                                                       TenantContextHolder tenantContextHolder,
@@ -39,6 +41,12 @@ public class BeanConfiguration {
                                                       XmRequestContextHolder requestContextHolder) {
         return new JGitRepository(applicationProperties.getGit(), lock,
                                   tenantContextHolder, authenticationContextHolder, requestContextHolder);
+    }
+
+    @Bean
+    @Qualifier("multiGitRepository")
+    public PersistenceConfigRepository multiGitRepository(@Qualifier("jGitRepository") PersistenceConfigRepository jGitRepository) {
+        return new MultiGitRepository(jGitRepository);
     }
 
     @Bean

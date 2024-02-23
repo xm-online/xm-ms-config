@@ -44,6 +44,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     ApplicationProperties applicationProperties;
 
     public ConfigProxyRepository(MemoryConfigStorage storage,
+                                 @Qualifier("multiGitRepository")
                                  PersistenceConfigRepository persistenceConfigRepository,
                                  ConfigTopicProducer configTopicProducer,
                                  ApplicationProperties applicationProperties,
@@ -75,7 +76,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private boolean isOnCommit(ConfigVersion version) {
-        return UNDEFINED_VERSION.equals(version) || version == null
+        return  version == null || UNDEFINED_VERSION.equals(version)
             || version.equals(this.version.get())
             || persistenceConfigRepository.hasVersion(version);
     }

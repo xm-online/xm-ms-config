@@ -199,10 +199,10 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         String version = new ObjectMapper().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
-        assertEquals(configurationMap, Map.of(
+        assertEquals(Map.of(
                 "/config/file1", new Configuration("/config/file1", "1\n"),
                 "/config/file2", new Configuration("/config/file2", "2\n")
-        ));
+        ), configurationMap);
     }
 
     @Test

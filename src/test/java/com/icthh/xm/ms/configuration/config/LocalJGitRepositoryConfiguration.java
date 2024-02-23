@@ -15,6 +15,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -29,6 +30,7 @@ public class LocalJGitRepositoryConfiguration {
 
     @Bean(destroyMethod = "destroy")
     @Primary
+    @Qualifier("jGitRepository")
     @SneakyThrows
     public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
                                                       TenantContextHolder tenantContextHolder,
