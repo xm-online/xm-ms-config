@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.logging.util.MdcUtils;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,14 +32,14 @@ public class ConfigTopicProducerUnitTest {
     public void notifyConfigurationChanged() {
         MdcUtils.putRid("testRid");
         when(configProperties.getKafkaConfigTopic()).thenReturn("topic");
-        producer.notifyConfigurationChanged("commit", Collections.singletonList("path"));
+        producer.notifyConfigurationChanged(new ConfigVersion("commit"), Collections.singletonList("path"));
 
-        verify(kafkaTemplate).send("topic", "{\"eventId\":\"testRid\",\"commit\":\"commit\",\"paths\":[\"path\"]}");
+        verify(kafkaTemplate).send("topic", "{\"eventId\":\"testRid\",\"commit\":\"{\\\"externalTenantVersions\\\":{},\\\"mainVersion\\\":\\\"commit\\\"}\",\"paths\":[\"path\"]}");
     }
 
     @Test
     public void notifyConfigurationChangedIfNoPaths() {
-        producer.notifyConfigurationChanged("commit", Collections.emptyList());
+        producer.notifyConfigurationChanged(new ConfigVersion("commit"), Collections.emptyList());
 
         verifyZeroInteractions(kafkaTemplate);
     }

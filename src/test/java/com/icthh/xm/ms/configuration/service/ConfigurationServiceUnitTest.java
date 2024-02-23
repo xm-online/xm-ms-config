@@ -13,6 +13,7 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigProxyRepository;
@@ -78,7 +79,7 @@ public class ConfigurationServiceUnitTest {
     @Test
     public void findConfiguration() {
         Configuration configuration = new Configuration("path", "content");
-        when(configProxyRepository.find("path", null)).thenReturn(new ConfigurationItem("commit", configuration));
+        when(configProxyRepository.find("path")).thenReturn(new ConfigurationItem(new ConfigVersion("commit"), configuration));
 
         Optional<Configuration> result = configurationService.findConfiguration("path");
 
@@ -129,7 +130,7 @@ public class ConfigurationServiceUnitTest {
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
 
-        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig)));
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList(new ConfigVersion("commit"), List.of(firstConfig, secondConfig, thirdConfig)));
 
         Map<String, Configuration> actual = configurationService.findConfigurations(List.of(firstPath, secondPath), false);
 
@@ -151,7 +152,7 @@ public class ConfigurationServiceUnitTest {
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
         Configuration fourthConfig = new Configuration(fourthPath, "fourthContent");
-        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList(new ConfigVersion("commit"), List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
 
         Map<String, Configuration> actual = configurationService.findConfigurations(List.of(), true);
 
@@ -183,7 +184,7 @@ public class ConfigurationServiceUnitTest {
         Configuration secondConfig = new Configuration(secondPath, "secondContent");
         Configuration thirdConfig = new Configuration(thirdPath, "thirdContent");
         Configuration fourthConfig = new Configuration(fourthPath, "fourthContent");
-        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList("commit", List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
+        when(configProxyRepository.findAll()).thenReturn(new ConfigurationList(new ConfigVersion("commit"), List.of(firstConfig, secondConfig, thirdConfig, fourthConfig)));
 
         List<ConfigurationHashSum> configurationsHashSum = configurationService.findConfigurationsHashSum().getConfigurationsHashSum();
 

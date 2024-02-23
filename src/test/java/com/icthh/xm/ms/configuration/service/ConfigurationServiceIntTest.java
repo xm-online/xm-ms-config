@@ -1,7 +1,9 @@
 package com.icthh.xm.ms.configuration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
@@ -32,6 +34,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -160,7 +163,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
         doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
-        verify(configTopicProducer).notifyConfigurationChanged(anyString(), eq(filesList("/some-config.yml")));
+        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(filesList("/some-config.yml")));
     }
 
     @Test
@@ -181,7 +184,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Mockito.reset(configTopicProducer);
 
         configurationService.refreshConfiguration();
-        verify(configTopicProducer).notifyConfigurationChanged(anyString(), eq(List.of(
+        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(List.of(
                 "/config/file2", "/config/file1"
         )));
     }
@@ -192,9 +195,10 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
         configurationService.updateConfiguration(new Configuration("/config/file2", "1\n"));
         configurationService.updateConfiguration(new Configuration("/config/file3", "1\n"));
-        String commit = configurationService.updateConfigurationsFromZip(
+        ConfigVersion commit = configurationService.updateConfigurationsFromZip(
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
-        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(commit);
+        String version = new ObjectMapper().writeValueAsString(commit);
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(configurationMap, Map.of(
                 "/config/file1", new Configuration("/config/file1", "1\n"),
                 "/config/file2", new Configuration("/config/file2", "2\n")

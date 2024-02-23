@@ -23,6 +23,8 @@ import java.util.function.Supplier;
 
 import static com.icthh.xm.commons.lep.XmLepConstants.THREAD_CONTEXT_KEY_AUTH_CONTEXT;
 import static com.icthh.xm.commons.lep.XmLepConstants.THREAD_CONTEXT_KEY_TENANT_CONTEXT;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static java.util.Collections.emptyList;
 
 @Slf4j
@@ -39,8 +41,6 @@ public class LepConfigProcessor implements PrivateConfigurationProcessor {
     @Setter(onMethod = @__(@Autowired))
     private LepConfigProcessor self;
 
-    private static final String TENANT_NAME = "tenantName";
-    public static final String TENANT_PREFIX = "/config/tenants/";
     private static final String TENANT_CONFIG_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**/*";
 
     @Override

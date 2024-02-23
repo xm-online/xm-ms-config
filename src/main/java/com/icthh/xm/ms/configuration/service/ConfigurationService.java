@@ -11,6 +11,8 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
@@ -51,24 +53,27 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final TenantContextHolder tenantContextHolder;
     private final DistributedConfigRepository inMemoryRepository;
     private final ApplicationProperties applicationProperties;
+    private final ConfigVersionDeserializer configVersionDeserializer;
+
 
     @Override
     @LoggingAspectConfig(resultDetails = false)
-    public Map<String, Configuration> getConfigurationMap(String commit) {
-        return inMemoryRepository.getMap(commit);
+    public Map<String, Configuration> getConfigurationMap(String version) {
+        ConfigVersion configVersion = configVersionDeserializer.from(version);
+        return inMemoryRepository.getMap(configVersion);
     }
 
     @Override
     @LoggingAspectConfig(resultDetails = false, inputCollectionAware = true)
-    public Map<String, Configuration> getConfigurationMap(String commit, Collection<String> paths) {
-        Map<String, Configuration> map = getConfigurationMap(commit);
+    public Map<String, Configuration> getConfigurationMap(String version, Collection<String> paths) {
+        Map<String, Configuration> map = getConfigurationMap(version);
         Map<String, Configuration> resultMap = new HashMap<>();
         paths.forEach(path -> resultMap.put(path, map.get(path)));
         return resultMap;
     }
 
-    public Optional<Configuration> findConfiguration(String path, String version) {
-        return Optional.ofNullable(repositoryProxy.find(path, version).getData());
+    public Optional<Configuration> findConfiguration(String path, ConfigVersion version) {
+        return Optional.ofNullable(repositoryProxy.find(path, version));
     }
 
     public Optional<Configuration> findProcessedConfiguration(String path, Boolean processed) {
@@ -79,7 +84,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public Optional<Configuration> findConfiguration(String path) {
-        return findConfiguration(path, null);
+        return Optional.ofNullable(repositoryProxy.find(path)).map(ConfigurationItem::getData);
     }
 
     public Map<String, Configuration> findConfigurations(List<String> paths, Boolean fetchAll) {
@@ -113,12 +118,12 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationInMemory(Configuration configuration) {
-        inMemoryRepository.updateConfigurationInMemory(configuration, inMemoryRepository.getCommitVersion());
+        inMemoryRepository.updateConfigurationInMemory(configuration, inMemoryRepository.getCurrentVersion());
     }
 
     public void updateConfigurationsInMemory(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        inMemoryRepository.updateConfigurationsInMemory(configurations, inMemoryRepository.getCommitVersion());
+        inMemoryRepository.updateConfigurationsInMemory(configurations, inMemoryRepository.getCurrentVersion());
     }
 
     public void deleteConfiguration(String path) {
@@ -151,8 +156,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return new Configuration(path, IOUtils.toString(file.getInputStream(), UTF_8));
     }
 
-    public String getVersion() {
-        return inMemoryRepository.getCommitVersion();
+    public ConfigVersion getVersion() {
+        return inMemoryRepository.getCurrentVersion();
     }
 
     public void deleteConfigurationInMemory(List<String> paths) {
@@ -176,15 +181,14 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return findConfigurationsHashSum(getRequiredTenantKeyValue(tenantContextHolder));
     }
 
-    public String updateConfigurationsFromList(List<Configuration> configs) {
+    public void updateConfigurationsFromList(List<Configuration> configs) {
         configs = configs.stream().filter(this::isConfigUnderTenant).collect(toList());
-        String commit = repositoryProxy.saveOrDeleteEmpty(configs);
+        repositoryProxy.saveOrDeleteEmpty(configs);
         refreshTenantConfigurations();
-        return commit;
     }
 
     @SneakyThrows
-    public String updateConfigurationsFromZip(MultipartFile zipFile) {
+    public ConfigVersion updateConfigurationsFromZip(MultipartFile zipFile) {
         return repositoryProxy.setRepositoryState(unzip(new ZipInputStream(zipFile.getInputStream())));
     }
 

@@ -15,6 +15,7 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
@@ -130,7 +131,7 @@ public class ConfigurationAdminResource {
     public ResponseEntity<String> getConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
         String version = request.getParameter("version");
-        Optional<Configuration> configuration = configurationService.findConfiguration(path, version);
+        Optional<Configuration> configuration = configurationService.findConfiguration(path, new ConfigVersion(version));
         return toResponse(request.getParameterMap().containsKey("toJson"), path, configuration);
     }
 
@@ -139,7 +140,7 @@ public class ConfigurationAdminResource {
     @PostAuthorize("hasPermission({'returnObject': returnObject}, 'CONFIG.ADMIN.GET_VERSION')")
     @PrivilegeDescription("Privilege to get version for admin")
     public ResponseEntity<String> getVersion() {
-        return ResponseEntity.ok(configurationService.getVersion());
+        return ResponseEntity.ok(configurationService.getVersion().getMainVersion());
     }
 
     protected ResponseEntity<String> getConfiguration(Boolean toJson, String path) {

@@ -8,6 +8,10 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public final class Constants {
 
+    public static final String TENANT_NAME = "tenantName";
+    public static final String TENANT_PREFIX = "/config/tenants/";
+    public static final String TENANT_ENV_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**";
+
     public static final String AUTH_TENANT_KEY = "tenant";
     public static final String AUTH_XM_TOKEN_KEY = "xmToken";
     public static final String AUTH_XM_COOKIE_KEY = "xmCookie";
