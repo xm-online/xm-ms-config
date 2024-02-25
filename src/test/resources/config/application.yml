@@ -98,6 +98,7 @@ xm-config:
     kafka-config-topic: config_topic
 
 application:
+    multiRepositoryEnabled: true
     super-tenants-list: XM, MANAGER
     env-config-externalization-enabled: false
     kafka-enabled: false

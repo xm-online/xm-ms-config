@@ -13,8 +13,6 @@ import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.AntPathMatcher;
 
@@ -35,7 +33,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.collections.MapUtils.isEmpty;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 @Slf4j
@@ -227,6 +224,9 @@ public abstract class MultiGitRepository implements PersistenceConfigRepository 
             }
         });
         this.externalRepositories = newExternalRepositories;
+        if (this.externalRepositories.isEmpty()) {
+            version.set(new ConfigVersion(version.get().getMainVersion()));
+        }
         log.info("External tenants config updated: {}", externalTenantsConfig.getExternalTenants().keySet());
     }
 
