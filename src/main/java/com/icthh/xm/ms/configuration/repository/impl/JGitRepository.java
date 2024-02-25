@@ -324,7 +324,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                 getRequestSourceTypeLogName(requestContextHolder), paths);
             return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths and delete empty"),
                 () -> configurations.forEach(it -> {
-                    if (it.getContent().isEmpty()) {
+                    if (StringUtils.isEmpty(it.getContent())) {
                         deleteExistingFile(it.getPath());
                     } else {
                         writeConfiguration(it);
@@ -386,7 +386,11 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private UsernamePasswordCredentialsProvider createCredentialsProvider() {
-        return new UsernamePasswordCredentialsProvider(gitProperties.getLogin(), gitProperties.getPassword());
+        String password = gitProperties.getPassword();
+        String login = gitProperties.getLogin();
+        login = login == null ? "" : login;
+        password = password == null ? "" : password;
+        return new UsernamePasswordCredentialsProvider(login, password);
     }
 
     private String getGitPath(String absolutePath) {

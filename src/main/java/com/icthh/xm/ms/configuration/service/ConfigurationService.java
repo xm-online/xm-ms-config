@@ -139,6 +139,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         repositoryProxy.refreshAll();
     }
 
+    public void refreshConfiguration(List<String> excludeNotificationPaths) {
+        repositoryProxy.refreshAll(excludeNotificationPaths);
+    }
+
     public void refreshConfiguration(String path) {
         repositoryProxy.refreshPath(path);
     }

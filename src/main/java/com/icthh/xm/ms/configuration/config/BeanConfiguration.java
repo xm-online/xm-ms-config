@@ -45,8 +45,18 @@ public class BeanConfiguration {
 
     @Bean
     @Qualifier("multiGitRepository")
-    public PersistenceConfigRepository multiGitRepository(@Qualifier("jGitRepository") PersistenceConfigRepository jGitRepository) {
-        return new MultiGitRepository(jGitRepository);
+    public PersistenceConfigRepository multiGitRepository(@Qualifier("jGitRepository") PersistenceConfigRepository jGitRepository,
+                                                          ApplicationProperties applicationProperties,
+                                                          @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
+                                                          TenantContextHolder tenantContextHolder,
+                                                          XmAuthenticationContextHolder authenticationContextHolder,
+                                                          XmRequestContextHolder requestContextHolder) {
+        return new MultiGitRepository(jGitRepository) {
+            @Override
+            protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
+                return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
+            }
+        };
     }
 
     @Bean

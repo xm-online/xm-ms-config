@@ -201,10 +201,16 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
 
     @Override
     public void refreshAll() {
+        refreshAll(List.of());
+    }
+
+    @Override
+    public void refreshAll(List<String> excludeNotificationPaths) {
         ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData();
         Set<String> updated = storage.refreshStorage(actualConfigs);
         updateVersion(configurationList.getVersion());
+        excludeNotificationPaths.forEach(updated::remove);
         notifyChanged(updated);
     }
 

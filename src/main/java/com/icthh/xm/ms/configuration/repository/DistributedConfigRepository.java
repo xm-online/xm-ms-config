@@ -20,6 +20,8 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
 
     void refreshAll();
 
+    void refreshAll(List<String> excludeNotificationPaths);
+
     void refreshPath(String path);
 
     void refreshTenant(String tenant);

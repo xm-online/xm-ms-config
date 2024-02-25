@@ -1,14 +1,15 @@
 package com.icthh.xm.ms.configuration.domain;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 import static com.icthh.xm.ms.configuration.repository.impl.JGitRepository.UNDEFINED_COMMIT;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableMap;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 @ToString
@@ -39,9 +40,9 @@ public class ConfigVersion {
     }
 
     public ConfigVersion addExternalTenantVersion(String tenant, ConfigVersion version) {
-        Map<String, ConfigVersion> newExternalTenantVersions = externalTenantVersions;
+        Map<String, ConfigVersion> newExternalTenantVersions = new HashMap<>(externalTenantVersions);
         newExternalTenantVersions.put(tenant, version);
-        return new ConfigVersion(mainVersion, newExternalTenantVersions);
+        return new ConfigVersion(mainVersion, unmodifiableMap(newExternalTenantVersions));
     }
 
     @Override
