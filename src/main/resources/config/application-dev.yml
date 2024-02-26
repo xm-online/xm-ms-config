@@ -97,7 +97,6 @@ jhipster:
 # ===================================================================
 
 application:
-    multiRepositoryEnabled: true
     adminApiRestrictionEnabled: true
     git:
         uri:
