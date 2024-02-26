@@ -51,7 +51,7 @@ public class BeanConfiguration {
                                                           TenantContextHolder tenantContextHolder,
                                                           XmAuthenticationContextHolder authenticationContextHolder,
                                                           XmRequestContextHolder requestContextHolder) {
-        return new MultiGitRepository(jGitRepository(applicationProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder)) {
+        return new MultiGitRepository(new JGitRepository(applicationProperties.getGit(), lock, tenantContextHolder, authenticationContextHolder, requestContextHolder)) {
             @Override
             protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
                 return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
