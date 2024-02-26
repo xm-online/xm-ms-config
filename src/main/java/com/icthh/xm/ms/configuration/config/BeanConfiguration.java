@@ -34,7 +34,6 @@ public class BeanConfiguration {
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
 
     @Bean(destroyMethod = "destroy")
-    @ConditionalOnProperty(value = "application.multiRepositoryEnabled", havingValue = "false")
     public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
                                                       @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
                                                       TenantContextHolder tenantContextHolder,
@@ -46,12 +45,12 @@ public class BeanConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "application.multiRepositoryEnabled", havingValue = "true")
-    public PersistenceConfigRepository multiGitRepository(ApplicationProperties applicationProperties,
+    public PersistenceConfigRepository multiGitRepository(@Qualifier("jGitRepository") PersistenceConfigRepository jGitRepository,
                                                           @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
                                                           TenantContextHolder tenantContextHolder,
                                                           XmAuthenticationContextHolder authenticationContextHolder,
                                                           XmRequestContextHolder requestContextHolder) {
-        return new MultiGitRepository(new JGitRepository(applicationProperties.getGit(), lock, tenantContextHolder, authenticationContextHolder, requestContextHolder)) {
+        return new MultiGitRepository(jGitRepository) {
             @Override
             protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
                 return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
