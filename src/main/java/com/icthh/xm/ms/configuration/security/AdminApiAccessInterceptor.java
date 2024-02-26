@@ -27,10 +27,10 @@ public class AdminApiAccessInterceptor extends HandlerInterceptorAdapter {
         if (Boolean.TRUE.equals(applicationProperties.getAdminApiRestrictionEnabled())) {
             if (requestURI.startsWith("/api/config") || requestURI.startsWith("/api/tenants")) {
                 String tenantKey = tenantContextHolder.getTenantKey().toUpperCase();
-                    List<String> superTenantsList = applicationProperties.getSuperTenantsList();
-                    if (firstNonNull(superTenantsList, emptyList()).contains(tenantKey)) {
-                        return true;
-                    }
+                List<String> superTenantsList = applicationProperties.getSuperTenantsList();
+                if (firstNonNull(superTenantsList, emptyList()).contains(tenantKey)) {
+                    return true;
+                }
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Only privileges tenant can access admin api");
                 return false;
             }

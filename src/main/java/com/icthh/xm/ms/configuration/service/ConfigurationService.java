@@ -43,17 +43,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.annotation.PostConstruct;
-
 @Slf4j
 @RequiredArgsConstructor
 @Primary
 @Service
 public class ConfigurationService extends AbstractConfigService implements InitializingBean {
 
-    private final DistributedConfigRepository repositoryProxy; // TODO two same fields?
+    private final DistributedConfigRepository repositoryProxy;
     private final TenantContextHolder tenantContextHolder;
-    private final DistributedConfigRepository inMemoryRepository; // TODO two same fields?
     private final ApplicationProperties applicationProperties;
     private final ConfigVersionDeserializer configVersionDeserializer;
 
@@ -61,7 +58,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     @LoggingAspectConfig(resultDetails = false)
     public Map<String, Configuration> getConfigurationMap(String version) {
         ConfigVersion configVersion = configVersionDeserializer.from(version);
-        return inMemoryRepository.getMap(configVersion);
+        return repositoryProxy.getMap(configVersion);
     }
 
     @Override
@@ -119,12 +116,12 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationInMemory(Configuration configuration) {
-        inMemoryRepository.updateConfigurationInMemory(configuration, inMemoryRepository.getCurrentVersion());
+        repositoryProxy.updateConfigurationInMemory(configuration, repositoryProxy.getCurrentVersion());
     }
 
     public void updateConfigurationsInMemory(List<MultipartFile> files) {
         List<Configuration> configurations = files.stream().map(this::toConfiguration).collect(toList());
-        inMemoryRepository.updateConfigurationsInMemory(configurations, inMemoryRepository.getCurrentVersion());
+        repositoryProxy.updateConfigurationsInMemory(configurations, repositoryProxy.getCurrentVersion());
     }
 
     public void deleteConfiguration(String path) {
@@ -162,11 +159,11 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public ConfigVersion getVersion() {
-        return inMemoryRepository.getCurrentVersion();
+        return repositoryProxy.getCurrentVersion();
     }
 
     public void deleteConfigurationInMemory(List<String> paths) {
-        inMemoryRepository.deleteAllInMemory(paths);
+        repositoryProxy.deleteAllInMemory(paths);
     }
 
     public void recloneConfiguration() {
