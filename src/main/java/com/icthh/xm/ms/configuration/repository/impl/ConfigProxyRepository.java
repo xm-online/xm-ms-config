@@ -44,6 +44,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     ApplicationProperties applicationProperties;
 
     public ConfigProxyRepository(MemoryConfigStorage storage,
+                                 @Qualifier("configRepository")
                                  PersistenceConfigRepository persistenceConfigRepository,
                                  ConfigTopicProducer configTopicProducer,
                                  ApplicationProperties applicationProperties,

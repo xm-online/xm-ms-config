@@ -9,18 +9,15 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
-import com.icthh.xm.ms.configuration.repository.impl.MultiGitRepository;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,17 +37,8 @@ public class BeanConfiguration {
                                                         TenantContextHolder tenantContextHolder,
                                                         XmAuthenticationContextHolder authenticationContextHolder,
                                                         XmRequestContextHolder requestContextHolder) {
-        JGitRepository jGitRepository = new JGitRepository(applicationProperties.getGit(), lock,
+        return new JGitRepository(applicationProperties.getGit(), lock,
             tenantContextHolder, authenticationContextHolder, requestContextHolder);
-        if (Boolean.TRUE.equals(applicationProperties.getMultiRepositoryEnabled())) {
-            return new MultiGitRepository(jGitRepository) {
-                @Override
-                protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
-                    return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
-                }
-            };
-        }
-        return jGitRepository;
     }
 
     @Bean

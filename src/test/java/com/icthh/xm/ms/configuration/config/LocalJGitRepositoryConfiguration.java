@@ -12,15 +12,12 @@ import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.PreDestroy;
 
-import com.icthh.xm.ms.configuration.repository.impl.MultiGitRepository;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.junit.rules.TemporaryFolder;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
 @Slf4j
@@ -31,7 +28,6 @@ public class LocalJGitRepositoryConfiguration {
     TemporaryFolder initTestGitFolder = new TemporaryFolder();
 
     @Bean
-    @Primary
     @SneakyThrows
     public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
                                                         TenantContextHolder tenantContextHolder,
@@ -39,7 +35,7 @@ public class LocalJGitRepositoryConfiguration {
                                                         XmRequestContextHolder requestContextHolder) {
         createGitRepository(serverGitFolder, initTestGitFolder, applicationProperties.getGit());
         ReentrantLock lock = new ReentrantLock();
-        JGitRepository jGitRepository = new JGitRepository(applicationProperties.getGit(),
+        return new JGitRepository(applicationProperties.getGit(),
             lock,
             tenantContextHolder,
             authenticationContextHolder,
@@ -56,12 +52,6 @@ public class LocalJGitRepositoryConfiguration {
             protected File createGitWorkDirectory() {
                 configGitFolder.create();
                 return configGitFolder.getRoot();
-            }
-        };
-        return new MultiGitRepository(jGitRepository) {
-            @Override
-            protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
-                return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
             }
         };
     }

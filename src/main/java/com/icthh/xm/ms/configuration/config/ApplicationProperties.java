@@ -21,7 +21,6 @@ public class ApplicationProperties {
     private GitProperties git;
     private final Retry retry = new Retry();
 
-    private Boolean multiRepositoryEnabled;
     private Boolean adminApiRestrictionEnabled;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();

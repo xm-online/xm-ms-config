@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
-import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -35,7 +34,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -54,7 +52,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     MemoryConfigStorage memoryConfigStorage;
 
     @Autowired
-    PersistenceConfigRepository repositoryProxy;
+    JGitRepository repository;
 
     @Before
     public void before() {
@@ -168,7 +166,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @Test
     public void testExcludeFileFromNotifications() {
-        List<String> paths = repositoryProxy.findAll()
+        List<String> paths = repository.findAll()
                 .getData()
                 .stream()
                 .map(Configuration::getPath)
