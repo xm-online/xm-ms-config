@@ -5,6 +5,7 @@ import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -40,7 +41,7 @@ public class MultiGitRepositoryIntTest extends AbstractSpringBootTest {
     public MultiGitRepository multiGitRepository;
 
     @Autowired
-    public JGitRepository jGitRepository;
+    public PersistenceConfigRepository jGitRepository;
 
     @Rule
     public TemporaryFolder extTenantGitFolder = new TemporaryFolder();

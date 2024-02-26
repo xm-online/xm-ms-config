@@ -20,6 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -33,29 +34,23 @@ public class BeanConfiguration {
 
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
 
-    @Bean(destroyMethod = "destroy")
-    public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
-                                                      @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
-                                                      TenantContextHolder tenantContextHolder,
-                                                      XmAuthenticationContextHolder authenticationContextHolder,
-                                                      XmRequestContextHolder requestContextHolder) {
-        return new JGitRepository(applicationProperties.getGit(), lock,
-                                  tenantContextHolder, authenticationContextHolder, requestContextHolder);
-    }
-
     @Bean
-    @ConditionalOnProperty(value = "application.multiRepositoryEnabled", havingValue = "true")
-    public PersistenceConfigRepository multiGitRepository(@Qualifier("jGitRepository") PersistenceConfigRepository jGitRepository,
-                                                          @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
-                                                          TenantContextHolder tenantContextHolder,
-                                                          XmAuthenticationContextHolder authenticationContextHolder,
-                                                          XmRequestContextHolder requestContextHolder) {
-        return new MultiGitRepository(jGitRepository) {
-            @Override
-            protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
-                return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
-            }
-        };
+    public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
+                                                        @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
+                                                        TenantContextHolder tenantContextHolder,
+                                                        XmAuthenticationContextHolder authenticationContextHolder,
+                                                        XmRequestContextHolder requestContextHolder) {
+        JGitRepository jGitRepository = new JGitRepository(applicationProperties.getGit(), lock,
+            tenantContextHolder, authenticationContextHolder, requestContextHolder);
+        if (Boolean.TRUE.equals(applicationProperties.getMultiRepositoryEnabled())) {
+            return new MultiGitRepository(jGitRepository) {
+                @Override
+                protected PersistenceConfigRepository createExternalRepository(ApplicationProperties.GitProperties gitProperties) {
+                    return new JGitRepository(gitProperties, lock, tenantContextHolder, authenticationContextHolder, requestContextHolder);
+                }
+            };
+        }
+        return jGitRepository;
     }
 
     @Bean
