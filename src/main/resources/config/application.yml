@@ -139,6 +139,7 @@ xm-config:
 tenant.reject-suspended: false
 
 application:
+    adminApiRestrictionEnabled: false
     super-tenants-list: XM, MANAGER
     tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config
     kafka-enabled: true

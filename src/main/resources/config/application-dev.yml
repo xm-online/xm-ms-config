@@ -97,6 +97,7 @@ jhipster:
 # ===================================================================
 
 application:
+    adminApiRestrictionEnabled: true
     git:
         uri:
         login:

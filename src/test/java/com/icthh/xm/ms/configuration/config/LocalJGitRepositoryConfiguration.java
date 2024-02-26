@@ -11,13 +11,13 @@ import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.PreDestroy;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
 @Slf4j
@@ -27,25 +27,26 @@ public class LocalJGitRepositoryConfiguration {
     TemporaryFolder configGitFolder = new TemporaryFolder();
     TemporaryFolder initTestGitFolder = new TemporaryFolder();
 
-    @Bean(destroyMethod = "destroy")
-    @Primary
+    @Bean
     @SneakyThrows
-    public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
-                                                      TenantContextHolder tenantContextHolder,
-                                                      XmAuthenticationContextHolder authenticationContextHolder,
-                                                      XmRequestContextHolder requestContextHolder) {
+    public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
+                                                        TenantContextHolder tenantContextHolder,
+                                                        XmAuthenticationContextHolder authenticationContextHolder,
+                                                        XmRequestContextHolder requestContextHolder) {
         createGitRepository(serverGitFolder, initTestGitFolder, applicationProperties.getGit());
+        ReentrantLock lock = new ReentrantLock();
         return new JGitRepository(applicationProperties.getGit(),
-                                  new ReentrantLock(),
-                                  tenantContextHolder,
-                                  authenticationContextHolder,
-                                  requestContextHolder) {
+            lock,
+            tenantContextHolder,
+            authenticationContextHolder,
+            requestContextHolder) {
             @Override
             protected void cloneRepository() {
                 if (isNotBlank(applicationProperties.getGit().getUri())) {
                     super.cloneRepository();
                 }
             }
+
             @Override
             @SneakyThrows
             protected File createGitWorkDirectory() {

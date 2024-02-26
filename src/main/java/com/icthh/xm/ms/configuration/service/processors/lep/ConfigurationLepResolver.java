@@ -2,7 +2,6 @@ package com.icthh.xm.ms.configuration.service.processors.lep;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.lep.SeparatorSegmentedLepKeyResolver;
-import com.icthh.xm.commons.lep.XmLepConstants;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.lep.api.LepKey;
 import com.icthh.xm.lep.api.LepManagerService;
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
 
 import static com.icthh.xm.commons.lep.XmLepConstants.EXTENSION_KEY_GROUP_MODE;
 import static com.icthh.xm.commons.lep.XmLepConstants.EXTENSION_KEY_SEPARATOR;
-import static com.icthh.xm.ms.configuration.service.processors.LepConfigProcessor.TENANT_PREFIX;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 
 @Component
 @RequiredArgsConstructor

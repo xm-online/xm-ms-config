@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_ENV_PATTERN;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -36,10 +39,6 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     private final Map<String, TenantProfileEntry> tenantProfileCash = new ConcurrentHashMap<>();
     private final AntPathMatcher matcher = new AntPathMatcher();
-
-    private static final String TENANT_NAME = "tenantName";
-    public static final String TENANT_PREFIX = "/config/tenants/";
-    private final String TENANT_ENV_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**";
 
     public EnvConfigExternalizationFromFile() {
         Map<String, String> env = new HashMap<>();
