@@ -5,40 +5,19 @@ import com.icthh.xm.commons.security.oauth2.ConfigSignatureVerifierClient;
 import com.icthh.xm.commons.security.oauth2.OAuth2JwtAccessTokenConverter;
 import com.icthh.xm.commons.security.oauth2.OAuth2Properties;
 import com.icthh.xm.commons.security.oauth2.OAuth2SignatureVerifierClient;
-import com.icthh.xm.ms.configuration.service.TokenKeyService;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.client.loadbalancer.RestTemplateCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.access.AccessDecisionManager;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.access.ConfigAttribute;
-import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.JwtTokenStore;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
-import java.util.Collection;
-
-import static com.icthh.xm.ms.configuration.config.Constants.CERTIFICATE;
-import static com.icthh.xm.ms.configuration.config.Constants.PUBLIC_KEY;
 
 @Configuration
 @EnableResourceServer
