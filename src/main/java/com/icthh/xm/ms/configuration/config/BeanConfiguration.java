@@ -31,14 +31,14 @@ public class BeanConfiguration {
 
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
 
-    @Bean(destroyMethod = "destroy")
-    public PersistenceConfigRepository jGitRepository(ApplicationProperties applicationProperties,
-                                                      @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
-                                                      TenantContextHolder tenantContextHolder,
-                                                      XmAuthenticationContextHolder authenticationContextHolder,
-                                                      XmRequestContextHolder requestContextHolder) {
+    @Bean
+    public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
+                                                        @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
+                                                        TenantContextHolder tenantContextHolder,
+                                                        XmAuthenticationContextHolder authenticationContextHolder,
+                                                        XmRequestContextHolder requestContextHolder) {
         return new JGitRepository(applicationProperties.getGit(), lock,
-                                  tenantContextHolder, authenticationContextHolder, requestContextHolder);
+            tenantContextHolder, authenticationContextHolder, requestContextHolder);
     }
 
     @Bean

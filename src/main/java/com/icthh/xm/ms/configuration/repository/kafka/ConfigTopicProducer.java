@@ -8,8 +8,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.config.domain.ConfigEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.domain.ConfigVersionMixIn;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -32,16 +35,17 @@ public class ConfigTopicProducer {
     private final ObjectMapper mapper = new ObjectMapper()
         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+        .addMixIn(ConfigVersion.class, ConfigVersionMixIn.class)
         .registerModule(new JavaTimeModule());
 
     @Value("${xm-config.kafka-config-topic}")
     private String topicName;
 
-    public void notifyConfigurationChanged(String commit, List<String> paths) {
+    public void notifyConfigurationChanged(ConfigVersion version, List<String> paths) {
         if (CollectionUtils.isNotEmpty(paths)) {
-            ConfigEvent event = buildEvent(MdcUtils.getRid(), commit, paths);
+            ConfigEvent event = buildEvent(MdcUtils.getRid(), version, paths);
             log.info("prepared ConfigEvent: commit = {}, paths.count = {}, top paths: {}",
-                     commit, paths.size(), ConfigPathUtils.printPathsWithLimit(paths));
+                version, paths.size(), ConfigPathUtils.printPathsWithLimit(paths));
             serializeEvent(event).ifPresent(this::send);
         }
     }
@@ -56,10 +60,12 @@ public class ConfigTopicProducer {
         return Optional.empty();
     }
 
-    private ConfigEvent buildEvent(String eventId, String commit, List<String> paths) {
+    @SneakyThrows
+    private ConfigEvent buildEvent(String eventId, ConfigVersion version, List<String> paths) {
         ConfigEvent event = new ConfigEvent();
         event.setEventId(eventId);
-        event.setCommit(commit);
+        String versionJson = this.mapper.writeValueAsString(version);
+        event.setCommit(versionJson);
         event.setPaths(new HashSet<>(paths));
 
         return event;

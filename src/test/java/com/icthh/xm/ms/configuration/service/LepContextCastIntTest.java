@@ -67,6 +67,8 @@ public class LepContextCastIntTest extends AbstractSpringBootTest {
         String body = "import com.icthh.xm.ms.configuration.config.lep.LepContext;\nLepContext context = lepContext\nreturn ['context':context]";
         leps.onRefresh(key, body);
         Map<String, Object> result = testLepService.sayHello();
+        log.info("result: {}", result);
+        log.info("class: {}", result.get("context").getClass());
         assertTrue(result.get("context") instanceof LepContext);
         leps.onRefresh(key, null);
     }
