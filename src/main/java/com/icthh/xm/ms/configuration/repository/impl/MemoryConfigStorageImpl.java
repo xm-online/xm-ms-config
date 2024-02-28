@@ -177,12 +177,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                                                     List<? extends ConfigurationProcessor> configurationProcessors,
                                                     Map<String, Configuration> processedStorage) {
         Set<Configuration> currentConfigurations = new HashSet<>(configurations);
+        Map<String, Configuration> resultStorage = new HashMap<>();
         Set<Configuration> configToReprocess = new HashSet<>();
         for (var processor: configurationProcessors) {
             Set<Configuration> processedConfiguration = currentConfigurations.stream()
                 .filter(Objects::nonNull)
                 .filter(processor::isSupported)
-                .flatMap(runProcessor(processor, processedStorage, configToReprocess))
+                .flatMap(runProcessor(processor, resultStorage, processedStorage, configToReprocess))
                 .collect(toSet());
 
             currentConfigurations.addAll(processedConfiguration);
@@ -192,17 +193,19 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             log.info("Need to reprocess {} configs", configToReprocess.size());
             processAll(configToReprocess);
         }
+        processedStorage.putAll(resultStorage);
         return currentConfigurations;
     }
 
     private Function<Configuration, Stream<Configuration>> runProcessor(ConfigurationProcessor processor,
+                                                                        Map<String, Configuration> resultStorage,
                                                                         Map<String, Configuration> processedStorage,
                                                                         Set<Configuration> configToReprocess) {
         var storage = unmodifiableMap(this.storage);
         return configuration -> {
             try {
                 List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage, configToReprocess);
-                processedStorage.putAll(configurations.stream().collect(toMap(Configuration::getPath, identity())));
+                resultStorage.putAll(configurations.stream().collect(toMap(Configuration::getPath, identity())));
                 return configurations.stream();
             } catch (Exception e) {
                 log.error("Error run processor", e);
