@@ -35,6 +35,7 @@ import com.icthh.xm.ms.configuration.utils.Task;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
@@ -200,7 +201,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
-            String content = readFileToString(new File(getPathname(path)), UTF_8);
+            String content = readFileToString(new File(getAbsolutePath(path)), UTF_8);
             return new ConfigurationItem(new ConfigVersion(commit), new Configuration(path, content));
         });
     }
@@ -293,7 +294,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
 
         String path = configuration.getPath();
-        String content = readFileToString(new File(getPathname(path)), UTF_8);
+        String content = readFileToString(new File(getAbsolutePath(path)), UTF_8);
         String expectedOldConfigHash = sha1Hex(content);
         log.info("Expected hash {}, actual hash {}", expectedOldConfigHash, oldConfigHash);
         if (!expectedOldConfigHash.equals(oldConfigHash)) {
@@ -336,7 +337,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private void deleteExistingFile(final String path) {
-        File file = Paths.get(rootDirectory.getAbsolutePath(), path).toFile();
+        File file = Paths.get(getAbsolutePath(path)).toFile();
         if (file.isDirectory()) {
             log.info("delete whole directory by path: {}", file.getPath());
             assertDelete(FileSystemUtils.deleteRecursively(file), file.getPath());
@@ -376,13 +377,13 @@ public class JGitRepository implements PersistenceConfigRepository {
         return new ConfigVersion(executeGitAction("getCurrentVersion", this::findLastCommit));
     }
 
-    private String getPathname(String path) {
-        return rootDirectory.getAbsolutePath() + path;
+    private String getAbsolutePath(String path) {
+        return rootDirectory.getAbsolutePath() + Path.of("/", path).normalize();
     }
 
     @SneakyThrows
     private void writeConfiguration(Configuration configuration) {
-        write(new File(getPathname(configuration.getPath())), configuration.getContent(), UTF_8);
+        write(new File(getAbsolutePath(configuration.getPath())), configuration.getContent(), UTF_8);
     }
 
     private UsernamePasswordCredentialsProvider createCredentialsProvider() {

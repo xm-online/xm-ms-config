@@ -263,8 +263,11 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     public void testGetConfigurationsByPaths() {
         String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname1";
         String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname2";
+        String thirdPath = CONFIG + TENANTS + "/OTHER_" + TENANT_NAME + "/documentname3";
+        String relativePath = CONFIG + TENANTS + "/" + TENANT_NAME + "/../OTHER_" + TENANT_NAME + "/documentname3";
         String firstContent = "first content";
         String secondContent = "second content";
+        String thirdContent = "third content";
 
         mockMvc.perform(post(API_PREFIX + firstPath)
                 .content(firstContent)
@@ -276,8 +279,13 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
 
+        mockMvc.perform(post(API_PREFIX + thirdPath)
+                .content(thirdContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
-            .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath)))
+            .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
@@ -326,6 +334,9 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     public void updateTenantsFromJson() {
         String path = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
         String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config2.yml";
+        String path3 = CONFIG + TENANTS + "/" + TENANT_NAME + "/../ANOTHER_TENANT/my-config3.yml";
+        String path4 = CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/subfolder/subsubfolder/../../my-config4.yml";
+        String normalisedPath4 = CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/my-config4.yml";
         String contentToUpdate = "very cool content to update";
         String contentToDelete = "very cool content to delete";
         String updatedContent = "very cool updated content";
@@ -335,13 +346,22 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration(path2, contentToDelete));
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_update")
-                .content(new ObjectMapper().writeValueAsString(List.of(updatedConfiguration, new Configuration(path2, ""))))
+                .content(new ObjectMapper().writeValueAsString(List.of(
+                    updatedConfiguration,
+                    new Configuration(path2, ""),
+                    new Configuration(path3, "will not be created"),
+                    new Configuration(path4, "will be created")
+                )))
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful());
 
         Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
         assertEquals(updatedContent, configurationMap.get(path).getContent());
         assertFalse(configurationMap.containsKey(path2));
+        assertFalse(configurationMap.containsKey(path3));
+        assertFalse(configurationMap.containsKey(path4));
+        assertFalse(configurationMap.containsKey(CONFIG + TENANTS + "/ANOTHER_TENANT/my-config3.yml"));
+        assertEquals("will be created", configurationMap.get(normalisedPath4).getContent());
     }
 
     @Test

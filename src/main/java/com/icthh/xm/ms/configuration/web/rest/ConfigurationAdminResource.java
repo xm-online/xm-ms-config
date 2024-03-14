@@ -32,6 +32,7 @@ import org.springframework.web.util.UrlPathHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -255,7 +256,8 @@ public class ConfigurationAdminResource {
     }
 
     protected String extractPath(HttpServletRequest request) {
-        return urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length());
+        String path = urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length());
+        return Path.of("/", path).normalize().toString();
     }
 
 }
