@@ -16,6 +16,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -223,7 +224,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     private Boolean isConfigUnderTenant(Configuration config, String tenant) {
-        return config.getPath().startsWith(getTenantPathPrefix(tenant) + "/");
+        Path path = Path.of("/", config.getPath()).normalize();
+        return path.startsWith(getTenantPathPrefix(tenant) + "/");
     }
 
     private Boolean isConfigUnderTenant(Configuration config) {

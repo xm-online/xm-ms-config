@@ -20,6 +20,7 @@ import org.springframework.web.util.UrlPathHelper;
 
 import javax.servlet.http.HttpServletRequest;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -146,6 +147,7 @@ public class ConfigurationClientResource {
 
     @PostMapping(value = PROFILE + "/configs_map")
     @Timed
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_MAP')")
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths,
                                                                                @RequestParam(name = "fetchAll", required = false, defaultValue = "false") Boolean fetchAll) {
@@ -176,12 +178,12 @@ public class ConfigurationClientResource {
     }
 
     private String extractUrlPath(HttpServletRequest request) {
-        return urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length() + PROFILE.length());
+        String path = urlHelper.getPathWithinApplication(request).substring(API_PREFIX.length() + PROFILE.length());
+        return Path.of("/", path).normalize().toString();
     }
 
-
     private String getAbsolutePath(String relativePath) {
-        return getTenantPathPrefix(tenantContextHolder) + relativePath;
+        return getTenantPathPrefix(tenantContextHolder) + Path.of("/", relativePath).normalize();
     }
 
 }
