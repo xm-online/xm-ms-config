@@ -276,6 +276,10 @@ dependencies {
     implementation 'com.github.mwiede:jsch:0.2.0'
     implementation "com.ryantenney.metrics:metrics-spring:${metrics_spring_version}"
 
+    implementation "io.undertow:undertow-core:${undertow_version}"
+    implementation "io.undertow:undertow-servlet:${undertow_version}"
+    implementation "io.undertow:undertow-websockets-jsr:${undertow_version}"
+
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
     testImplementation "com.github.stefanbirkner:system-rules:${system_rules_version}"
