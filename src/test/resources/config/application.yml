@@ -106,6 +106,7 @@ application:
         login: null
         password: null
         max-wait-time-second: 30
+        depth: 1
     kafka-system-queue: system_queue
     lep:
         tenant-script-storage: XM_MS_CONFIG
