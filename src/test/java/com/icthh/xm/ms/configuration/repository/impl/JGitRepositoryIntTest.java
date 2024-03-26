@@ -11,12 +11,12 @@ import com.icthh.xm.commons.security.internal.SpringSecurityXmAuthenticationCont
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
-
-import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
-import org.junit.Before;
+import org.eclipse.jgit.api.Git;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -40,25 +40,9 @@ public class JGitRepositoryIntTest {
 
     private JGitRepository jGitRepository;
 
-    @Before
-    @SneakyThrows
-    public void setUp() {
-        createGitRepository(serverGitFolder, initTestGitFolder, gitProperties);
-
-        jGitRepository = new JGitRepository(gitProperties, new ReentrantLock(),
-                                            tenantContextHolder, authenticationContextHolder,
-                                            requestContextHolder) {
-            @Override
-            @SneakyThrows
-            protected File createGitWorkDirectory() {
-                configGitFolder.create();
-                return configGitFolder.getRoot();
-            }
-        };
-    }
-
     @Test
     public void testGetByVersion() {
+        setUpRepositories(gitProperties);
         String path = "/config/test.file";
         jGitRepository.save(new Configuration(path, "1"));
         ConfigVersion ref = jGitRepository.save(new Configuration(path, "2"));
@@ -69,9 +53,50 @@ public class JGitRepositoryIntTest {
 
     @Test
     public void testSave_shouldReturnLastCommitWhenNoFilesChanged() {
+        setUpRepositories(gitProperties);
         String path = "/config/dummy";
         ConfigVersion commit1 = jGitRepository.save(new Configuration(path, "unchanged_content"));
         ConfigVersion commit2 = jGitRepository.save(new Configuration(path, "unchanged_content"));
-        assertEquals("Expected then save return last commit when no files changed", commit1, commit2);
+        assertEquals("Expected then save return last commit when no files changed", commit1,
+            commit2);
     }
+
+    @Test
+    public void testDepth_shouldCloneAllCommitsWhenDepthMinusOne() {
+        setUpRepositories(gitProperties);
+        try (Git git = Git.open(configGitFolder.getRoot())) {
+            long commitsCount = StreamSupport.stream(git.log().call().spliterator(), false).count();
+            assertEquals(2, commitsCount);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testDepth_shouldCloneOneCommitWhenDepthOne() {
+        gitProperties.setDepth(1);
+        setUpRepositories(gitProperties);
+        try (Git git = Git.open(configGitFolder.getRoot())) {
+            long commitsCount = StreamSupport.stream(git.log().call().spliterator(), false).count();
+            assertEquals(1, commitsCount);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setUpRepositories(GitProperties gitProps) {
+        createGitRepository(serverGitFolder, initTestGitFolder, gitProps);
+
+        jGitRepository = new JGitRepository(gitProps, new ReentrantLock(),
+            tenantContextHolder, authenticationContextHolder,
+            requestContextHolder) {
+            @Override
+            @SneakyThrows
+            protected File createGitWorkDirectory() {
+                configGitFolder.create();
+                return configGitFolder.getRoot();
+            }
+        };
+    }
+
 }
