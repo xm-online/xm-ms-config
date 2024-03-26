@@ -143,6 +143,10 @@ public class JGitRepository implements PersistenceConfigRepository {
             CloneCommand cloneCommand = Git.cloneRepository().setURI(gitProperties.getUri())
                                                          .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
+            cloneCommand.setBranch(gitProperties.getBranchName());
+            if (gitProperties.getDepth() > 0) {
+                cloneCommand.setDepth(gitProperties.getDepth());
+            }
             cloneCommand.call().close();
             return null;
         });
@@ -414,7 +418,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                 git.clean().setForce(true);
                 git.checkout()
                    .setName(branchName)
-                   .setForce(true).call();
+                   .setForceRefUpdate(true).call();
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
                 pull.call();
@@ -423,6 +427,9 @@ public class JGitRepository implements PersistenceConfigRepository {
                 log.info("Branch {} not found in local repository, pull from remote.", branchName);
                 FetchCommand fetch = git.fetch();
                 fetch = setAuthorizationConfig(fetch);
+                if (gitProperties.getDepth() > 0) {
+                    fetch.setDepth(gitProperties.getDepth());
+                }
                 fetch.call();
                 git.checkout()
                    .setCreateBranch(true)
@@ -460,7 +467,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             String branchName = gitProperties.getBranchName();
             try {
                 git.clean().setForce(true);
-                git.checkout().setName(branchName).setForce(true).call();
+                git.checkout().setName(branchName).setForceRefUpdate(true).call();
                 Iterable<RevCommit> refs = git.log().call();
                 // TODO there should be better way to get commit from Git like:
                 //      git.log().setRevFilter(...).call()

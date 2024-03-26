@@ -89,9 +89,12 @@ public class LocalJGitRepositoryConfiguration {
                 .setDirectory(root)
                 .call().close();
         Git git = Git.open(root);
-        new File(root + "/emtpyFile").createNewFile();
+        new File(root + "/emptyFile1").createNewFile();
         git.add().addFilepattern("*").call();
         git.commit().setMessage("init commit").call();
+        new File(root + "/emptyFile2").createNewFile();
+        git.add().addFilepattern("*").call();
+        git.commit().setMessage("second commit").call();
         git.branchRename().setNewName("test").call();
         git.push().call();
     }
