@@ -126,6 +126,10 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
             return envVariable;
         }
 
+        if (isBoolean(envVariable)) {
+            return Boolean.valueOf(envVariable);
+        }
+
         if (!isNumber(envVariable)) {
             return envVariable;
         }
@@ -145,4 +149,7 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
         return envVariable.matches("-?\\d+(\\.\\d+)?");
     }
 
+    private static boolean isBoolean(String envVariable) {
+        return envVariable.toLowerCase().matches("true|false");
+    }
 }
