@@ -121,6 +121,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     protected void cloneRepository() {
+        log.info("Clone git repository");
         File repositoryFolder = createGitWorkDirectory();
         File oldDirectory = this.rootDirectory;
         if (oldDirectory == null) {
@@ -489,11 +490,22 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private String findLastCommit(Git git) {
+        File directory = git.getRepository().getDirectory();
+        if (directory != null && directory.exists()) {
+            log.info("Find last commit for local repository: {}", directory.getAbsolutePath());
+        }
         Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
-        return StreamSupport.stream(refs.spliterator(), false)
-                            .findFirst()
-                            .map(AnyObjectId::getName)
-                            .orElse("[N/A]");
+        Optional<RevCommit> firstCommit = StreamSupport.stream(refs.spliterator(), false)
+            .findFirst();
+
+        if (firstCommit.isPresent()) {
+            RevCommit revCommit = firstCommit.get();
+            log.info("Commit {} found in local repository", revCommit.getName());
+            log.info("Commit {}, time: {}", revCommit.getName(), revCommit.getCommitTime());
+            log.info("Commit {}, message: {}", revCommit.getName(), revCommit.getFullMessage());
+        }
+
+        return firstCommit.map(AnyObjectId::getName).orElse("[N/A]");
     }
 
     @SneakyThrows
