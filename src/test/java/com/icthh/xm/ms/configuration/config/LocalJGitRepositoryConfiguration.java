@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
+import static java.lang.Thread.sleep;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import com.icthh.xm.commons.request.XmRequestContextHolder;
@@ -81,6 +82,23 @@ public class LocalJGitRepositoryConfiguration {
     }
 
     @SneakyThrows
+    public static void createGitRepositoryTest(TemporaryFolder serverGitFolder,
+                                           TemporaryFolder initTestGitFolder,
+                                           GitProperties gitProperties) {
+        serverGitFolder.create();
+        Git git = Git.init().setBare(true).setDirectory(serverGitFolder.getRoot()).call();
+
+        gitProperties.setUri(serverGitFolder.getRoot().getAbsolutePath());
+        gitProperties.setLogin("none");
+        gitProperties.setPassword("none");
+        gitProperties.setBranchName("test");
+
+        createBranchTest(gitProperties, initTestGitFolder);
+
+        git.getRepository().close();
+    }
+
+    @SneakyThrows
     private static void createBranch(GitProperties gitProperties, TemporaryFolder initTestGitFolder) {
         initTestGitFolder.create();
         File root = initTestGitFolder.getRoot();
@@ -99,4 +117,33 @@ public class LocalJGitRepositoryConfiguration {
         git.push().call();
     }
 
+    @SneakyThrows
+    private static void createBranchTest(GitProperties gitProperties, TemporaryFolder initTestGitFolder) {
+        initTestGitFolder.create();
+        File root = initTestGitFolder.getRoot();
+        Git.cloneRepository()
+            .setURI(gitProperties.getUri())
+            .setDirectory(root)
+            .call().close();
+        Git git = Git.open(root);
+
+        new File(root + "/emptyFile1").createNewFile();
+        git.add().addFilepattern("*").call();
+        git.commit().setMessage("init commit").call();
+        sleep(100);
+        git.branchRename().setNewName("test").call();
+        git.push().call();
+
+        for (int i = 0; i < 3; i++) {
+            try {
+                sleep(1000);
+                new File(root + "/emptyFile" + i).createNewFile();
+                git.add().addFilepattern("*").call();
+                git.commit().setMessage("commit" + i).call();
+                git.push().call();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 }

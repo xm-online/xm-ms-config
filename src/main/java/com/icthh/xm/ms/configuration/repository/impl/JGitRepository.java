@@ -56,10 +56,12 @@ import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -494,18 +496,22 @@ public class JGitRepository implements PersistenceConfigRepository {
         if (directory != null && directory.exists()) {
             log.info("Find last commit for local repository: {}", directory.getAbsolutePath());
         }
-        Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
-        Optional<RevCommit> firstCommit = StreamSupport.stream(refs.spliterator(), false)
-            .findFirst();
 
-        if (firstCommit.isPresent()) {
-            RevCommit revCommit = firstCommit.get();
+        log.info("Using the new style of getting the last commit");
+        RevWalk walk = new RevWalk(git.getRepository());
+
+        walk.markStart(walk.parseCommit(git.getRepository().resolve(Constants.HEAD)));
+        walk.sort(RevSort.COMMIT_TIME_DESC, true );
+        Optional<RevCommit> lastCommit = Optional.ofNullable(walk.iterator().next());
+
+        if (lastCommit.isPresent()) {
+            RevCommit revCommit = lastCommit.get();
             log.info("Commit {} found in local repository", revCommit.getName());
             log.info("Commit {}, time: {}", revCommit.getName(), revCommit.getCommitTime());
             log.info("Commit {}, message: {}", revCommit.getName(), revCommit.getFullMessage());
         }
 
-        return firstCommit.map(AnyObjectId::getName).orElse("[N/A]");
+        return lastCommit.map(AnyObjectId::getName).orElse("[N/A]");
     }
 
     @SneakyThrows
