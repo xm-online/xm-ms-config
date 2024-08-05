@@ -229,18 +229,24 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public void refreshTenant(String tenant) {
-        ConfigurationList configurationList = persistenceConfigRepository.findAll();
-        List<Configuration> actualConfigs = configurationList.getData();
-        actualConfigs = actualConfigs.stream()
+    public void refreshTenant(String tenant, ConfigurationList configs) {
+        ConfigurationList configurationList = configs;
+        if (configurationList == null) {
+            configurationList = persistenceConfigRepository.findAll();
+        }
+        List<Configuration> actualConfigs = configurationList.getData().stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
 
         Set<String> updated = storage.refreshStorage(actualConfigs, tenant);
-        storage.reprocess(tenant);
         updated.addAll(storage.getConfigPathsList(tenant));
         updateVersion(configurationList.getVersion());
         notifyChanged(updated);
+    }
+
+    @Override
+    public void refreshTenant(String tenant) {
+        refreshTenant(tenant, null);
     }
 
     @Override

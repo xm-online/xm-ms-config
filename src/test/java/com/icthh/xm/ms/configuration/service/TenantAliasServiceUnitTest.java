@@ -7,6 +7,7 @@ import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,9 @@ public class TenantAliasServiceUnitTest {
     TenantContextHolder tenantContextHolder;
     @InjectMocks
     TenantAliasService tenantAliasService;
+    @Mock
+    PersistenceConfigRepository persistenceConfigRepository;
+
 
     @Test
     public void testUpdateChangedTenantsDuringProcessConfiguration() {

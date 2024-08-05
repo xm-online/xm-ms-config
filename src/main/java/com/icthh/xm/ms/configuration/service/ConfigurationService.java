@@ -153,6 +153,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         repositoryProxy.refreshTenant(tenantKey);
     }
 
+    public void refreshTenantConfigurations(String tenantKey, ConfigurationList configs) {
+        repositoryProxy.refreshTenant(tenantKey, configs);
+    }
+
     @SneakyThrows
     private Configuration toConfiguration(MultipartFile file) {
         String path = StringUtils.replaceChars(file.getOriginalFilename(), File.separator, "/");

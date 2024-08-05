@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
 import java.io.IOException;
@@ -21,6 +23,7 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
@@ -41,16 +44,20 @@ public class TenantAliasService implements PublicConfigurationProcessor {
     private final ConfigurationService configurationService;
     private final MemoryConfigStorage memoryConfigStorage;
     private final TenantContextHolder tenantContextHolder;
+    private final PersistenceConfigRepository persistenceConfigRepository;
 
     @Getter
     private volatile TenantAliasTree tenantAliasTree = new TenantAliasTree();
 
     public TenantAliasService(@Lazy ConfigurationService configurationService,
                               @Lazy MemoryConfigStorage memoryConfigStorage,
-                              @Lazy TenantContextHolder tenantContextHolder) {
+                              @Lazy TenantContextHolder tenantContextHolder,
+                              @Qualifier("configRepository")
+                              PersistenceConfigRepository persistenceConfigRepository) {
         this.configurationService = configurationService;
         this.memoryConfigStorage = memoryConfigStorage;
         this.tenantContextHolder = tenantContextHolder;
+        this.persistenceConfigRepository = persistenceConfigRepository;
     }
 
     @Override
@@ -77,9 +84,11 @@ public class TenantAliasService implements PublicConfigurationProcessor {
             allTenants.addAll(oldTenants.keySet());
             allTenants.addAll(newTenants.keySet());
 
+            ConfigurationList configurationList = this.persistenceConfigRepository.findAll();
+
             allTenants.stream().filter(it -> isTenantChanged(oldTenants, newTenants, it))
                     .distinct()
-                    .peek(configurationService::refreshTenantConfigurations)
+                    .peek(key -> configurationService.refreshTenantConfigurations(key, configurationList))
                     .map(newTenants::get)
                     .map(this::getParentKey)
                     .filter(Optional::isPresent)
