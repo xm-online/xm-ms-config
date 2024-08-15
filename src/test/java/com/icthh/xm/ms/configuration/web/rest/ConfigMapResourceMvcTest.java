@@ -98,6 +98,16 @@ public class ConfigMapResourceMvcTest {
         verify(configurationService).updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("someHash"));
     }
 
+    @Test
+    @SneakyThrows
+    public void updateConfigsMap() {
+        mockMvc.perform(put("/api/private/profile/configs_update")
+                .content(toJson(List.of(new Configuration("somePath", "some content"))))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+        verify(configurationService).updateConfigurationsFromList(eq(List.of(new Configuration("somePath", "some content"))));
+    }
+
     private String toJson(Object object) throws JsonProcessingException {
         return new ObjectMapper().writeValueAsString(object);
     }

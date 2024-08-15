@@ -62,6 +62,19 @@ public class ConfigMapResource {
         return ResponseEntity.ok().build();
     }
 
+    // api required tenant context
+    @PutMapping(value = "/profile/configs_update")
+    @Timed
+    public ResponseEntity<Void> updateConfiguration(@RequestBody List<Configuration> configs) {
+        try {
+            configurationService.updateConfigurationsFromList(configs);
+        } catch (ConcurrentConfigModificationException e) {
+            log.warn("Error update configuration", e);
+            return ResponseEntity.status(CONFLICT).build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
     @Data
     private static class GetConfigRequest {
         private List<String> paths;
