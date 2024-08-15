@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.repository.impl;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.in;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -36,10 +37,12 @@ public class ConfigProxyRepositoryUnitTest {
     private ConfigTopicProducer configTopicProducer;
     @Mock
     private TenantAliasService tenantAliasService;
+    @Mock
+    private InconsistentConfigLogger inconsistentConfigLogger;
 
     @Before
     public void before() {
-        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorageImpl(emptyList(), emptyList(), tenantAliasService);
+        MemoryConfigStorage memoryConfigStorage = new MemoryConfigStorageImpl(emptyList(), emptyList(), tenantAliasService,inconsistentConfigLogger);
         ApplicationProperties applicationProperties = new ApplicationProperties();
         configProxyRepository = new ConfigProxyRepository(memoryConfigStorage, persistenceConfigRepository,
             configTopicProducer, applicationProperties, new ReentrantLock());

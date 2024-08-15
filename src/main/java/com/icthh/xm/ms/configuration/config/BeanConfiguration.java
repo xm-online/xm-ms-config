@@ -4,11 +4,8 @@ import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.request.spring.config.XmRequestContextConfiguration;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.impl.*;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
-import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
-import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
-import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
 import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
@@ -57,7 +54,8 @@ public class BeanConfiguration {
     public MemoryConfigStorage memoryConfigStorage(List<PrivateConfigurationProcessor> privateConfigurationProcessors,
                                                    List<PublicConfigurationProcessor> publicConfigurationProcessors,
                                                    TenantAliasService tenantAliasService,
-                                                   ApplicationProperties applicationProperties) {
+                                                   ApplicationProperties applicationProperties,
+                                                   InconsistentConfigLogger inconsistentConfigLogger) {
         log.info("PrivateConfigurationProcessor {}", privateConfigurationProcessors);
         log.info("PublicConfigurationProcessor {}", publicConfigurationProcessors);
 
@@ -65,7 +63,8 @@ public class BeanConfiguration {
                 new MemoryConfigStorageImpl(
                         privateConfigurationProcessors,
                         publicConfigurationProcessors,
-                        tenantAliasService
+                        tenantAliasService,
+                        inconsistentConfigLogger
                 ),
                 applicationProperties
         );
