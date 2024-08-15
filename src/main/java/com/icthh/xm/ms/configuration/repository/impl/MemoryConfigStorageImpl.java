@@ -47,9 +47,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private final List<PrivateConfigurationProcessor> privateConfigurationProcessors;
     private final List<PublicConfigurationProcessor> publicConfigurationProcessors;
     private final TenantAliasService tenantAliasService;
+    private final InconsistentConfigLogger inconsistentConfigLogger;
 
     @Override
     public Map<String, Configuration> getPrivateConfigs() {
+        inconsistentConfigLogger.logConfigGet();
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
         configs.putAll(processedStorage);
@@ -59,6 +61,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigList() {
+        inconsistentConfigLogger.logConfigGet();
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
         configs.putAll(processedStorage);
@@ -67,6 +70,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Configuration getConfigByPath(String path) {
+        inconsistentConfigLogger.logConfigGet();
         return processedStorage.getOrDefault(path, storage.get(path));
     }
 
@@ -104,8 +108,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> updateConfig(String path, Configuration config) {
-        storage.put(path, config);
-        return process(config);
+        inconsistentConfigLogger.lock("updateConfig");
+        try {
+            storage.put(path, config);
+            return process(config);
+        } finally {
+            inconsistentConfigLogger.unlock();
+        }
     }
 
     @Override
@@ -123,11 +132,16 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private void reprocessTenant(String tenant) {
-        String tenantPathPrefix = getTenantPathPrefix(tenant);
-        storage.keySet().stream()
+        inconsistentConfigLogger.lock("reprocessTenant");
+        try {
+            String tenantPathPrefix = getTenantPathPrefix(tenant);
+            storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
                 .map(storage::get)
                 .forEach(this::process);
+        } finally {
+            inconsistentConfigLogger.unlock();
+        }
     }
 
     @Override
@@ -155,10 +169,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public boolean removeConfig(String path) {
-        boolean removed = storage.remove(path) != null;
-        removed = processedStorage.remove(path) != null || removed;
-        removed = privateStorage.remove(path) != null || removed;
-        return removed;
+        inconsistentConfigLogger.lock("removeConfig");
+        try {
+            boolean removed = storage.remove(path) != null;
+            removed = processedStorage.remove(path) != null || removed;
+            removed = privateStorage.remove(path) != null || removed;
+            return removed;
+        } finally {
+            inconsistentConfigLogger.unlock();
+        }
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -222,10 +241,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private Set<String> updateConfigs(Map<String, Configuration> map) {
-        storage.putAll(map);
-        return map.values().stream()
-            .map(this::process)
-            .collect(flatMapping(Collection::stream, toSet()));
+        inconsistentConfigLogger.lock("updateConfigs");
+        try {
+            storage.putAll(map);
+            return map.values().stream()
+                .map(this::process)
+                .collect(flatMapping(Collection::stream, toSet()));
+        } finally {
+            inconsistentConfigLogger.unlock();
+        }
     }
 
     @Override
