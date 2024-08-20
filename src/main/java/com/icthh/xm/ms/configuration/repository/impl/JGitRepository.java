@@ -123,7 +123,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     protected void cloneRepository() {
-        log.info("Clone git repository");
+        log.debug("Clone git repository");
         File repositoryFolder = createGitWorkDirectory();
         File oldDirectory = this.rootDirectory;
         if (oldDirectory == null) {
@@ -494,10 +494,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     private String findLastCommit(Git git) {
         File directory = git.getRepository().getDirectory();
         if (directory != null && directory.exists()) {
-            log.info("Find last commit for local repository: {}", directory.getAbsolutePath());
+            log.debug("Find last commit for local repository: {}", directory.getAbsolutePath());
         }
 
-        log.info("Using the new style of getting the last commit");
+        log.debug("Using the new style of getting the last commit");
         RevWalk walk = new RevWalk(git.getRepository());
 
         walk.markStart(walk.parseCommit(git.getRepository().resolve(Constants.HEAD)));
@@ -506,9 +506,9 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         if (lastCommit.isPresent()) {
             RevCommit revCommit = lastCommit.get();
-            log.info("Commit {} found in local repository", revCommit.getName());
-            log.info("Commit {}, time: {}", revCommit.getName(), revCommit.getCommitTime());
-            log.info("Commit {}, message: {}", revCommit.getName(), revCommit.getFullMessage());
+            log.debug("Commit {} found in local repository", revCommit.getName());
+            log.debug("Commit {}, time: {}", revCommit.getName(), revCommit.getCommitTime());
+            log.debug("Commit {}, message: {}", revCommit.getName(), revCommit.getFullMessage());
         }
 
         return lastCommit.map(AnyObjectId::getName).orElse("[N/A]");

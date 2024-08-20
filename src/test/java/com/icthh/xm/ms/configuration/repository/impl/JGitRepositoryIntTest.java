@@ -57,8 +57,9 @@ public class JGitRepositoryIntTest {
     @Test
     public void testGetAll() {
         setUpRepositoriesTest(gitProperties);
-        String path = "/config/test.file";
         ConfigurationList list = jGitRepository.findAll();
+        ConfigVersion configuration = jGitRepository.getCurrentVersion();
+        assertEquals(list.getVersion().getMainVersion(), configuration.getMainVersion());
     }
 
     @Test
