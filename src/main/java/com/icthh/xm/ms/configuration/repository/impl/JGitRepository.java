@@ -56,10 +56,12 @@ import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -121,6 +123,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     protected void cloneRepository() {
+        log.debug("Clone git repository");
         File repositoryFolder = createGitWorkDirectory();
         File oldDirectory = this.rootDirectory;
         if (oldDirectory == null) {
@@ -489,11 +492,26 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private String findLastCommit(Git git) {
-        Iterable<RevCommit> refs = git.log().setMaxCount(1).call();
-        return StreamSupport.stream(refs.spliterator(), false)
-                            .findFirst()
-                            .map(AnyObjectId::getName)
-                            .orElse("[N/A]");
+        File directory = git.getRepository().getDirectory();
+        if (directory != null && directory.exists()) {
+            log.debug("Find last commit for local repository: {}", directory.getAbsolutePath());
+        }
+
+        log.debug("Using the new style of getting the last commit");
+        RevWalk walk = new RevWalk(git.getRepository());
+
+        walk.markStart(walk.parseCommit(git.getRepository().resolve(Constants.HEAD)));
+        walk.sort(RevSort.COMMIT_TIME_DESC, true );
+        Optional<RevCommit> lastCommit = Optional.ofNullable(walk.iterator().next());
+
+        if (lastCommit.isPresent()) {
+            RevCommit revCommit = lastCommit.get();
+            log.debug("Commit {} found in local repository", revCommit.getName());
+            log.debug("Commit {}, time: {}", revCommit.getName(), revCommit.getCommitTime());
+            log.debug("Commit {}, message: {}", revCommit.getName(), revCommit.getFullMessage());
+        }
+
+        return lastCommit.map(AnyObjectId::getName).orElse("[N/A]");
     }
 
     @SneakyThrows

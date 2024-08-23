@@ -59,6 +59,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     @LoggingAspectConfig(resultDetails = false)
     public Map<String, Configuration> getConfigurationMap(String version) {
         ConfigVersion configVersion = configVersionDeserializer.from(version);
+        log.debug("Get configuration map for version {}", configVersion.getMainVersion());
         return repositoryProxy.getMap(configVersion);
     }
 
