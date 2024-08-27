@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
+import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepositoryTest;
 import static org.junit.Assert.assertEquals;
 
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -15,6 +16,8 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
+
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.junit.Rule;
@@ -52,6 +55,14 @@ public class JGitRepositoryIntTest {
     }
 
     @Test
+    public void testGetAll() {
+        setUpRepositoriesTest(gitProperties);
+        ConfigurationList list = jGitRepository.findAll();
+        ConfigVersion configuration = jGitRepository.getCurrentVersion();
+        assertEquals(list.getVersion().getMainVersion(), configuration.getMainVersion());
+    }
+
+    @Test
     public void testSave_shouldReturnLastCommitWhenNoFilesChanged() {
         setUpRepositories(gitProperties);
         String path = "/config/dummy";
@@ -86,6 +97,21 @@ public class JGitRepositoryIntTest {
 
     private void setUpRepositories(GitProperties gitProps) {
         createGitRepository(serverGitFolder, initTestGitFolder, gitProps);
+
+        jGitRepository = new JGitRepository(gitProps, new ReentrantLock(),
+            tenantContextHolder, authenticationContextHolder,
+            requestContextHolder) {
+            @Override
+            @SneakyThrows
+            protected File createGitWorkDirectory() {
+                configGitFolder.create();
+                return configGitFolder.getRoot();
+            }
+        };
+    }
+
+    private void setUpRepositoriesTest(GitProperties gitProps) {
+        createGitRepositoryTest(serverGitFolder, initTestGitFolder, gitProps);
 
         jGitRepository = new JGitRepository(gitProps, new ReentrantLock(),
             tenantContextHolder, authenticationContextHolder,
