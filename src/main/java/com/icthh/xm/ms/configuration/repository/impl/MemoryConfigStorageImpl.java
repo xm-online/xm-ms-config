@@ -51,26 +51,28 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Map<String, Configuration> getPrivateConfigs() {
-        inconsistentConfigLogger.logConfigGet();
+        inconsistentConfigLogger.logConfigGet("getPrivateConfigs");
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
         configs.putAll(processedStorage);
         configs.putAll(privateStorage);
+        inconsistentConfigLogger.logAdditionalParameters(configs);
         return configs;
     }
 
     @Override
     public List<Configuration> getConfigList() {
-        inconsistentConfigLogger.logConfigGet();
+        inconsistentConfigLogger.logConfigGet("getConfigList");
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
         configs.putAll(processedStorage);
+        inconsistentConfigLogger.logAdditionalParameters(configs);
         return new ArrayList<>(configs.values());
     }
 
     @Override
     public Configuration getConfigByPath(String path) {
-        inconsistentConfigLogger.logConfigGet();
+        inconsistentConfigLogger.logConfigGet("getConfigByPath");
         return processedStorage.getOrDefault(path, storage.get(path));
     }
 
@@ -111,7 +113,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         inconsistentConfigLogger.lock("updateConfig");
         try {
             storage.put(path, config);
-            return process(config);
+            log.info("updateConfigPerPath: config was stored to the general storage path={}", path);
+            Set<String> processedConfig = process(config);
+            log.info("updateConfigPerPath: config was processed path={}",path);
+            return processedConfig;
         } finally {
             inconsistentConfigLogger.unlock();
         }
@@ -152,8 +157,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Synchronized
     private Set<String> refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
+        log.info("refreshStorage: refresh started actualConfigsSize={} initialOldKeysSize={}", actualConfigs.size(), oldKeys.size());
         Set<String> updated = getUpdatePaths(actualConfigs, oldKeys);
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
+        log.info("refreshStorage: oldKeys removal for oldKeysSize={}", oldKeys.size());
         oldKeys.forEach(this::removeConfig);
         updateConfigs(actualConfigs);
         return updated;
@@ -174,6 +181,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             boolean removed = storage.remove(path) != null;
             removed = processedStorage.remove(path) != null || removed;
             removed = privateStorage.remove(path) != null || removed;
+            log.info("removeConfig: finished for path={}", path);
             return removed;
         } finally {
             inconsistentConfigLogger.unlock();
@@ -244,9 +252,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         inconsistentConfigLogger.lock("updateConfigs");
         try {
             storage.putAll(map);
-            return map.values().stream()
+            log.info("updateConfigs: config was stored to the general storage configsFromRepoSize={}", map.size());
+            Set<String> processedConfigs = map.values().stream()
                 .map(this::process)
                 .collect(flatMapping(Collection::stream, toSet()));
+            log.info("updateConfigs: config was processed processedConfigsSize={}", processedConfigs.size());
+            return processedConfigs;
         } finally {
             inconsistentConfigLogger.unlock();
         }
@@ -254,6 +265,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public void clear() {
+        log.info("clear: was triggered");
         storage.clear();
         processedStorage.clear();
         privateStorage.clear();
