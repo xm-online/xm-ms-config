@@ -7,6 +7,7 @@ import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,9 @@ public class TenantAliasServiceUnitTest {
     TenantContextHolder tenantContextHolder;
     @InjectMocks
     TenantAliasService tenantAliasService;
+    @Mock
+    PersistenceConfigRepository persistenceConfigRepository;
+
 
     @Test
     public void testUpdateChangedTenantsDuringProcessConfiguration() {
@@ -49,9 +53,9 @@ public class TenantAliasServiceUnitTest {
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("SUBMAIN"));
-        verify(configurationService).refreshTenantConfigurations(eq("SUBMAIN"));
-        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"));
-        verify(configurationService).refreshTenantConfigurations(eq("ONEMORELIFETENANT"));
+        verify(configurationService).refreshTenantConfigurations(eq("SUBMAIN"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("ONEMORELIFETENANT"), eq(null));
 
         verifyNoMoreInteractions(memoryConfigStorage);
         verifyNoMoreInteractions(configurationService);
@@ -65,9 +69,9 @@ public class TenantAliasServiceUnitTest {
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("ONEMORELIFETENANT"));
         verify(memoryConfigStorage).reprocess(eq("NEWPARENTTENANTSECOND"));
-        verify(configurationService).refreshTenantConfigurations(eq("MAINCHILDTENANT"));
-        verify(configurationService).refreshTenantConfigurations(eq("CHILDTENANT"));
-        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"));
+        verify(configurationService).refreshTenantConfigurations(eq("MAINCHILDTENANT"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("CHILDTENANT"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"), eq(null));
 
         verifyNoMoreInteractions(memoryConfigStorage);
         verifyNoMoreInteractions(configurationService);
@@ -82,9 +86,9 @@ public class TenantAliasServiceUnitTest {
 
         verify(memoryConfigStorage).reprocess(eq("MAIN"));
         verify(memoryConfigStorage).reprocess(eq("SUBMAIN"));
-        verify(configurationService).refreshTenantConfigurations(eq("SUBMAIN"));
-        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"));
-        verify(configurationService).refreshTenantConfigurations(eq("ONEMORELIFETENANT"));
+        verify(configurationService).refreshTenantConfigurations(eq("SUBMAIN"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("LIFETENANT"), eq(null));
+        verify(configurationService).refreshTenantConfigurations(eq("ONEMORELIFETENANT"), eq(null));
 
         verifyNoMoreInteractions(memoryConfigStorage);
         verifyNoMoreInteractions(configurationService);
