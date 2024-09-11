@@ -69,13 +69,16 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public Map<String, Configuration> getMap(ConfigVersion version) {
         if (isOnCommit(version)) {
             log.info("Get configuration from memory by commit: {}", version);
+            // if processed
         } else {
             updateConfig(version);
         }
+
         return storage.getPrivateConfigs();
     }
 
     private boolean isOnCommit(ConfigVersion version) {
+        log.info("isOnCommit: version: {}, this.version: {}", version, this.version);
         return  version == null || UNDEFINED_VERSION.equals(version)
             || version.equals(this.version.get())
             || persistenceConfigRepository.hasVersion(version);
@@ -137,14 +140,14 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     @Override
     public void updateConfigurationInMemory(Configuration configuration, ConfigVersion commit) {
         Set<String> updated = storage.updateConfig(configuration.getPath(), configuration);
-        updateVersion(commit);
+        updateVersion(commit); // set version without full reprocess
         notifyChanged(commit, updated);
     }
 
     @Override
     public ConfigVersion saveAll(List<Configuration> configurations) {
         ConfigVersion commit = persistenceConfigRepository.saveAll(configurations);
-        updateConfigurationsInMemory(configurations, commit);
+        updateConfigurationsInMemory(configurations, commit); // race
         return commit;
     }
 
@@ -166,7 +169,7 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     public ConfigVersion delete(String path) {
         ConfigVersion commit = persistenceConfigRepository.delete(path);
         List<String> removedPaths = storage.removeExactOrByPrefix(path);
-        updateVersion(commit);
+        updateVersion(commit); // potential race
         notifyChanged(commit, removedPaths);
         return commit;
     }
@@ -254,6 +257,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     private void updateVersion(ConfigVersion commit) {
+        // TODO reprocess by flag | add stacktrace
+        log.info("updateVersion: commit: {}, stacktrace: {}", commit.getMainVersion(), Thread.currentThread().getStackTrace());
         version.set(commit);
     }
 

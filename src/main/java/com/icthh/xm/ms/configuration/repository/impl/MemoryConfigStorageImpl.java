@@ -56,7 +56,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         configs.putAll(storage);
         configs.putAll(processedStorage);
         configs.putAll(privateStorage);
-        inconsistentConfigLogger.logAdditionalParameters(configs);
+
+        inconsistentConfigLogger.logAdditionalParameters("storage", storage);
+        inconsistentConfigLogger.logAdditionalParameters("processedStorage", processedStorage);
+        inconsistentConfigLogger.logAdditionalParameters("privateStorage", privateStorage);
+        inconsistentConfigLogger.logAdditionalParameters("configs", configs);
+
         return configs;
     }
 
@@ -66,7 +71,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
         configs.putAll(processedStorage);
-        inconsistentConfigLogger.logAdditionalParameters(configs);
+        inconsistentConfigLogger.logAdditionalParameters("configs", configs);
         return new ArrayList<>(configs.values());
     }
 
