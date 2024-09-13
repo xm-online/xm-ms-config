@@ -16,11 +16,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 
@@ -229,11 +225,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public void refreshTenant(String tenant, ConfigurationList configs) {
-        ConfigurationList configurationList = configs;
-        if (configurationList == null) {
-            configurationList = persistenceConfigRepository.findAll();
-        }
+    public void refreshTenant(String tenant) {
+        ConfigurationList configurationList = persistenceConfigRepository.findAll();
         List<Configuration> actualConfigs = configurationList.getData().stream()
             .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
             .collect(toList());
@@ -245,8 +238,25 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
     }
 
     @Override
-    public void refreshTenant(String tenant) {
-        refreshTenant(tenant, null);
+    public void refreshTenants(List<String> tenants, ConfigurationList configs) {
+        final ConfigurationList configurationList = configs == null ? persistenceConfigRepository.findAll() : configs;
+        Map<String, Set<String>> updates = new HashMap<>();
+        tenants.stream().forEach((tenant) -> {
+            long start = System.currentTimeMillis();
+            List<Configuration> actualConfigs = configurationList.getData().stream()
+                .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
+                .collect(toList());
+
+            Set<String> oldKeys = storage.getConfigPathsList(tenant);
+            Set<String> updated = storage.refreshStorage(actualConfigs, oldKeys);
+            updates.put(tenant, updated);
+        });
+        storage.reprocess(tenants.get(0));
+        updateVersion(configurationList.getVersion());
+        updates.entrySet().stream().forEach((el) -> {
+            el.getValue().addAll(storage.getConfigPathsList(el.getKey()));
+            notifyChanged(el.getValue());
+        });
     }
 
     @Override

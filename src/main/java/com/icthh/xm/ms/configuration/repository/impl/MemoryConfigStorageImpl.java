@@ -137,7 +137,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Synchronized
-    private Set<String> refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
+    public Set<String> refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys) {
         Set<String> updated = getUpdatePaths(actualConfigs, oldKeys);
         actualConfigs.forEach(config -> oldKeys.remove(config.getPath()));
         oldKeys.forEach(this::removeConfig);

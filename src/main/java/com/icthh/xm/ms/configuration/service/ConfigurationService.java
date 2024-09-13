@@ -154,8 +154,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         repositoryProxy.refreshTenant(tenantKey);
     }
 
-    public void refreshTenantConfigurations(String tenantKey, ConfigurationList configs) {
-        repositoryProxy.refreshTenant(tenantKey, configs);
+    public void refreshTenantsConfigurations(List<String> tenants, ConfigurationList configs) {
+        repositoryProxy.refreshTenants(tenants, configs);
     }
 
     @SneakyThrows
