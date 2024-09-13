@@ -240,7 +240,8 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
             .collect(toList());
 
         Set<String> updated = storage.refreshStorage(actualConfigs, tenant);
-        storage.reprocess(tenant);
+        //refreshStorage already reprocess tenant. and here we reprocess it again
+//        storage.reprocess(tenant);
         updated.addAll(storage.getConfigPathsList(tenant));
         updateVersion(configurationList.getVersion());
         notifyChanged(updated);
