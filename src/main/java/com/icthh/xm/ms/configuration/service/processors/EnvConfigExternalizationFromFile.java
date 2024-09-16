@@ -74,6 +74,9 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
             targetStorage.remove(configuration.getPath());
+            log.info(
+                "EnvConfigExternalizationFromFile: processConfiguration removed path={} storageSize={} storageKeys={}",
+                configuration.getPath(), targetStorage.size(), targetStorage.keySet());
             return emptyList();
         }
     }
