@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -25,6 +27,7 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathP
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -34,26 +37,27 @@ import static org.thymeleaf.util.SetUtils.singletonSet;
 @RequiredArgsConstructor
 public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
+    /** original configuration in memory storage */
+    private final ConcurrentMap<String, Configuration> storage = new ConcurrentHashMap<>();
+    /** use for processed config with private information (returned only by /api/private) see ConfigMapResource */
+    private final ConcurrentMap<String, Configuration> privateStorage = new ConcurrentHashMap<>();
+    /** use for processed configs for override */
+    private final ConcurrentMap<String, Configuration> processedStorage = new ConcurrentHashMap<>();
+
     private final List<PrivateConfigurationProcessor> privateConfigurationProcessors;
     private final List<PublicConfigurationProcessor> publicConfigurationProcessors;
     private final TenantAliasService tenantAliasService;
     private final InconsistentConfigLogger inconsistentConfigLogger;
-    private ConfigurationValuesHolder configurationValuesHolder = new ConfigurationValuesHolder();
 
     @Override
     public Map<String, Configuration> getPrivateConfigs() {
         inconsistentConfigLogger.logConfigGet("getPrivateConfigs");
         Map<String, Configuration> configs = new HashMap<>();
-
-        Map<String, Configuration> storageConfigs = configurationValuesHolder.getStorageConfigsSnapshot();
-        Map<String, Configuration> processedStorage = configurationValuesHolder.getProcessedConfigsSnapshot();
-        Map<String, Configuration> privateStorage = configurationValuesHolder.getPrivateConfigsSnapshot();
-
-        configs.putAll(storageConfigs);
+        configs.putAll(storage);
         configs.putAll(processedStorage);
         configs.putAll(privateStorage);
 
-        inconsistentConfigLogger.logAdditionalParameters("storage", storageConfigs);
+        inconsistentConfigLogger.logAdditionalParameters("storage", storage);
         inconsistentConfigLogger.logAdditionalParameters("processedStorage", processedStorage);
         inconsistentConfigLogger.logAdditionalParameters("privateStorage", privateStorage);
         inconsistentConfigLogger.logAdditionalParameters("configs", configs);
@@ -65,26 +69,16 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public List<Configuration> getConfigList() {
         inconsistentConfigLogger.logConfigGet("getConfigList");
         Map<String, Configuration> configs = new HashMap<>();
-
-        Map<String, Configuration> storageConfigs = configurationValuesHolder.getStorageConfigsSnapshot();
-        Map<String, Configuration> processedStorage = configurationValuesHolder.getProcessedConfigsSnapshot();
-
-        configs.putAll(storageConfigs);
+        configs.putAll(storage);
         configs.putAll(processedStorage);
         inconsistentConfigLogger.logAdditionalParameters("configs", configs);
-        inconsistentConfigLogger.logAdditionalParameters("storage", storageConfigs);
-        inconsistentConfigLogger.logAdditionalParameters("processedStorage", processedStorage);
         return new ArrayList<>(configs.values());
     }
 
     @Override
     public Configuration getConfigByPath(String path) {
         inconsistentConfigLogger.logConfigGet("getConfigByPath");
-
-        Map<String, Configuration> storageConfigs = configurationValuesHolder.getStorageConfigsSnapshot();
-        Map<String, Configuration> processedStorage = configurationValuesHolder.getProcessedConfigsSnapshot();
-
-        return processedStorage.getOrDefault(path, storageConfigs.get(path));
+        return processedStorage.getOrDefault(path, storage.get(path));
     }
 
     @Override
@@ -113,11 +107,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private Set<String> getConfigPathsList() {
-        Map<String, Configuration> storageConfigs = configurationValuesHolder.getStorageConfigsSnapshot();
-        Map<String, Configuration> processedStorage = configurationValuesHolder.getProcessedConfigsSnapshot();
-        Map<String, Configuration> privateStorage = configurationValuesHolder.getPrivateConfigsSnapshot();
-
-        Set<String> keys = new HashSet<>(storageConfigs.keySet());
+        Set<String> keys = new HashSet<>(storage.keySet());
         keys.addAll(processedStorage.keySet());
         keys.addAll(privateStorage.keySet());
         return keys;
@@ -127,13 +117,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public Set<String> updateConfig(String path, Configuration config) {
         inconsistentConfigLogger.lock("updateConfig");
         try {
-            configurationValuesHolder.updateStorage(path,config);
+            storage.put(path, config);
             log.info("updateConfigPerPath: config was stored to the general storage path={}", path);
             Set<String> processedConfig = process(config);
             log.info("updateConfigPerPath: config was processed path={}",path);
             return processedConfig;
         } finally {
-            configurationValuesHolder.syncSnapshots();
             inconsistentConfigLogger.unlock();
         }
     }
@@ -156,12 +145,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         inconsistentConfigLogger.lock("reprocessTenant");
         try {
             String tenantPathPrefix = getTenantPathPrefix(tenant);
-            configurationValuesHolder.getStorageConfigsSnapshot().keySet().stream()
+            storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
-                .map(configurationValuesHolder.getStorageConfigsSnapshot()::get)
+                .map(storage::get)
                 .forEach(this::process);
         } finally {
-            configurationValuesHolder.syncSnapshots();
             inconsistentConfigLogger.unlock();
         }
     }
@@ -195,13 +183,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public boolean removeConfig(String path) {
         inconsistentConfigLogger.lock("removeConfig");
         try {
-            boolean removed = configurationValuesHolder.getStorage().remove(path) != null;
-            removed = configurationValuesHolder.getProcessedConfigsSnapshot().remove(path) != null || removed;
-            removed = configurationValuesHolder.getPrivateConfigsSnapshot().remove(path) != null || removed;
+            boolean removed = storage.remove(path) != null;
+            removed = processedStorage.remove(path) != null || removed;
+            removed = privateStorage.remove(path) != null || removed;
             log.info("removeConfig: finished for path={}", path);
             return removed;
         } finally {
-            configurationValuesHolder.syncSnapshots();
             inconsistentConfigLogger.unlock();
         }
     }
@@ -213,8 +200,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private Set<String> processAll(Set<Configuration> configurations) {
-        configurations = processConfiguration(configurations, publicConfigurationProcessors, configurationValuesHolder.getProcessedStorage());
-        configurations = processConfiguration(configurations, privateConfigurationProcessors, configurationValuesHolder.getPrivateStorage());
+        configurations = processConfiguration(configurations, publicConfigurationProcessors, processedStorage);
+        configurations = processConfiguration(configurations, privateConfigurationProcessors, privateStorage);
         return configurations.stream().filter(Objects::nonNull).map(Configuration::getPath).collect(toSet());
     }
 
@@ -246,7 +233,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                                                                         Map<String, Configuration> resultStorage,
                                                                         Map<String, Configuration> processedStorage,
                                                                         Set<Configuration> configToReprocess) {
-        var storage = unmodifiableMap(configurationValuesHolder.getStorageConfigsSnapshot());
+        var storage = unmodifiableMap(this.storage);
         return configuration -> {
             try {
                 List<Configuration> configurations = processor.processConfiguration(configuration, storage, processedStorage, configToReprocess);
@@ -261,18 +248,32 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> updateConfigs(List<Configuration> configs) {
-        return configs.stream()
-            .map(configuration -> updateConfig(configuration.getPath(),configuration))
-            .flatMap(Collection::stream)
-            .collect(toSet());
+        Map<String, Configuration> configsByPath = configs.stream()
+            .collect(toMap(Configuration::getPath, identity()));
+        return updateConfigs(configsByPath);
+    }
+
+    private Set<String> updateConfigs(Map<String, Configuration> map) {
+        inconsistentConfigLogger.lock("updateConfigs");
+        try {
+            storage.putAll(map);
+            log.info("updateConfigs: config was stored to the general storage configsFromRepoSize={}", map.size());
+            Set<String> processedConfigs = map.values().stream()
+                .map(this::process)
+                .collect(flatMapping(Collection::stream, toSet()));
+            log.info("updateConfigs: config was processed processedConfigsSize={}", processedConfigs.size());
+            return processedConfigs;
+        } finally {
+            inconsistentConfigLogger.unlock();
+        }
     }
 
     @Override
     public void clear() {
         log.info("clear: was triggered");
-        configurationValuesHolder.getStorage().clear();
-        configurationValuesHolder.getProcessedConfigsSnapshot().clear();
-        configurationValuesHolder.getPrivateStorage().clear();
+        storage.clear();
+        processedStorage.clear();
+        privateStorage.clear();
     }
 
 }
