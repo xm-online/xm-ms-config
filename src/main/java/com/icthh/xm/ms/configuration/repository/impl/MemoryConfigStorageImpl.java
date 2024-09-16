@@ -252,24 +252,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> updateConfigs(List<Configuration> configs) {
-        Map<String, Configuration> configsByPath = configs.stream()
-            .collect(toMap(Configuration::getPath, identity()));
-        return updateConfigs(configsByPath);
-    }
-
-    private Set<String> updateConfigs(Map<String, Configuration> map) {
-        inconsistentConfigLogger.lock("updateConfigs");
-        try {
-            storage.putAll(map);
-            log.info("updateConfigs: config was stored to the general storage configsFromRepoSize={}", map.size());
-            Set<String> processedConfigs = map.values().stream()
-                .map(this::process)
-                .collect(flatMapping(Collection::stream, toSet()));
-            log.info("updateConfigs: config was processed processedConfigsSize={}", processedConfigs.size());
-            return processedConfigs;
-        } finally {
-            inconsistentConfigLogger.unlock();
-        }
+        return configs.stream()
+            .map(configuration -> updateConfig(configuration.getPath(),configuration))
+            .flatMap(Collection::stream)
+            .collect(toSet());
     }
 
     @Override
