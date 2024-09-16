@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 
@@ -27,13 +28,20 @@ public class InconsistentConfigLogger {
 
     void lock(String updateTriggerMethod) {
         configUpdateInProgress.set(true);
-        lockedByThreads.put(Thread.currentThread().getName(), Thread.currentThread().getStackTrace());
+
+        String traceToLog = Optional.ofNullable(MDC.get("rid"))
+            .orElse(Thread.currentThread().getName());
+
+        lockedByThreads.put(traceToLog, Thread.currentThread().getStackTrace());
         log.info("Config update started by method={}", updateTriggerMethod);
     }
 
     void unlock() {
+        String traceToLog = Optional.ofNullable(MDC.get("rid"))
+            .orElse(Thread.currentThread().getName());
+
         configUpdateInProgress.set(false);
-        lockedByThreads.remove(Thread.currentThread().getName());
+        lockedByThreads.remove(traceToLog);
         log.info("Config update ended");
     }
 
