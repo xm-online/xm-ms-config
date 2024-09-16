@@ -78,12 +78,14 @@ public class InconsistentConfigLogger {
             .map(Object::toString)
             .orElse(StringUtils.EMPTY);
 
-        if (configUpdateInProgress.get()){
-            log.info("logAdditionalParameters: name: {} systemClientSecret={} redisHost={} configs.size={} config.keys={}", name,
-                systemClientSecret, redisHost, configs.size(),configs.keySet());
-        }
-
         log.info("logAdditionalParameters: name: {} systemClientSecret={} redisHost={} configs.size={}", name,
             systemClientSecret, redisHost, configs.size());
+    }
+
+    @SneakyThrows
+    void logPrivateKeys(Map<String, Configuration> configs) {
+        if (configUpdateInProgress.get()) {
+            log.info("logAdditionalParameters: privateConfigKeys={}", configs.keySet());
+        }
     }
 }

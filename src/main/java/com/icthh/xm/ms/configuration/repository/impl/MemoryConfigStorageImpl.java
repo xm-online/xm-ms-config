@@ -60,6 +60,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         inconsistentConfigLogger.logAdditionalParameters("storage", storage);
         inconsistentConfigLogger.logAdditionalParameters("processedStorage", processedStorage);
         inconsistentConfigLogger.logAdditionalParameters("privateStorage", privateStorage);
+        inconsistentConfigLogger.logPrivateKeys(privateStorage);
         inconsistentConfigLogger.logAdditionalParameters("configs", configs);
 
         return configs;
@@ -72,6 +73,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         configs.putAll(storage);
         configs.putAll(processedStorage);
         inconsistentConfigLogger.logAdditionalParameters("configs", configs);
+        inconsistentConfigLogger.logAdditionalParameters("processedStorage", processedStorage);
+        inconsistentConfigLogger.logAdditionalParameters("privateStorage", privateStorage);
+        inconsistentConfigLogger.logPrivateKeys(privateStorage);
         return new ArrayList<>(configs.values());
     }
 
@@ -120,7 +124,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             storage.put(path, config);
             log.info("updateConfigPerPath: config was stored to the general storage path={}", path);
             Set<String> processedConfig = process(config);
-            log.info("updateConfigPerPath: config was processed path={}",path);
+            log.info("updateConfigPerPath: config was processed path={}", path);
             return processedConfig;
         } finally {
             inconsistentConfigLogger.unlock();
