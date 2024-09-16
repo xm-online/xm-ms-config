@@ -91,9 +91,9 @@ public class InconsistentConfigLogger {
     }
 
     @SneakyThrows
-    void logPrivateKeys(Map<String, Configuration> configs) {
+    void logPrivateKeys(String name,Map<String, Configuration> configs) {
         if (configUpdateInProgress.get()) {
-            log.info("logAdditionalParameters: privateConfigKeys={}", configs.keySet());
+            log.info("logAdditionalParameters: name={}, privateConfigKeys={}",name, configs.keySet());
         }
     }
 }
