@@ -27,7 +27,6 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathP
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -43,6 +42,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private final ConcurrentMap<String, Configuration> privateStorage = new ConcurrentHashMap<>();
     /** use for processed configs for override */
     private final ConcurrentMap<String, Configuration> processedStorage = new ConcurrentHashMap<>();
+    /** use for retrieval of the private configs with overrides to avoid race conditions and configs inconsistency during config updates */
+    private final ConcurrentMap<String, Configuration> privateConfigSnapshot = new ConcurrentHashMap<>();
+    /** use for retrival of the processed config with private information to avoid race conditions and configs inconsistency during config updates */
+    private final ConcurrentMap<String, Configuration> processedConfigSnapshot = new ConcurrentHashMap<>();
 
     private final List<PrivateConfigurationProcessor> privateConfigurationProcessors;
     private final List<PublicConfigurationProcessor> publicConfigurationProcessors;
@@ -52,8 +55,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public Map<String, Configuration> getPrivateConfigs() {
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
-        configs.putAll(processedStorage);
-        configs.putAll(privateStorage);
+        configs.putAll(processedConfigSnapshot);
+        configs.putAll(privateConfigSnapshot);
         return configs;
     }
 
@@ -61,13 +64,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public List<Configuration> getConfigList() {
         Map<String, Configuration> configs = new HashMap<>();
         configs.putAll(storage);
-        configs.putAll(processedStorage);
+        configs.putAll(processedConfigSnapshot);
         return new ArrayList<>(configs.values());
     }
 
     @Override
     public Configuration getConfigByPath(String path) {
-        return processedStorage.getOrDefault(path, storage.get(path));
+        return processedConfigSnapshot.getOrDefault(path, storage.get(path));
     }
 
     @Override
@@ -104,8 +107,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> updateConfig(String path, Configuration config) {
-        storage.put(path, config);
-        return process(config);
+        try {
+            storage.put(path, config);
+            return process(config);
+        }finally {
+            syncSnapshots();
+        }
     }
 
     @Override
@@ -123,11 +130,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private void reprocessTenant(String tenant) {
-        String tenantPathPrefix = getTenantPathPrefix(tenant);
-        storage.keySet().stream()
+        try {
+            String tenantPathPrefix = getTenantPathPrefix(tenant);
+            storage.keySet().stream()
                 .filter(it -> it.startsWith(tenantPathPrefix))
                 .map(storage::get)
                 .forEach(this::process);
+        }finally {
+            syncSnapshots();
+        }
     }
 
     @Override
@@ -155,10 +166,14 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public boolean removeConfig(String path) {
-        boolean removed = storage.remove(path) != null;
-        removed = processedStorage.remove(path) != null || removed;
-        removed = privateStorage.remove(path) != null || removed;
-        return removed;
+        try {
+            boolean removed = storage.remove(path) != null;
+            removed = processedStorage.remove(path) != null || removed;
+            removed = privateStorage.remove(path) != null || removed;
+            return removed;
+        }finally {
+            syncSnapshots();
+        }
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -216,16 +231,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> updateConfigs(List<Configuration> configs) {
-        Map<String, Configuration> configsByPath = configs.stream()
-            .collect(toMap(Configuration::getPath, identity()));
-        return updateConfigs(configsByPath);
-    }
-
-    private Set<String> updateConfigs(Map<String, Configuration> map) {
-        storage.putAll(map);
-        return map.values().stream()
-            .map(this::process)
-            .collect(flatMapping(Collection::stream, toSet()));
+        return configs.stream()
+            .map(configuration -> updateConfig(configuration.getPath(),configuration))
+            .flatMap(Collection::stream)
+            .collect(toSet());
     }
 
     @Override
@@ -233,6 +242,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         storage.clear();
         processedStorage.clear();
         privateStorage.clear();
+    }
+
+    public void syncSnapshots() {
+        privateConfigSnapshot.putAll(privateStorage);
+        processedConfigSnapshot.putAll(processedStorage);
     }
 
 }
