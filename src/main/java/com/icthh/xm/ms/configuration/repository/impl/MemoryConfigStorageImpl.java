@@ -43,9 +43,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     /** use for processed configs for override */
     private final ConcurrentMap<String, Configuration> processedStorage = new ConcurrentHashMap<>();
     /** use for retrieval of the private configs with overrides to avoid race conditions and configs inconsistency during config updates */
-    private final ConcurrentMap<String, Configuration> privateConfigSnapshot = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, Configuration> privateConfigSnapshot = new ConcurrentHashMap<>();
     /** use for retrival of the processed config with private information to avoid race conditions and configs inconsistency during config updates */
-    private final ConcurrentMap<String, Configuration> processedConfigSnapshot = new ConcurrentHashMap<>();
+    private ConcurrentMap<String, Configuration> processedConfigSnapshot = new ConcurrentHashMap<>();
 
     private final List<PrivateConfigurationProcessor> privateConfigurationProcessors;
     private final List<PublicConfigurationProcessor> publicConfigurationProcessors;
@@ -110,7 +110,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         try {
             storage.put(path, config);
             return process(config);
-        }finally {
+        } finally {
             syncSnapshots();
         }
     }
@@ -136,7 +136,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 .filter(it -> it.startsWith(tenantPathPrefix))
                 .map(storage::get)
                 .forEach(this::process);
-        }finally {
+        } finally {
             syncSnapshots();
         }
     }
@@ -171,7 +171,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             removed = processedStorage.remove(path) != null || removed;
             removed = privateStorage.remove(path) != null || removed;
             return removed;
-        }finally {
+        } finally {
             syncSnapshots();
         }
     }
@@ -245,8 +245,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     public void syncSnapshots() {
-        privateConfigSnapshot.putAll(privateStorage);
-        processedConfigSnapshot.putAll(processedStorage);
+        privateConfigSnapshot = new ConcurrentHashMap<>(privateStorage);
+        processedConfigSnapshot = new ConcurrentHashMap<>(processedStorage);
     }
 
 }
