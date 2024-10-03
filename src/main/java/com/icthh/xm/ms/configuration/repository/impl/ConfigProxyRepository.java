@@ -247,7 +247,6 @@ public class ConfigProxyRepository implements DistributedConfigRepository {
         final ConfigurationList configurationList = configs == null ? persistenceConfigRepository.findAll() : configs;
         Map<String, Set<String>> updates = new HashMap<>();
         tenants.stream().forEach((tenant) -> {
-            long start = System.currentTimeMillis();
             List<Configuration> actualConfigs = configurationList.getData().stream()
                 .filter(config -> config.getPath().startsWith(getTenantPathPrefix(tenant)))
                 .collect(toList());
