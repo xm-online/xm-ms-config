@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
-import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +54,7 @@ import org.eclipse.jgit.api.PushCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -94,10 +94,10 @@ public class JGitRepository implements PersistenceConfigRepository {
     private final XmRequestContextHolder requestContextHolder;
 
     public JGitRepository(GitProperties gitProperties,
-                          Lock lock,
-                          TenantContextHolder tenantContextHolder,
-                          XmAuthenticationContextHolder authenticationContextHolder,
-                          XmRequestContextHolder requestContextHolder) {
+        Lock lock,
+        TenantContextHolder tenantContextHolder,
+        XmAuthenticationContextHolder authenticationContextHolder,
+        XmRequestContextHolder requestContextHolder) {
         this.gitProperties = gitProperties;
         this.lock = lock;
         this.requestContextHolder = requestContextHolder;
@@ -144,7 +144,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         executeLoggedAction("cloneRepository", () -> {
             CloneCommand cloneCommand = Git.cloneRepository().setURI(gitProperties.getUri())
-                                                         .setDirectory(repositoryFolder);
+                .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
             cloneCommand.setBranch(gitProperties.getBranchName());
             if (gitProperties.getDepth() > 0) {
@@ -164,7 +164,8 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     public boolean hasVersion(ConfigVersion version) {
         log.info("[{}] Search if commit present: {}", getRequestSourceTypeLogName(requestContextHolder), version);
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> containsGitCommit(version.getMainVersion()));
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(),
+            () -> containsGitCommit(version.getMainVersion()));
     }
 
     @Override
@@ -217,7 +218,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     public Configuration find(String path, ConfigVersion version) {
         log.info("[{}] Find configuration by path: {} and version: {}",
-                 getRequestSourceTypeLogName(requestContextHolder), path, version);
+            getRequestSourceTypeLogName(requestContextHolder), path, version);
 
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             if (!hasVersion(version)) {
@@ -262,21 +263,22 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         if (!paths.isEmpty()) {
             log.info("[{}] Save configurations to git by paths {}",
-                     getRequestSourceTypeLogName(requestContextHolder), paths);
+                getRequestSourceTypeLogName(requestContextHolder), paths);
             return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
-                                     () -> configurations.forEach(this::writeConfiguration));
+                () -> configurations.forEach(this::writeConfiguration));
         }
-        log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
+        log.info("[{}] configuration list is empty, nothing to save",
+            getRequestSourceTypeLogName(requestContextHolder));
         return getCurrentVersion();
     }
 
     @Override
     public ConfigVersion setRepositoryState(List<Configuration> configurations) {
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, "multiple paths"),
-                () -> {
-                    deleteExistingFile("/config");
-                    configurations.forEach(this::writeConfiguration);
-                });
+            () -> {
+                deleteExistingFile("/config");
+                configurations.forEach(this::writeConfiguration);
+            });
     }
 
     @Override
@@ -287,7 +289,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion save(Configuration configuration, String oldConfigHash) {
         log.info("[src: {}] Save configuration to git with path {}", getRequestSourceTypeLogName(requestContextHolder),
-                 configuration.getPath());
+            configuration.getPath());
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_UPDATE_TPL, configuration.getPath()), () -> {
             assertConfigHash(configuration, oldConfigHash);
             writeConfiguration(configuration);
@@ -312,17 +314,18 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion deleteAll(List<String> paths) {
         log.info("[{}] Delete configurations from git by paths {}",
-                 getRequestSourceTypeLogName(requestContextHolder), paths);
+            getRequestSourceTypeLogName(requestContextHolder), paths);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, paths.size()),
-                                 () -> paths.forEach(this::deleteExistingFile));
+            () -> paths.forEach(this::deleteExistingFile));
     }
 
     @Override
     public ConfigVersion delete(String path) {
         log.info("[{}] Delete configuration from git by path {}",
-                 getRequestSourceTypeLogName(requestContextHolder), path);
+            getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithPullCommit(getCommitMsg(GIT_COMMIT_MSG_DELETE_TPL, path), () -> deleteExistingFile(path));
     }
+
     @Override
     public ConfigVersion saveOrDeleteEmpty(List<Configuration> configurations) {
         List<String> paths = configurations.stream().map(Configuration::getPath).collect(toList());
@@ -339,7 +342,8 @@ public class JGitRepository implements PersistenceConfigRepository {
                     }
                 }));
         }
-        log.info("[{}] configuration list is empty, nothing to save", getRequestSourceTypeLogName(requestContextHolder));
+        log.info("[{}] configuration list is empty, nothing to save",
+            getRequestSourceTypeLogName(requestContextHolder));
         return getCurrentVersion();
     }
 
@@ -365,18 +369,18 @@ public class JGitRepository implements PersistenceConfigRepository {
         String operationSourceMsg;
         if (isRequestSourceNameExist(requestContextHolder)) {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC_AND_APP,
-                                               getRequestSourceTypeLogName(requestContextHolder),
-                                               getRequestSourceLogName(requestContextHolder));
+                getRequestSourceTypeLogName(requestContextHolder),
+                getRequestSourceLogName(requestContextHolder));
         } else {
             operationSourceMsg = String.format(SUB_MSG_TPL_OPERATION_SRC,
-                                               getRequestSourceTypeLogName(requestContextHolder));
+                getRequestSourceTypeLogName(requestContextHolder));
         }
 
         return String.format(template,
-                             path,
-                             authenticationContextHolder.getContext().getLogin().orElse("unknown"),
-                             TenantContextUtils.getTenantKey(tenantContextHolder).map(TenantKey::getValue).orElse("no tenant"),
-                             operationSourceMsg);
+            path,
+            authenticationContextHolder.getContext().getLogin().orElse("unknown"),
+            TenantContextUtils.getTenantKey(tenantContextHolder).map(TenantKey::getValue).orElse("no tenant"),
+            operationSourceMsg);
     }
 
     @Override
@@ -420,8 +424,8 @@ public class JGitRepository implements PersistenceConfigRepository {
             try {
                 git.clean().setForce(true);
                 git.checkout()
-                   .setName(branchName)
-                   .setForceRefUpdate(true).call();
+                    .setName(branchName)
+                    .setForceRefUpdate(true).call();
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
                 pull.call();
@@ -435,10 +439,10 @@ public class JGitRepository implements PersistenceConfigRepository {
                 }
                 fetch.call();
                 git.checkout()
-                   .setCreateBranch(true)
-                   .setName(branchName)
-                   .setUpstreamMode(TRACK)
-                   .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName).call();
+                    .setCreateBranch(true)
+                    .setName(branchName)
+                    .setUpstreamMode(TRACK)
+                    .setStartPoint(DEFAULT_REMOTE_NAME + "/" + branchName).call();
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
                 pull.call();
@@ -452,7 +456,8 @@ public class JGitRepository implements PersistenceConfigRepository {
         return executeGitAction("commitAndPush", git -> {
             if (git.status().call().isClean()) {
                 String lastCommit = findLastCommit(git);
-                log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
+                log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}",
+                    commitMsg, lastCommit);
                 return lastCommit;
             }
             git.add().addFilepattern(".").call();
@@ -469,18 +474,33 @@ public class JGitRepository implements PersistenceConfigRepository {
         return executeGitAction("containsGitCommit", git -> {
             String branchName = gitProperties.getBranchName();
             try {
-                git.clean().setForce(true);
+                git.clean().setForce(true).call();
                 git.checkout().setName(branchName).setForceRefUpdate(true).call();
-                Iterable<RevCommit> refs = git.log().call();
-                // TODO there should be better way to get commit from Git like:
-                //      git.log().setRevFilter(...).call()
-                Optional<RevCommit> targetCommit = StreamSupport.stream(refs.spliterator(), false)
-                                                                .filter(revCommit -> revCommit.getName().equals(commit))
-                                                                .findFirst();
-                log.info("Commit {} found in local repository", targetCommit);
-                return targetCommit.isPresent();
+
+                ObjectId jCommit = git.getRepository().resolve(commit);
+                if (jCommit == null) {
+                    log.warn("Could not find commit: {} due to wrong revision format", commit);
+                    return false;
+                }
+
+                try (RevWalk revWalk = new RevWalk(git.getRepository())) {
+                    RevCommit revCommit = revWalk.parseCommit(jCommit);
+                    if (revCommit != null) {
+                        log.info("Successfully found commit: {} in the local repository", commit);
+                        return true;
+                    } else {
+                        log.info("Could not find commit: {} in the local repository", commit);
+                        return false;
+                    }
+                } catch (MissingObjectException e) {
+                    log.info("Could not find commit: {} due to missing in the local repo", commit);
+                    return false;
+                }
             } catch (RefNotFoundException e) {
-                log.info("Branch {} not found in local repository", branchName);
+                log.warn("Branch {} not found in local repository", branchName);
+                return false;
+            } catch (IOException e) {
+                log.warn("Could not find commit: {} due to unexpected exception", commit, e);
                 return false;
             }
         });
@@ -501,7 +521,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         RevWalk walk = new RevWalk(git.getRepository());
 
         walk.markStart(walk.parseCommit(git.getRepository().resolve(Constants.HEAD)));
-        walk.sort(RevSort.COMMIT_TIME_DESC, true );
+        walk.sort(RevSort.COMMIT_TIME_DESC, true);
         Optional<RevCommit> lastCommit = Optional.ofNullable(walk.iterator().next());
 
         if (lastCommit.isPresent()) {
@@ -525,7 +545,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action){
+    private <R> R executeLoggedAction(String logActionName, ThrowingSupplier<R, Exception> action) {
         StopWatch stopWatch = StopWatch.createStarted();
         try {
             return action.get();
@@ -548,11 +568,13 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @FunctionalInterface
     public interface GitFunction<R> {
+
         R apply(Git git) throws GitAPIException;
     }
 
     @FunctionalInterface
     public interface ThrowingSupplier<R, E extends Exception> {
+
         R get() throws E;
     }
 
