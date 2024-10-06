@@ -117,3 +117,4 @@ application:
         password:
         branch-name: master
         max-wait-time-second: 30
+        depth: 1

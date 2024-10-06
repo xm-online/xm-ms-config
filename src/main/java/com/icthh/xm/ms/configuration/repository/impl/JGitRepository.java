@@ -14,6 +14,7 @@ import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
@@ -65,6 +66,7 @@ import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -80,6 +82,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     private static final String SUB_MSG_TPL_OPERATION_SRC = "Operation src [%s]";
     private static final String SUB_MSG_TPL_OPERATION_SRC_AND_APP = SUB_MSG_TPL_OPERATION_SRC + ", app name [%s]";
     public static final String UNDEFINED_COMMIT = "undefined";
+    public static final String REFS_HEADS = "refs/heads/";
 
     private final GitProperties gitProperties;
 
@@ -455,10 +458,15 @@ public class JGitRepository implements PersistenceConfigRepository {
                 log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
                 return lastCommit;
             }
+            String branchName = gitProperties.getBranchName();
             git.add().addFilepattern(".").call();
             RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
             PushCommand push = git.push();
             push = setAuthorizationConfig(push);
+            push.setThin(true);
+            if (isNotBlank(branchName)) {
+                push.setRefSpecs(new RefSpec(REFS_HEADS + branchName));
+            }
             push.call();
             return commit.getName();
         });
