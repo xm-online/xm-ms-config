@@ -483,8 +483,8 @@ public class JGitRepository implements PersistenceConfigRepository {
             StatusCommand statusCommand = git.status();
             statusCommand.setProgressMonitor(NullProgressMonitor.INSTANCE);
             Status status = statusCommand.call();
+            String lastCommit = findLastCommit(git);
             if (status.isClean()) {
-                String lastCommit = findLastCommit(git);
                 log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
                 return lastCommit;
             }
@@ -492,9 +492,12 @@ public class JGitRepository implements PersistenceConfigRepository {
             String branchName = gitProperties.getBranchName();
 
             Set<String> filePatterns = new HashSet<>();
-            filePatterns.addAll(status.getModified());
             filePatterns.addAll(status.getUntracked());
-            filePatterns.addAll(status.getRemoved());
+            filePatterns.addAll(status.getUncommittedChanges());
+            if (filePatterns.isEmpty()) {
+                log.info("Skip commit to git as no file changed after performing: {}, lastCommit: {}", commitMsg, lastCommit);
+                return lastCommit;
+            }
 
             AddCommand addCmd = git.add();
             for (String file : filePatterns) {
