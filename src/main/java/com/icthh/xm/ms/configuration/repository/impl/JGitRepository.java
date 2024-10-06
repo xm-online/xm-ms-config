@@ -38,8 +38,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
@@ -47,20 +49,24 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PushCommand;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
@@ -453,23 +459,49 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SneakyThrows
     protected String commitAndPush(String commitMsg) {
         return executeGitAction("commitAndPush", git -> {
-            if (git.status().call().isClean()) {
+            Status status = git.status().call();
+            if (status.isClean()) {
                 String lastCommit = findLastCommit(git);
                 log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
                 return lastCommit;
             }
+
             String branchName = gitProperties.getBranchName();
-            git.add().addFilepattern(".").call();
-            RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
+
+            disablePreloadIndexAndFileMode(git);
+
+            Set<String> filePatterns = new HashSet<>();
+            filePatterns.addAll(status.getModified());
+            filePatterns.addAll(status.getUntracked());
+            filePatterns.addAll(status.getRemoved());
+
+            AddCommand addCmd = git.add();
+            for (String file : filePatterns) {
+                addCmd.addFilepattern(file);
+            }
+            addCmd.call();
+
+            RevCommit commit = git.commit().setMessage(commitMsg).call();
+
             PushCommand push = git.push();
             push = setAuthorizationConfig(push);
             push.setThin(true);
+            push.setProgressMonitor(NullProgressMonitor.INSTANCE);
             if (isNotBlank(branchName)) {
                 push.setRefSpecs(new RefSpec(REFS_HEADS + branchName));
             }
             push.call();
+
             return commit.getName();
         });
+    }
+
+    @SneakyThrows
+    private void disablePreloadIndexAndFileMode(Git git) {
+        StoredConfig config = git.getRepository().getConfig();
+        config.setBoolean("core", null, "filemode", false);
+        config.setBoolean("core", null, "preloadindex", false);
+        config.save();
     }
 
     @SneakyThrows
