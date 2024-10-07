@@ -27,6 +27,6 @@ public interface DistributedConfigRepository extends PersistenceConfigRepository
 
     void refreshTenant(String tenant);
 
-    void refreshTenant(String tenant, ConfigurationList actualConfigs);
+    void refreshTenants(List<String> tenants, ConfigurationList actualConfigs);
 
 }

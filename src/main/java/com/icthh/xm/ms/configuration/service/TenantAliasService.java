@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -86,16 +87,7 @@ public class TenantAliasService implements PublicConfigurationProcessor {
 
             ConfigurationList configurationList = this.persistenceConfigRepository.findAll();
 
-            allTenants.stream().filter(it -> isTenantChanged(oldTenants, newTenants, it))
-                    .distinct()
-                    .peek(key -> configurationService.refreshTenantConfigurations(key, configurationList))
-                    .map(newTenants::get)
-                    .map(this::getParentKey)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .distinct()
-                    .forEach(memoryConfigStorage::reprocess);
-
+            this.processAliasTree(tenantAliasTree.getTenantAliasTree(), configurationList);
         } catch (IOException e) {
             log.error("Error parse tenant alias config", e);
         }
@@ -133,6 +125,22 @@ public class TenantAliasService implements PublicConfigurationProcessor {
         }
 
         saveTenantAliases(tenantAliasTree);
+    }
+
+    private void processAliasTree(List<TenantAliasTree.TenantAlias> children, ConfigurationList configurationList) {
+        children.stream().forEach(it-> {
+            if (it.getChildren() != null) {
+                boolean hasOnlyLeafs = it.getChildren().stream().allMatch(c -> c.getChildren() == null);
+                List<String> tenants = it.getChildren().stream().map(c -> c.getKey()).collect(Collectors.toList());
+                if (!hasOnlyLeafs) {
+                    this.processAliasTree(it.getChildren(), configurationList);
+                } else {
+                    configurationService.refreshTenantsConfigurations(tenants, configurationList);
+                }
+            }
+        });
+        List<String> tenants = children.stream().map(c -> c.getKey()).collect(Collectors.toList());
+        configurationService.refreshTenantsConfigurations(tenants, configurationList);
     }
 
     private TenantAliasTree.TenantAlias findTenantAlias(String tenantKey, List<TenantAliasTree.TenantAlias> tenantAliasTree) {

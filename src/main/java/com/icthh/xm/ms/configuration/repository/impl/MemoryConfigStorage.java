@@ -30,4 +30,6 @@ public interface MemoryConfigStorage {
     Set<String> refreshStorage(List<Configuration> actualConfigs);
 
     Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant);
+
+    Set<String> refreshStorage(List<Configuration> actualConfigs, Set<String> oldKeys);
 }
