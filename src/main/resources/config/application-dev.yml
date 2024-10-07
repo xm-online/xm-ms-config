@@ -104,3 +104,4 @@ application:
         password:
         branch-name:
         max-wait-time-second: 30
+        depth: 1

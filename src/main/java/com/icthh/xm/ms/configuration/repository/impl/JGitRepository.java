@@ -10,10 +10,10 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.listFiles;
-import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
@@ -34,11 +34,14 @@ import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationExcepti
 import com.icthh.xm.ms.configuration.utils.Task;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
@@ -46,25 +49,31 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jgit.api.AddCommand;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.FetchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PushCommand;
+import org.eclipse.jgit.api.Status;
+import org.eclipse.jgit.api.StatusCommand;
 import org.eclipse.jgit.api.TransportCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.RefNotFoundException;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
@@ -80,6 +89,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     private static final String SUB_MSG_TPL_OPERATION_SRC = "Operation src [%s]";
     private static final String SUB_MSG_TPL_OPERATION_SRC_AND_APP = SUB_MSG_TPL_OPERATION_SRC + ", app name [%s]";
     public static final String UNDEFINED_COMMIT = "undefined";
+    public static final String REFS_HEADS = "refs/heads/";
 
     private final GitProperties gitProperties;
 
@@ -146,7 +156,9 @@ public class JGitRepository implements PersistenceConfigRepository {
             CloneCommand cloneCommand = Git.cloneRepository().setURI(gitProperties.getUri())
                                                          .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
+            cloneCommand.setBranchesToClone(List.of(REFS_HEADS + gitProperties.getBranchName()));
             cloneCommand.setBranch(gitProperties.getBranchName());
+            cloneCommand.setProgressMonitor(NullProgressMonitor.INSTANCE);
             if (gitProperties.getDepth() > 0) {
                 cloneCommand.setDepth(gitProperties.getDepth());
             }
@@ -158,6 +170,12 @@ public class JGitRepository implements PersistenceConfigRepository {
         if (oldDirectory != null) {
             oldDirectory.delete();
         }
+    }
+
+    @SneakyThrows
+    public static String readFileToString(String filePath) {
+        byte[] encoded = Files.readAllBytes(Paths.get(filePath));
+        return new String(encoded, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -197,7 +215,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     @SneakyThrows
     private Configuration fileToConfiguration(File file) {
-        String content = readFileToString(file, UTF_8);
+        String content = readFileToString(file.getAbsolutePath());
         String path = StringUtils.replaceChars(getRelativePath(file), File.separator, "/");
         return new Configuration(path, content);
     }
@@ -208,7 +226,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
             String commit = pull();
-            String content = readFileToString(new File(getAbsolutePath(path)), UTF_8);
+            String content = readFileToString(getAbsolutePath(path));
             return new ConfigurationItem(new ConfigVersion(commit), new Configuration(path, content));
         });
     }
@@ -301,7 +319,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
 
         String path = configuration.getPath();
-        String content = readFileToString(new File(getAbsolutePath(path)), UTF_8);
+        String content = readFileToString(getAbsolutePath(path));
         String expectedOldConfigHash = sha1Hex(content);
         log.info("Expected hash {}, actual hash {}", expectedOldConfigHash, oldConfigHash);
         if (!expectedOldConfigHash.equals(oldConfigHash)) {
@@ -419,11 +437,12 @@ public class JGitRepository implements PersistenceConfigRepository {
             log.info("Start to pull branch: {}", branchName);
             try {
                 git.clean().setForce(true);
-                git.checkout()
-                   .setName(branchName)
-                   .setForceRefUpdate(true).call();
+                checkout(git, branchName);
                 PullCommand pull = git.pull();
                 pull = setAuthorizationConfig(pull);
+                pull.setRebase(false);
+                pull.setProgressMonitor(NullProgressMonitor.INSTANCE);
+
                 pull.call();
                 return findLastCommit(git);
             } catch (RefNotFoundException e) {
@@ -448,20 +467,65 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
+    private void checkout(Git git, String branchName) {
+        if (!branchName.equals(git.getRepository().getBranch())) {
+            git.checkout()
+                .setName(branchName)
+                .setCreateBranch(false)
+                .setProgressMonitor(NullProgressMonitor.INSTANCE)
+                .setForceRefUpdate(true).call();
+        }
+    }
+
+    @SneakyThrows
     protected String commitAndPush(String commitMsg) {
         return executeGitAction("commitAndPush", git -> {
-            if (git.status().call().isClean()) {
-                String lastCommit = findLastCommit(git);
+            StatusCommand statusCommand = git.status();
+            statusCommand.setProgressMonitor(NullProgressMonitor.INSTANCE);
+            Status status = statusCommand.call();
+            String lastCommit = findLastCommit(git);
+            if (status.isClean()) {
                 log.info("Skip commit to git as working directory is clean after performing: {}, lastCommit: {}", commitMsg, lastCommit);
                 return lastCommit;
             }
-            git.add().addFilepattern(".").call();
-            RevCommit commit = git.commit().setAll(true).setMessage(commitMsg).call();
+
+            String branchName = gitProperties.getBranchName();
+
+            Set<String> filePatterns = new HashSet<>();
+            filePatterns.addAll(status.getUntracked());
+            filePatterns.addAll(status.getUncommittedChanges());
+            if (filePatterns.isEmpty()) {
+                log.info("Skip commit to git as no file changed after performing: {}, lastCommit: {}", commitMsg, lastCommit);
+                return lastCommit;
+            }
+
+            AddCommand addCmd = git.add();
+            for (String file : filePatterns) {
+                addCmd.addFilepattern(file);
+            }
+            addCmd.call();
+
+            RevCommit commit = git.commit().setMessage(commitMsg).call();
+
             PushCommand push = git.push();
             push = setAuthorizationConfig(push);
+            push.setThin(true);
+            push.setProgressMonitor(NullProgressMonitor.INSTANCE);
+            if (isNotBlank(branchName)) {
+                push.setRefSpecs(new RefSpec(REFS_HEADS + branchName));
+            }
             push.call();
+
             return commit.getName();
         });
+    }
+
+    @SneakyThrows
+    private void disablePreloadIndexAndFileMode(Git git) {
+        StoredConfig config = git.getRepository().getConfig();
+        config.setBoolean("core", null, "filemode", false);
+        config.setBoolean("core", null, "preloadindex", false);
+        config.save();
     }
 
     @SneakyThrows
@@ -470,7 +534,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             String branchName = gitProperties.getBranchName();
             try {
                 git.clean().setForce(true);
-                git.checkout().setName(branchName).setForceRefUpdate(true).call();
+                checkout(git, branchName);
                 Iterable<RevCommit> refs = git.log().call();
                 // TODO there should be better way to get commit from Git like:
                 //      git.log().setRevFilter(...).call()
@@ -520,6 +584,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             Repository db = createRepository();
             Git git = Git.wrap(db)
         ) {
+            disablePreloadIndexAndFileMode(git);
             return executeLoggedAction(logActionName, () -> function.apply(git));
         }
     }
