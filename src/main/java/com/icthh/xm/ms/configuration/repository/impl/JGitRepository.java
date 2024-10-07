@@ -1,23 +1,5 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
-import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
-import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
-import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
-import static java.io.File.separator;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.toList;
-import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
-import static org.apache.commons.io.FileUtils.listFiles;
-import static org.apache.commons.io.FileUtils.write;
-import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
-import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
-import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
-import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
@@ -32,19 +14,6 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.utils.Task;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.function.Predicate;
-import java.util.stream.StreamSupport;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -79,6 +48,39 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.FS;
 import org.springframework.util.FileSystemUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.function.Predicate;
+import java.util.stream.StreamSupport;
+
+import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
+import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.isRequestSourceNameExist;
+import static java.io.File.separator;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toList;
+import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
+import static org.apache.commons.io.FileUtils.listFiles;
+import static org.apache.commons.io.FileUtils.write;
+import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
+import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
+import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
 public class JGitRepository implements PersistenceConfigRepository {
@@ -168,7 +170,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         this.rootDirectory = repositoryFolder;
         if (oldDirectory != null) {
-            oldDirectory.delete();
+            deleteRecursively(oldDirectory);
         }
     }
 
@@ -365,7 +367,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         File file = Paths.get(getAbsolutePath(path)).toFile();
         if (file.isDirectory()) {
             log.info("delete whole directory by path: {}", file.getPath());
-            assertDelete(FileSystemUtils.deleteRecursively(file), file.getPath());
+            assertDelete(deleteRecursively(file), file.getPath());
         } else if (file.exists()) {
             assertDelete(file.delete(), file.getPath());
         } else {
