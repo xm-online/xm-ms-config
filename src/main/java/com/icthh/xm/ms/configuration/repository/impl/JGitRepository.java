@@ -8,7 +8,6 @@ import static java.io.File.separator;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.commons.io.FileUtils.listFiles;
 import static org.apache.commons.io.FileUtils.write;
 import static org.apache.commons.io.filefilter.TrueFileFilter.INSTANCE;
@@ -17,6 +16,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.eclipse.jgit.api.CreateBranchCommand.SetupUpstreamMode.TRACK;
 import static org.eclipse.jgit.lib.Constants.DEFAULT_REMOTE_NAME;
 import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
+import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
@@ -123,7 +123,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     @SuppressWarnings("unused")
     public void destroy() {
         log.info("Delete git directory: {}", rootDirectory);
-        deleteDirectory(rootDirectory);
+        deleteRecursively(rootDirectory);
     }
 
     @SneakyThrows
@@ -168,7 +168,7 @@ public class JGitRepository implements PersistenceConfigRepository {
 
         this.rootDirectory = repositoryFolder;
         if (oldDirectory != null) {
-            oldDirectory.delete();
+            deleteRecursively(oldDirectory);
         }
     }
 
