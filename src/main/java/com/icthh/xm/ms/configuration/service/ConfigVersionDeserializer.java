@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -10,6 +9,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigVersionMixIn;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -23,7 +23,7 @@ public class ConfigVersionDeserializer {
 
     @SneakyThrows
     public ConfigVersion from(String value) {
-        if (value == null) {
+        if (StringUtils.isEmpty(value)) {
             return ConfigVersion.UNDEFINED_VERSION;
         }
         try {
