@@ -10,8 +10,7 @@ import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
-import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
-import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
+import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -54,18 +53,18 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public MemoryConfigStorage memoryConfigStorage(List<PrivateConfigurationProcessor> privateConfigurationProcessors,
-                                                   List<PublicConfigurationProcessor> publicConfigurationProcessors,
+    public MemoryConfigStorage memoryConfigStorage(List<TenantConfigurationProcessor> tenantConfigurationProcessors,
                                                    TenantAliasService tenantAliasService,
-                                                   ApplicationProperties applicationProperties) {
-        log.info("PrivateConfigurationProcessor {}", privateConfigurationProcessors);
-        log.info("PublicConfigurationProcessor {}", publicConfigurationProcessors);
+                                                   ApplicationProperties applicationProperties,
+                                                   @Qualifier(TENANT_CONFIGURATION_LOCK)
+                                                   Lock lock) {
 
         return new MemoryConfigStorageExcludeConfigDecorator(
                 new MemoryConfigStorageImpl(
-                        privateConfigurationProcessors,
-                        publicConfigurationProcessors,
-                        tenantAliasService
+                    tenantConfigurationProcessors,
+                    tenantAliasService,
+                    applicationProperties,
+                    lock
                 ),
                 applicationProperties
         );

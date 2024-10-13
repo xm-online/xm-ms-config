@@ -297,7 +297,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testGetTreeConfigurationsByPaths() {
         Configuration config = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(config, Map.of(), Map.of(), Set.of());
+        tenantAliasService.updateAliasTree(config);
 
         String path = CONFIG + TENANTS + "/MAIN/my-config.yml";
         String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
@@ -355,7 +355,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful());
 
-        Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
+        Map<String, Configuration> configurationMap = configurationService.findTenantConfigurations(List.of(), true);
         assertEquals(updatedContent, configurationMap.get(path).getContent());
         assertFalse(configurationMap.containsKey(path2));
         assertFalse(configurationMap.containsKey(path3));

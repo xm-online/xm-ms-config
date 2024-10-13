@@ -4,12 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantAliasTree.TenantAlias;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
-import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
-import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
+import com.icthh.xm.ms.configuration.repository.impl.ConfigState.IntermediateConfigState;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,60 +15,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
+import static java.util.stream.Collectors.toList;
 
-/**
- * Listen change of tenantAliasTree. Using PublicConfigurationProcessor because using RefreshableConfiguration cause
- * unresolvable cyclic dependency.
- */
 @Slf4j
 @Component
-public class TenantAliasService implements PublicConfigurationProcessor {
+public class TenantAliasService {
 
     public static final String TENANT_ALIAS_CONFIG = "/config/tenants/tenant-aliases.yml";
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     private final ConfigurationService configurationService;
-    private final MemoryConfigStorage memoryConfigStorage;
     private final TenantContextHolder tenantContextHolder;
-    private final PersistenceConfigRepository persistenceConfigRepository;
 
     @Getter
     private volatile TenantAliasTree tenantAliasTree = new TenantAliasTree();
 
     public TenantAliasService(@Lazy ConfigurationService configurationService,
-                              @Lazy MemoryConfigStorage memoryConfigStorage,
-                              @Lazy TenantContextHolder tenantContextHolder,
-                              @Qualifier("configRepository")
-                              PersistenceConfigRepository persistenceConfigRepository) {
+                              @Lazy TenantContextHolder tenantContextHolder) {
         this.configurationService = configurationService;
-        this.memoryConfigStorage = memoryConfigStorage;
         this.tenantContextHolder = tenantContextHolder;
-        this.persistenceConfigRepository = persistenceConfigRepository;
     }
 
-    @Override
-    public boolean isSupported(Configuration configuration) {
-        return TENANT_ALIAS_CONFIG.equals(configuration.getPath());
-    }
-
-    @Override
-    public List<Configuration> processConfiguration(Configuration configuration,
-                                                    Map<String, Configuration> originalStorage,
-                                                    Map<String, Configuration> targetStorage,
-                                                    Set<Configuration> configToReprocess) {
+    public List<Configuration> updateAliasTree(Configuration tenantAliasConfig) {
         try {
-            TenantAliasTree tenantAliasTree = mapper.readValue(configuration.getContent(), TenantAliasTree.class);
+            TenantAliasTree tenantAliasTree = mapper.readValue(tenantAliasConfig.getContent(), TenantAliasTree.class);
             tenantAliasTree.init();
 
             TenantAliasTree oldTenantAliasTree = this.tenantAliasTree;
@@ -84,17 +60,10 @@ public class TenantAliasService implements PublicConfigurationProcessor {
             allTenants.addAll(oldTenants.keySet());
             allTenants.addAll(newTenants.keySet());
 
-            ConfigurationList configurationList = this.persistenceConfigRepository.findAll();
-
-            allTenants.stream().filter(it -> isTenantChanged(oldTenants, newTenants, it))
-                    .distinct()
-                    .peek(key -> configurationService.refreshTenantConfigurations(key, configurationList))
-                    .map(newTenants::get)
-                    .map(this::getParentKey)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .distinct()
-                    .forEach(memoryConfigStorage::reprocess);
+            List<String> tenants = allTenants.stream()
+                .filter(it -> isTenantChanged(oldTenants, newTenants, it))
+                .collect(toList());
+            configurationService.refreshTenantsConfigurations(tenants);
 
         } catch (IOException e) {
             log.error("Error parse tenant alias config", e);
@@ -180,5 +149,12 @@ public class TenantAliasService implements PublicConfigurationProcessor {
         return Optional.ofNullable(alias)
                 .map(TenantAlias::getParent)
                 .map(TenantAlias::getKey);
+    }
+
+    public void updateAliasIfChanged(IntermediateConfigState intermediateConfigState) {
+        Optional.ofNullable(intermediateConfigState)
+            .map(IntermediateConfigState::getChangedFiles)
+            .map(it -> it.get(TENANT_ALIAS_CONFIG))
+            .ifPresent(this::updateAliasTree);
     }
 }

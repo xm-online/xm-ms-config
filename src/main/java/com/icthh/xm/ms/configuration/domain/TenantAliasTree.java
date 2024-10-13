@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Optional;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,8 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static com.icthh.xm.ms.configuration.domain.TenantAliasTree.TraverseRule.CONTINUE;
@@ -40,6 +43,20 @@ public class TenantAliasTree {
     public List<TenantAlias> getParents(String tenant) {
         return parents.getOrDefault(tenant, emptyList());
     }
+
+    public Optional<String> getParent(String tenant) {
+        return getParents(tenant).stream().findFirst().map(TenantAlias::getKey);
+    }
+
+    public Set<String> getChildrenKeys(String tenant) {
+        Set<String> tenantKeys = new HashSet<>();
+        tenants.getOrDefault(tenant, new TenantAlias()).traverseChild((parent, child) -> {
+            tenantKeys.add(child.getKey());
+            return CONTINUE;
+        });
+        return tenantKeys;
+    }
+
 
     @Data
     @ToString(exclude = "children")

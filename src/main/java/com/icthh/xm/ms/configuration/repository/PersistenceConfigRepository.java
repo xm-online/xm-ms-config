@@ -6,6 +6,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 
 import java.util.List;
+import java.util.Map;
 
 public interface PersistenceConfigRepository {
 
@@ -13,25 +14,23 @@ public interface PersistenceConfigRepository {
 
     ConfigurationList findAll();
 
+    ConfigurationList findAllInDirectory(String relativePath);
+
     ConfigurationItem find(String path);
 
     Configuration find(String path, ConfigVersion commit);
 
-    ConfigVersion saveAll(List<Configuration> configurations);
+    default ConfigVersion save(Configuration configuration) {
+        return saveAll(List.of(configuration), Map.of());
+    }
+
+    ConfigVersion saveAll(List<Configuration> configurations, Map<String, String> configHashes);
 
     ConfigVersion setRepositoryState(List<Configuration> configurations);
 
-    ConfigVersion save(Configuration configuration);
-
-    ConfigVersion save(Configuration configuration, String oldConfigHash);
-
     ConfigVersion deleteAll(List<String> paths);
 
-    ConfigVersion delete(String path);
-
-    ConfigVersion saveOrDeleteEmpty(List<Configuration> configurations);
-
-    void recloneConfiguration();
+    ConfigVersion recloneConfiguration();
 
     ConfigVersion getCurrentVersion();
 }

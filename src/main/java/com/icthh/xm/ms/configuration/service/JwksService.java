@@ -2,7 +2,6 @@ package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
-import com.icthh.xm.ms.configuration.repository.DistributedConfigRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ public class JwksService {
     public static final String TENANT_REPLACE_PATTERN = "{tenant}";
     public static final String IDP_CLIENT_KEY_REPLACE_PATTERN = "{idpClientKey}";
 
-    private final DistributedConfigRepository repositoryProxy;
+    private final ConfigurationService configurationService;
 
     public void createPublicJwksConfiguration(String tenantKey, Map<String, IdpPublicClientConfig> tenantClientConfigs) {
         Map<String, String> clientsJwks = getJwks(tenantClientConfigs);
@@ -39,7 +38,7 @@ public class JwksService {
             .map(entry -> buildPublicJwksConfiguration(tenantKey, entry.getKey(), entry.getValue()))
             .collect(Collectors.toList());
 
-        repositoryProxy.saveAll(configurations);
+        configurationService.saveConfigurations(configurations, Map.of());
     }
 
     public void deletePublicJwksConfigurations(String tenantKey, Map<String, IdpPublicClientConfig> tenantClientConfigs) {
@@ -59,7 +58,7 @@ public class JwksService {
 
         //delete all tenant jwks
         log.info("For tenant [{}] deleting following jwks: {}", tenantKey, jwksPaths);
-        repositoryProxy.deleteAll(jwksPaths);
+        configurationService.deleteConfigurations(jwksPaths);
     }
 
     private Map<String, String> getJwks(Map<String, IdpPublicClientConfig> tenantClientConfigs) {

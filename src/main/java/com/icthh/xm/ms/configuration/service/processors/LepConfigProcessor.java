@@ -32,7 +32,7 @@ import static java.util.Collections.emptyList;
 @LepService(group = "processors")
 @ConditionalOnProperty("application.lep.processor-enabled")
 @RequiredArgsConstructor
-public class LepConfigProcessor implements PrivateConfigurationProcessor {
+public class LepConfigProcessor implements TenantConfigurationProcessor {
 
     private final TenantContextHolder tenantContextHolder;
     private final XmAuthenticationContextHolder authContextHolder;
