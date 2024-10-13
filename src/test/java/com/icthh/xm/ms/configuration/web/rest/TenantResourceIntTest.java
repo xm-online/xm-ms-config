@@ -193,7 +193,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testSetParent() {
         Configuration oldConfig = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(oldConfig, Map.of(), Map.of(), Set.of());
+        tenantAliasService.updateAliasTree(oldConfig);
 
         mockMvc.perform(post("/api/tenants/set_parent")
                 .content("ONEMORELIFETENANT")

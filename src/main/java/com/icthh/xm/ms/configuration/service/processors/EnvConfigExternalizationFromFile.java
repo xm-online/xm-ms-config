@@ -33,7 +33,7 @@ import static org.apache.commons.text.StringSubstitutor.replace;
 
 @Slf4j
 @Component
-public class EnvConfigExternalizationFromFile implements PrivateConfigurationProcessor {
+public class EnvConfigExternalizationFromFile implements TenantConfigurationProcessor {
 
     private final Map<String, String> environment;
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());

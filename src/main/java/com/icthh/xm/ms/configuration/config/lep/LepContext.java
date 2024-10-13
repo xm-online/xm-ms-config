@@ -1,18 +1,8 @@
 package com.icthh.xm.ms.configuration.config.lep;
 
+import com.icthh.xm.commons.lep.api.BaseLepContext;
+import com.icthh.xm.commons.logging.trace.TraceService;
 
-import com.icthh.xm.commons.lep.BaseProceedingLep;
-import com.icthh.xm.commons.security.XmAuthenticationContext;
-import com.icthh.xm.commons.tenant.TenantContext;
-
-public class LepContext {
-
-    public Object commons;
-    public Object inArgs;
-    public BaseProceedingLep lep;
-    public XmAuthenticationContext authContext;
-    public TenantContext tenantContext;
-    public Object methodResult;
+public class LepContext extends BaseLepContext implements TraceService.TraceServiceField {
 
 }
-

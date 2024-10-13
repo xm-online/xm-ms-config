@@ -10,8 +10,8 @@ import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
 import com.icthh.xm.ms.configuration.service.TenantAliasService;
-import com.icthh.xm.ms.configuration.service.processors.PrivateConfigurationProcessor;
-import com.icthh.xm.ms.configuration.service.processors.PublicConfigurationProcessor;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
+import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,6 +30,8 @@ public class BeanConfiguration {
     public static final String TENANT_CONFIGURATION_LOCK = "tenant-configuration-lock";
 
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
+
+    public static final String UPDATE_IN_MEMORY = "in-memory-update-lock";
 
     @Bean
     public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
@@ -54,18 +56,24 @@ public class BeanConfiguration {
     }
 
     @Bean
-    public MemoryConfigStorage memoryConfigStorage(List<PrivateConfigurationProcessor> privateConfigurationProcessors,
-                                                   List<PublicConfigurationProcessor> publicConfigurationProcessors,
-                                                   TenantAliasService tenantAliasService,
-                                                   ApplicationProperties applicationProperties) {
-        log.info("PrivateConfigurationProcessor {}", privateConfigurationProcessors);
-        log.info("PublicConfigurationProcessor {}", publicConfigurationProcessors);
+    @Qualifier(UPDATE_IN_MEMORY)
+    public Lock inmemoryUpdateLock() {
+        return new ReentrantLock();
+    }
+
+    @Bean
+    public MemoryConfigStorage memoryConfigStorage(List<TenantConfigurationProcessor> tenantConfigurationProcessors,
+                                                   TenantAliasTreeStorage tenantAliasTreeStorage,
+                                                   ApplicationProperties applicationProperties,
+                                                   @Qualifier(UPDATE_IN_MEMORY)
+                                                   Lock lock) {
 
         return new MemoryConfigStorageExcludeConfigDecorator(
                 new MemoryConfigStorageImpl(
-                        privateConfigurationProcessors,
-                        publicConfigurationProcessors,
-                        tenantAliasService
+                    tenantConfigurationProcessors,
+                    tenantAliasTreeStorage,
+                    applicationProperties,
+                    lock
                 ),
                 applicationProperties
         );

@@ -10,11 +10,21 @@ import com.icthh.xm.commons.config.client.listener.ApplicationReadyEventListener
 import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
+import com.icthh.xm.commons.config.client.service.TenantAliasService;
+import com.icthh.xm.commons.lep.groovy.GroovyLepEngineConfiguration;
+import com.icthh.xm.commons.lep.spring.LepUpdateMode;
+import com.icthh.xm.commons.logging.config.LoggingConfigService;
+import com.icthh.xm.commons.logging.config.LoggingConfigServiceStub;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class TenantConfigMockConfiguration {
@@ -29,6 +39,18 @@ public class TenantConfigMockConfiguration {
     }
 
     @Bean
+    public TenantAliasTreeStorage tenantAliasTreeStorage(TenantContextHolder tenantContextHolder) {
+        return new TenantAliasTreeStorage(tenantContextHolder);
+    }
+
+    @Bean
+    public com.icthh.xm.ms.configuration.service.TenantAliasService tenantAliasService(ConfigurationService configurationService,
+                                                                                       TenantAliasTreeStorage tenantAliasTreeStorage) {
+        return new com.icthh.xm.ms.configuration.service.TenantAliasService(configurationService, tenantAliasTreeStorage);
+    }
+
+    @Bean
+    @Primary
     public TenantListRepository tenantListRepository() {
         TenantListRepository mockTenantListRepository = mock(TenantListRepository.class);
         doAnswer(mvc -> tenants.add(mvc.getArguments()[0].toString())).when(mockTenantListRepository).addTenant(any());
