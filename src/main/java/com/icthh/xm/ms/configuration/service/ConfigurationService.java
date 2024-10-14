@@ -150,6 +150,11 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             return Map.of();
         }
 
+        paths = paths.stream()
+            .map(it -> Path.of(it).normalize().toString())
+            .filter(this::isConfigUnderTenant)
+            .collect(toList());
+
         if (fetchAll) {
             return memoryStorage.getConfigsFromTenant(getRequiredTenantKeyValue(tenantContextHolder)).stream()
                 .collect(toMap(Configuration::getPath, identity()));
@@ -184,7 +189,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfiguration(Configuration configuration, String oldConfigHash) {
-        saveConfigurations(List.of(configuration), Map.of(configuration.getPath(), oldConfigHash));
+        Map<String, String> configHashes = oldConfigHash != null ? Map.of(configuration.getPath(), oldConfigHash) : Map.of();
+        saveConfigurations(List.of(configuration), configHashes);
     }
 
     public void updateConfigurationInMemory(List<Configuration> configurations) {
@@ -266,6 +272,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationsFromList(List<Configuration> configs) {
+        configs.forEach(config -> config.setPath(Path.of(config.getPath()).normalize().toString()));
         configs = configs.stream().filter(this::isConfigUnderTenant).collect(toList());
         saveConfigurations(configs, Map.of());
     }
@@ -300,13 +307,17 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return configurations;
     }
 
-    private Boolean isConfigUnderTenant(Configuration config, String tenant) {
-        Path path = Path.of("/", config.getPath()).normalize();
+    private Boolean isConfigUnderTenant(String tenant, String configPath) {
+        Path path = Path.of("/", configPath).normalize();
         return path.startsWith(getTenantPathPrefix(tenant) + "/");
     }
 
     private Boolean isConfigUnderTenant(Configuration config) {
-        return isConfigUnderTenant(config, getRequiredTenantKeyValue(tenantContextHolder));
+        return isConfigUnderTenant(config.getPath());
+    }
+
+    private Boolean isConfigUnderTenant(String configPath) {
+        return isConfigUnderTenant(getRequiredTenantKeyValue(tenantContextHolder), configPath);
     }
 
     public boolean isAdminRefreshAvailable() {
@@ -322,13 +333,13 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void refreshTenantsConfigurations(List<String> tenants) {
-        List<String> changed = new ArrayList<>();
+        List<Configuration> configurations = new ArrayList<>();
         tenants.forEach(tenantKey -> {
             var configurationList = persistenceRepository.findAllInDirectory(TENANT_PREFIX + "/" + tenantKey);
             version.addVersion(configurationList.getVersion());
-            var updated = memoryStorage.replaceByConfigurationInTenant(configurationList.getData(), tenantKey);
-            changed.addAll(updated);
+            configurations.addAll(configurationList.getData());
         });
-        notifyChanged(version.getLastVersion(), changed);
+        var updated = memoryStorage.replaceByConfigurationInTenants(configurations, tenants);
+        notifyChanged(version.getLastVersion(), updated);
     }
 }

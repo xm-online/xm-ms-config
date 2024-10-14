@@ -99,4 +99,9 @@ public class MemoryConfigStorageExcludeConfigDecorator implements MemoryConfigSt
     public List<Configuration> getConfigsFromTenant(String tenant) {
         return memoryConfigStorage.getConfigsFromTenant(tenant);
     }
+
+    @Override
+    public void clear() {
+        memoryConfigStorage.clear();
+    }
 }

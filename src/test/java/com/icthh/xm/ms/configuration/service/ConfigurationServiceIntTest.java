@@ -163,8 +163,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfigurationInMemory(List.of(mainValue));
 
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
-        doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
         verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(filesList("/some-config.yml")));
+        doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
     }
 
     @Test
@@ -202,8 +202,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
             "/config/file1", new Configuration("/config/file1", "1\n"),
-            "/config/file2", new Configuration("/config/file2", "2\n"),
-            TENANT_ALIAS_CONFIG, new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"))
+            "/config/file2", new Configuration("/config/file2", "2\n")
         ), configurationMap);
     }
 
@@ -218,8 +217,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
                 "/config/file1", new Configuration("/config/file1", "1\n"),
-                "/config/file2", new Configuration("/config/file2", "2\n"),
-            TENANT_ALIAS_CONFIG, new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"))
+                "/config/file2", new Configuration("/config/file2", "2\n")
         ));
     }
 

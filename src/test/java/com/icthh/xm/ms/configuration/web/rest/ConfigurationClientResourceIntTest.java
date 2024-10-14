@@ -10,10 +10,12 @@ import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -287,6 +289,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
             .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
             .contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
             .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
@@ -360,6 +363,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         assertFalse(configurationMap.containsKey(path2));
         assertFalse(configurationMap.containsKey(path3));
         assertFalse(configurationMap.containsKey(path4));
+        assertTrue(configurationMap.containsKey(normalisedPath4));
         assertFalse(configurationMap.containsKey(CONFIG + TENANTS + "/ANOTHER_TENANT/my-config3.yml"));
         assertEquals("will be created", configurationMap.get(normalisedPath4).getContent());
     }

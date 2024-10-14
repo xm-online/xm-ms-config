@@ -6,6 +6,7 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenan
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathsByTenants;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenants;
 import static java.util.Collections.emptyMap;
+import static java.util.Comparator.comparingInt;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -19,7 +20,7 @@ import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProce
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,7 +42,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     // same for /commons folder and for root config, don't change value
     public static final String COMMONS_CONFIG = "commons";
 
-    private final Map<String, ConfigState> configurations = new ConcurrentHashMap<>();
+    private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
 
     private final List<TenantConfigurationProcessor> configurationProcessors;
     private final TenantAliasService tenantAliasService;
@@ -62,7 +63,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Map<String, Configuration> getProcessedConfigs() {
-        return configurations.values().stream()
+        return tenantConfigStates.values().stream()
             .map(ConfigState::getProcessedConfiguration)
             .flatMap(map -> map.values().stream())
             .collect(toMap(Configuration::getPath, identity(), mergeOverride()));
@@ -89,7 +90,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigsFromTenant(String tenant) {
-        Collection<Configuration> values = configurations.get(tenant).getInmemoryConfigurations().values();
+        Collection<Configuration> values = tenantConfigStates.get(tenant).getInmemoryConfigurations().values();
         return List.copyOf(values);
     }
 
@@ -145,28 +146,30 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 updateConfigState.updateConfigurations(updatedConfigs);
             });
 
+            // global config processing
             applyTenantAlias(forUpdate);
 
-            tenants.forEach(tenant -> {
+            forUpdate.keySet().forEach(tenant -> {
+                // tenant config processing
                 processTenantConfig(forUpdate.get(tenant));
             });
 
             forUpdate.values().forEach(state -> changedFiles.addAll(state.getChangedFiles().keySet()));
 
             var updatedTenants = convertMapValue(forUpdate, ConfigState::new);
-            configurations.putAll(updatedTenants); // publish changes
+            tenantConfigStates.putAll(updatedTenants); // publish changes
             return changedFiles;
         });
     }
 
     @Override
     public void clear() {
-        configurations.clear();
+        tenantConfigStates.clear();
     }
 
     private IntermediateConfigState requestUpdate(String tenant, Map<String, IntermediateConfigState> forUpdate) {
         return forUpdate.computeIfAbsent(tenant, it ->
-            configurations.computeIfAbsent(tenant, ConfigState::new).toIntermediateConfigState()
+            tenantConfigStates.computeIfAbsent(tenant, ConfigState::new).toIntermediateConfigState()
         );
     }
 
@@ -179,7 +182,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private void addDeletedConfiguration(List<Configuration> actualConfigs, String tenant) {
-        var state = configurations.get(tenant);
+        var state = tenantConfigStates.get(tenant);
         if (state != null) {
             var deleted = state.calculateDeleted(actualConfigs);
             actualConfigs.addAll(deleted); // add empty configs to correct reprocess and remove from memory
@@ -211,20 +214,21 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         tenants.forEach(tenant -> {
             allTenants.addAll(tenantAliasTree.getChildrenKeys(tenant));
         });
-        return new ArrayList<>(allTenants);
+        List<String> tenantsList = new ArrayList<>(allTenants);
+        tenantsList.sort(comparingInt(tenant -> tenantAliasTree.getParents(tenant).size()));
+        return tenantsList;
     }
 
     private void applyTenantAlias(Map<String, IntermediateConfigState> forUpdate) {
         List<String> tenants = extendsTenantList(forUpdate.keySet());
-        var tenantAliasTree = tenantAliasService.getTenantAliasTree();
+        TenantAliasTree tenantAliasTree = tenantAliasService.getTenantAliasTree();
         tenants.forEach(tenant -> {
             var state = requestUpdate(tenant, forUpdate);
-            Optional<String> parentTenantKey = tenantAliasTree.getParent(tenant);
-            parentTenantKey.ifPresent(parentTenant -> {
+            tenantAliasTree.getParent(tenant).ifPresent(parentTenant -> {
                 IntermediateConfigState parent = forUpdate.get(parentTenant);
                 Map<String, Configuration> parentConfigs = parent == null ? Map.of() : parent.getChangedFiles();
                 Map<String, Configuration> childConfigs = toChildConfigs(tenant, parentConfigs);
-                state.extendInMemoryConfigurations(childConfigs);
+                state.addParentConfigurationByAliases(childConfigs);
             });
         });
     }
@@ -233,7 +237,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         Map<String, Configuration> result = new HashMap<>();
         updatedConfigs.forEach((path, config) -> {
             String tenantPath = getPathInTenant(path, tenant);
-            result.put(tenantPath, config);
+            result.put(tenantPath, new Configuration(tenantPath, config.getContent()));
         });
         return result;
     }
@@ -246,7 +250,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         var tenants = getPathsByTenants(paths);
         List<Configuration> result = new ArrayList<>();
         tenants.forEach((tenant, configs) -> {
-            ConfigState state = configurations.get(tenant);
+            ConfigState state = tenantConfigStates.get(tenant);
             Map<String, Configuration> tenantConfigs = state == null? emptyMap() : configType.apply(state);
             configs.stream()
                 .map(tenantConfigs::get)

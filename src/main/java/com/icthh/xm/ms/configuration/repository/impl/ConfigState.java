@@ -94,9 +94,9 @@ public class ConfigState {
             changedFiles.putAll(updatedConfigs);
         }
 
-        public void extendInMemoryConfigurations(Map<String, Configuration> updatedConfigs) {
-            Map<String, Configuration> configsToApply = new HashMap<>(updatedConfigs);
-            configsToApply.keySet().removeAll(inmemoryConfigurations.keySet()); // "override" parent configurations
+        public void addParentConfigurationByAliases(Map<String, Configuration> parentConfigs) {
+            Map<String, Configuration> configsToApply = new HashMap<>(parentConfigs);
+            configsToApply.keySet().removeAll(persistedConfigurations.keySet()); // "override" parent configurations
             inmemoryConfigurations.putAll(configsToApply); // put parent configurations
             inmemoryConfigurations.entrySet().removeIf(entry -> isBlank(entry.getValue().getContent()));
 
