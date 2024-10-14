@@ -20,7 +20,6 @@ import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProce
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -101,7 +100,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> remove(Collection<String> paths) {
-        var configs = paths.stream().map(it -> new Configuration(it, "")).collect(toList());
+        List<Configuration> configs = tenantConfigStates.values().stream()
+            .flatMap(state -> state.pathsByFolder(paths).stream())
+            .map(path -> new Configuration(path, ""))
+            .collect(toList());
         return saveConfigs(configs);
     }
 

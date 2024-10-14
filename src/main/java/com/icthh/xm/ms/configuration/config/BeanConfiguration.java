@@ -30,6 +30,8 @@ public class BeanConfiguration {
 
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
 
+    public static final String UPDATE_IN_MEMORY = "in-memory-update-lock";
+
     @Bean
     public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
                                                         @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
@@ -53,10 +55,16 @@ public class BeanConfiguration {
     }
 
     @Bean
+    @Qualifier(UPDATE_IN_MEMORY)
+    public Lock inmemoryUpdateLock() {
+        return new ReentrantLock();
+    }
+
+    @Bean
     public MemoryConfigStorage memoryConfigStorage(List<TenantConfigurationProcessor> tenantConfigurationProcessors,
                                                    TenantAliasService tenantAliasService,
                                                    ApplicationProperties applicationProperties,
-                                                   @Qualifier(TENANT_CONFIGURATION_LOCK)
+                                                   @Qualifier(UPDATE_IN_MEMORY)
                                                    Lock lock) {
 
         return new MemoryConfigStorageExcludeConfigDecorator(

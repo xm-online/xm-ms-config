@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_BY_COMMIT_LOCK;
+import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_IN_MEMORY;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static com.icthh.xm.ms.configuration.domain.ConfigVersion.UNDEFINED_VERSION;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
@@ -70,7 +71,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
                                 ApplicationProperties applicationProperties,
                                 ConfigVersionDeserializer configVersionDeserializer,
                                 VersionCache version,
-                                @Qualifier(UPDATE_BY_COMMIT_LOCK)
+                                @Qualifier(UPDATE_IN_MEMORY)
                                 Lock lock) {
         this.memoryStorage = memoryStorage;
         this.persistenceRepository = persistenceRepository;
@@ -80,6 +81,11 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         this.configVersionDeserializer = configVersionDeserializer;
         this.version = version;
         this.lock = lock;
+    }
+
+    @Override
+    public void afterPropertiesSet() {
+        refreshConfiguration();
     }
 
     @Override
@@ -161,11 +167,6 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         } else {
             return memoryStorage.getConfigs(paths).stream().collect(toMap(Configuration::getPath, identity()));
         }
-    }
-
-    @Override
-    public void afterPropertiesSet() {
-        refreshConfiguration();
     }
 
     private void notifyChanged(ConfigVersion commit, Collection<String> updated) {

@@ -65,6 +65,16 @@ public class ConfigState {
         );
     }
 
+    public Set<String> pathsByFolder(Collection<String> paths) {
+        return paths.stream().flatMap(path -> persistedConfigurations.keySet().stream()
+            .filter(it -> it.equals(path) || it.startsWith(normalizedPath(path)))
+        ).collect(toSet());
+    }
+
+    private static String normalizedPath(String path) {
+        return path.endsWith("/") ? path : path + "/";
+    }
+
     // mutable
     @Getter
     @RequiredArgsConstructor
