@@ -32,7 +32,7 @@
     <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
-    
+
     <logger name="com.icthh.xm.ms.configuration" level="#logback.loglevel#"/>
 
     <logger name="io.github.jhipster" level="#logback.loglevel#"/>
@@ -65,6 +65,7 @@
     <logger name="sun.rmi.transport" level="WARN"/>
     <logger name="com.hazelcast.internal" level="INFO"/>
     <logger name="org.reflections" level="INFO"/>
+    <logger name="org.eclipse.jgit" level="INFO"/>
     <logger name="org.springframework.boot.actuate.endpoint.EndpointId" level="ERROR"/>
     <logger name="com.netflix.config.sources.URLConfigurationSource" level="ERROR"/>
 

@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
-import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_BY_COMMIT_LOCK;
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_IN_MEMORY;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static com.icthh.xm.ms.configuration.domain.ConfigVersion.UNDEFINED_VERSION;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import lombok.SneakyThrows;
@@ -54,6 +54,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class ConfigurationService extends AbstractConfigService implements InitializingBean {
 
+    public static final String OPERATION = "update version operation";
     private final MemoryConfigStorage memoryStorage;
     private final PersistenceConfigRepository persistenceRepository;
     private final ConfigTopicProducer configTopicProducer;
@@ -118,7 +119,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     private void updateConfig(ConfigVersion version) {
-        LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), () -> {
+        LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), OPERATION, () -> {
             if (isOnCommit(version)) {
                 log.info("Configuration already actual by commit: {}", version);
                 return;
@@ -239,7 +240,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void refreshTenantConfigurations(String tenantKey) {
-        var configurationList = persistenceRepository.findAllInDirectory(TENANT_PREFIX + "/" + tenantKey);
+        var configurationList = persistenceRepository.findAllInTenant(tenantKey);
         Set<String> updated = memoryStorage.replaceByConfigurationInTenant(configurationList.getData(), tenantKey);
         version.addVersion(configurationList.getVersion());
         notifyChanged(configurationList.getVersion(), updated);
@@ -334,13 +335,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void refreshTenantsConfigurations(List<String> tenants) {
-        List<Configuration> configurations = new ArrayList<>();
-        tenants.forEach(tenantKey -> {
-            var configurationList = persistenceRepository.findAllInDirectory(TENANT_PREFIX + "/" + tenantKey);
-            version.addVersion(configurationList.getVersion());
-            configurations.addAll(configurationList.getData());
-        });
-        var updated = memoryStorage.replaceByConfigurationInTenants(configurations, tenants);
+        Set<String> folders = tenants.stream().map(it -> TENANT_PREFIX + it).collect(Collectors.toSet());
+        var configurationList = persistenceRepository.findAllInTenants(folders);
+        version.addVersion(configurationList.getVersion());
+        var updated = memoryStorage.replaceByConfigurationInTenants(configurationList.getData(), tenants);
         notifyChanged(version.getLastVersion(), updated);
     }
 }

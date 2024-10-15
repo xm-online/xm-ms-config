@@ -13,25 +13,25 @@ import org.apache.commons.lang3.time.StopWatch;
 public class LockUtils {
 
     @SneakyThrows
-    public static <R, E extends Exception> R runWithLock(Lock lock, long maxWaitTime, ReturnableTask<R, E> task) {
+    public static <R, E extends Exception> R runWithLock(Lock lock, long maxWaitTime, String operationName, ReturnableTask<R, E> task) {
         StopWatch stopWatch = StopWatch.createStarted();
-        log.info("Try to lock git repository");
+        log.info("Try to lock " + operationName);
         if (lock.tryLock(maxWaitTime, TimeUnit.SECONDS)) {
-            log.info("Git repository locked");
+            log.info(operationName + " locked");
             try {
                 return task.execute();
             } finally {
-                log.info("Try to unlock git repository");
+                log.info("Try to unlock " + operationName);
                 lock.unlock();
-                log.info("Git repository unlocked after {} ms", stopWatch.getTime());
+                log.info(operationName + " unlocked after {} ms", stopWatch.getTime());
             }
         } else {
-            throw new IllegalMonitorStateException("Git repository locked");
+            throw new IllegalMonitorStateException(operationName + " locked");
         }
     }
 
-    public static <E extends Exception> void runWithLock(Lock lock, long maxWaitTime, Task<E> task) {
-        runWithLock(lock, maxWaitTime, () -> {
+    public static <E extends Exception> void runWithLock(Lock lock, long maxWaitTime, String operationName, Task<E> task) {
+        runWithLock(lock, maxWaitTime, operationName, () -> {
             task.execute();
             return null;
         });

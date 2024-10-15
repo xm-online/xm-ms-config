@@ -32,6 +32,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 
@@ -100,6 +101,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> remove(Collection<String> paths) {
+        log.info("Remove configurations by paths: {}", paths);
         List<Configuration> configs = tenantConfigStates.values().stream()
             .flatMap(state -> state.pathsByFolder(paths).stream())
             .map(path -> new Configuration(path, ""))
@@ -109,18 +111,26 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Set<String> replaceByConfiguration(List<Configuration> actualConfigs) {
+        StopWatch stopWatch = StopWatch.createStarted();
+        log.info("Full configuration refresh inmemory started");
         Map<String, Map<String, Configuration>> configsByTenants = getTenants(actualConfigs);
         configsByTenants.forEach((tenant, configs) -> {
             addDeletedConfiguration(actualConfigs, tenant);
         });
-        return saveConfigs(actualConfigs);
+        Set<String> updated = saveConfigs(actualConfigs);
+        log.info("Full configuration refresh inmemory finished in {} ms", stopWatch.getTime());
+        return updated;
     }
 
     @Override
     public Set<String> replaceByConfigurationInTenant(List<Configuration> actualConfigs, String tenant) {
+        StopWatch stopWatch = StopWatch.createStarted();
+        log.info("Configuration refresh inmemory for tenant {} started", tenant);
         actualConfigs = filterByTenant(actualConfigs, tenant);
         addDeletedConfiguration(actualConfigs, tenant);
-        return saveConfigs(actualConfigs);
+        Set<String> updated = saveConfigs(actualConfigs);
+        log.info("Configuration refresh inmemory for tenant {} finished in {} ms", tenant, stopWatch.getTime());
+        return updated;
     }
 
     @Override
@@ -136,7 +146,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
      */
     @Override
     public Set<String> saveConfigs(List<Configuration> configs) {
-        return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), () -> {
+        StopWatch stopWatch = StopWatch.createStarted();
+        log.info("Save configurations to inmemory storage configs.size: {}", configs.size());
+        log.info("Try to acquire lock for update configuration");
+        return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), "memory storage", () -> {
+            log.info("Lock acquired for update configuration in {} ms", stopWatch.getTime());
+
             Set<String> changedFiles = new HashSet<>(toPathsList(configs));
             Map<String, Map<String, Configuration>> configsByTenants = getTenants(configs);
 
@@ -160,6 +175,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
             var updatedTenants = convertMapValue(forUpdate, ConfigState::new);
             tenantConfigStates.putAll(updatedTenants); // publish changes
+            log.info("Configuration inmemory updated in {} ms", stopWatch.getTime());
             return changedFiles;
         });
     }
@@ -222,7 +238,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private void applyTenantAlias(Map<String, IntermediateConfigState> forUpdate) {
+        StopWatch stopWatch = StopWatch.createStarted();
         List<String> tenants = extendsTenantList(forUpdate.keySet());
+        log.info("Start apply alias for tenants {}", tenants);
         TenantAliasTree tenantAliasTree = tenantAliasService.getTenantAliasTree();
         tenants.forEach(tenant -> {
             var state = requestUpdate(tenant, forUpdate);
@@ -233,6 +251,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 state.addParentConfigurationByAliases(childConfigs);
             });
         });
+        log.info("Apply alias for tenants finished in {} ms", stopWatch.getTime());
     }
 
     private Map<String, Configuration> toChildConfigs(String tenant, Map<String, Configuration> updatedConfigs) {

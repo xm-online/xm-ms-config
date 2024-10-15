@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static com.icthh.xm.ms.configuration.utils.FileUtils.readFileToString;
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +93,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     private static final String SUB_MSG_TPL_OPERATION_SRC_AND_APP = SUB_MSG_TPL_OPERATION_SRC + ", app name [%s]";
     public static final String UNDEFINED_COMMIT = "undefined";
     public static final String REFS_HEADS = "refs/heads/";
+    public static final String GIT_REPOSITORY = "git repository";
 
     private final GitProperties gitProperties;
 
@@ -123,25 +126,38 @@ public class JGitRepository implements PersistenceConfigRepository {
     @Override
     public boolean hasVersion(ConfigVersion version) {
         log.info("[{}] Search if commit present: {}", getRequestSourceTypeLogName(requestContextHolder), version);
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> containsGitCommit(version.getMainVersion()));
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> containsGitCommit(version.getMainVersion()));
     }
 
     @Override
     public ConfigurationList findAll() {
-        return findAllInDirectory("/config");
+        return readFromDirectory("/config");
     }
 
     @Override
-    public ConfigurationList findAllInDirectory(String relativePath) {
+    public ConfigurationList findAllInTenant(String tenantKey) {
+        return readFromDirectory(TENANT_PREFIX + tenantKey);
+    }
+
+    private ConfigurationList readFromDirectory(String relativePath) {
         File rootDirectory = this.rootDirectory;
         File directory = Paths.get(rootDirectory.getAbsolutePath(), relativePath).toFile();
-        return readConfigsFromDirectory(directory);
+        return readConfigsFromDirectories(List.of(directory));
+    }
+
+    @Override
+    public ConfigurationList findAllInTenants(Set<String> tenants) {
+        log.info("[{}] Find configurations in tenants {}", getRequestSourceTypeLogName(requestContextHolder), tenants);
+        List<File> directories = tenants.stream()
+            .map(tenant -> Paths.get(rootDirectory.getAbsolutePath(), TENANT_PREFIX, tenant).toFile())
+            .collect(toList());
+        return readConfigsFromDirectories(directories);
     }
 
     @Override
     public ConfigurationItem find(String path) {
         log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             String commit = pull();
             String content = readFileToString(getAbsolutePath(path));
             return new ConfigurationItem(new ConfigVersion(commit), new Configuration(path, content));
@@ -153,7 +169,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("[{}] Find configuration by path: {} and version: {}",
             getRequestSourceTypeLogName(requestContextHolder), path, version);
 
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             if (!hasVersion(version)) {
                 pull();
             }
@@ -240,6 +256,8 @@ public class JGitRepository implements PersistenceConfigRepository {
                                                          .setDirectory(repositoryFolder);
             cloneCommand = setAuthorizationConfig(cloneCommand);
             cloneCommand.setBranchesToClone(List.of(REFS_HEADS + gitProperties.getBranchName()));
+            cloneCommand.setCloneAllBranches(false);
+            cloneCommand.setCloneSubmodules(false);
             cloneCommand.setBranch(gitProperties.getBranchName());
             cloneCommand.setProgressMonitor(NullProgressMonitor.INSTANCE);
             if (gitProperties.getDepth() > 0) {
@@ -261,22 +279,28 @@ public class JGitRepository implements PersistenceConfigRepository {
         deleteRecursively(rootDirectory);
     }
 
-    private ConfigurationList readConfigsFromDirectory(File directory) {
-        log.info("[{}] Find configurations in directory {}", getRequestSourceTypeLogName(requestContextHolder), getRelativePath(directory));
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+    private ConfigurationList readConfigsFromDirectories(List<File> directories) {
+        var paths = directories.stream().map(this::getRelativePath).collect(toList());
+        log.info("[{}] Find configurations in directory {}", getRequestSourceTypeLogName(requestContextHolder), paths);
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             String commit = pull();
-            if (!directory.exists()) {
-                log.warn("Directory {} does not exist", directory);
-                return new ConfigurationList(new ConfigVersion(commit), List.of());
-            }
-
-            List<Configuration> configurations = listFiles(directory, INSTANCE, INSTANCE)
-                .stream()
-                .filter(excludeGitFiles())
-                .map(this::fileToConfiguration)
-                .collect(toList());
+            List<Configuration> configurations = new ArrayList<>();
+            directories.forEach(directory -> configurations.addAll(internalReadFileSystemFolder(directory)));
             return new ConfigurationList(new ConfigVersion(commit), configurations);
         });
+    }
+
+    private List<Configuration> internalReadFileSystemFolder(File directory) {
+        if (!directory.exists()) {
+            log.warn("Directory {} does not exist", directory);
+            return List.of();
+        }
+
+        return listFiles(directory, INSTANCE, INSTANCE)
+            .stream()
+            .filter(excludeGitFiles())
+            .map(this::fileToConfiguration)
+            .collect(toList());
     }
 
     private Predicate<? super File> excludeGitFiles() {
@@ -590,7 +614,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private <E extends Exception> ConfigVersion runWithPullCommit(String commitMsg, Task<E> task) {
-        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             pull();
             StopWatch stopWatch = StopWatch.createStarted();
             task.execute();
