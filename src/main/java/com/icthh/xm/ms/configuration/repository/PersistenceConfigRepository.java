@@ -14,7 +14,7 @@ public interface PersistenceConfigRepository {
 
     ConfigurationList findAll();
 
-    ConfigurationList findAllInTenant(String relativePath);
+    ConfigurationList findAllInTenant(String tenantKey);
 
     ConfigurationItem find(String path);
 
@@ -30,7 +30,7 @@ public interface PersistenceConfigRepository {
 
     ConfigVersion deleteAll(List<String> paths);
 
-    ConfigVersion recloneConfiguration();
+    void recloneConfiguration();
 
     ConfigVersion getCurrentVersion();
 

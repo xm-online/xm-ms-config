@@ -183,9 +183,8 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @Override
-    public ConfigVersion recloneConfiguration() {
+    public void recloneConfiguration() {
         cloneRepository();
-        return getCurrentVersion();
     }
 
     @Override
