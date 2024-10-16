@@ -12,10 +12,9 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
-import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigState.IntermediateConfigState;
-import com.icthh.xm.ms.configuration.service.TenantAliasService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
 import com.icthh.xm.ms.configuration.utils.LockUtils;
@@ -231,7 +230,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         TenantAliasTree tenantAliasTree = tenantAliasTreeStorage.getTenantAliasTree();
         Set<String> allTenants = new HashSet<>(tenants);
         tenants.forEach(tenant -> {
-            allTenants.addAll(tenantAliasTree.getChildrenKeys(tenant));
+            allTenants.addAll(tenantAliasTree.getAllChildrenRecursive(tenant));
         });
         List<String> tenantsList = new ArrayList<>(allTenants);
         tenantsList.sort(comparingInt(tenant -> tenantAliasTree.getParents(tenant).size()));
@@ -245,12 +244,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         TenantAliasTree tenantAliasTree = tenantAliasTreeStorage.getTenantAliasTree();
         tenants.forEach(tenant -> {
             var state = requestUpdate(tenant, forUpdate);
-            tenantAliasTree.getParent(tenant).ifPresent(parentTenant -> {
-                IntermediateConfigState parent = forUpdate.get(parentTenant);
+            TenantAliasTree.TenantAlias tenantAlias = tenantAliasTree.getTenants().get(tenant);
+            if (tenantAlias != null && tenantAlias.getParent() != null) {
+                IntermediateConfigState parent = forUpdate.get(tenantAlias.getParent().getKey());
                 Map<String, Configuration> parentConfigs = parent == null ? Map.of() : parent.getChangedFiles();
                 Map<String, Configuration> childConfigs = toChildConfigs(tenant, parentConfigs);
                 state.addParentConfigurationByAliases(childConfigs);
-            });
+            }
         });
         log.info("Apply alias for tenants finished in {} ms", stopWatch.getTime());
     }

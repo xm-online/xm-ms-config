@@ -30,6 +30,9 @@ public class ConfigurationLepResolver implements LepKeyResolver {
         Configuration configuration = method.getParameter("configuration", Configuration.class);
         String path = getRelativePath(configuration);
         int index = path.lastIndexOf("/");
+        if (index <= 0) {
+            return LepKeyResolver.super.group(method);
+        }
         String pathToConfig = path.substring(0, index);
         return LepKeyResolver.super.group(method) + "." + pathToConfig.replaceAll("/", ".");
     }

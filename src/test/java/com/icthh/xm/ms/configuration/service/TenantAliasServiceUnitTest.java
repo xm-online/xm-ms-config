@@ -1,6 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -13,22 +13,18 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -39,12 +35,12 @@ public class TenantAliasServiceUnitTest {
     ConfigurationService configurationService;
     @Mock
     TenantContextHolder tenantContextHolder;
-    TenantAliasService tenantAliasService;
+    TenantAliasTreeService tenantAliasService;
 
     @Before
     public void before() {
         tenantAliasTreeStorage = new TenantAliasTreeStorage(tenantContextHolder);
-        tenantAliasService = new TenantAliasService(configurationService, tenantAliasTreeStorage);
+        tenantAliasService = new TenantAliasTreeService(configurationService, tenantAliasTreeStorage);
     }
 
     @Test

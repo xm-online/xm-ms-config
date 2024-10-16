@@ -99,7 +99,10 @@ jhipster:
 application:
     adminApiRestrictionEnabled: true
     git:
-        branch-name: master
+        uri:
+        login:
+        password:
+        branch-name:
         max-wait-time-second: 30
         depth: 50
 

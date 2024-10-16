@@ -1,6 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 
 import com.icthh.xm.commons.config.client.api.RefreshableConfiguration;
 import com.icthh.xm.commons.config.domain.Configuration;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TenantAliasRefreshableConfiguration implements RefreshableConfiguration {
 
-    private final TenantAliasService tenantAliasService;
+    private final TenantAliasTreeService tenantAliasService;
 
     @Override
     public void onRefresh(String updatedKey, String config) {

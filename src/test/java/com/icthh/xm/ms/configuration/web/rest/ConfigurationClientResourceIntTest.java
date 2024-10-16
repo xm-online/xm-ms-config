@@ -4,7 +4,7 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
@@ -28,7 +28,7 @@ import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
-import com.icthh.xm.ms.configuration.service.TenantAliasService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -46,7 +46,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
@@ -75,7 +74,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private TenantAliasService tenantAliasService;
+    private TenantAliasTreeService tenantAliasService;
 
     @Autowired
     ConfigurationService configurationService;

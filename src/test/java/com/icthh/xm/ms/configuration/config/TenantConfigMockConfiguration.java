@@ -10,15 +10,10 @@ import com.icthh.xm.commons.config.client.listener.ApplicationReadyEventListener
 import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
-import com.icthh.xm.commons.config.client.service.TenantAliasService;
-import com.icthh.xm.commons.lep.groovy.GroovyLepEngineConfiguration;
-import com.icthh.xm.commons.lep.spring.LepUpdateMode;
-import com.icthh.xm.commons.logging.config.LoggingConfigService;
-import com.icthh.xm.commons.logging.config.LoggingConfigServiceStub;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -44,9 +39,9 @@ public class TenantConfigMockConfiguration {
     }
 
     @Bean
-    public com.icthh.xm.ms.configuration.service.TenantAliasService tenantAliasService(ConfigurationService configurationService,
-                                                                                       TenantAliasTreeStorage tenantAliasTreeStorage) {
-        return new com.icthh.xm.ms.configuration.service.TenantAliasService(configurationService, tenantAliasTreeStorage);
+    public TenantAliasTreeService tenantAliasService(ConfigurationService configurationService,
+                                                     TenantAliasTreeStorage tenantAliasTreeStorage) {
+        return new TenantAliasTreeService(configurationService, tenantAliasTreeStorage);
     }
 
     @Bean

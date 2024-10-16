@@ -1,7 +1,7 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -16,14 +16,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import com.icthh.xm.ms.configuration.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.TenantAliasService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import lombok.SneakyThrows;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +35,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.Map;
 import java.util.Set;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
@@ -56,7 +55,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     private ExceptionTranslator exceptionTranslator;
 
     @Autowired
-    private TenantAliasService tenantAliasService;
+    private TenantAliasTreeService tenantAliasService;
 
     @Autowired
     TenantContextHolder tenantContextHolder;
