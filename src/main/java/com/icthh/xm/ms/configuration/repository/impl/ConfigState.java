@@ -78,7 +78,7 @@ public class ConfigState {
     // mutable
     @Getter
     @RequiredArgsConstructor
-    public class IntermediateConfigState {
+    public static class IntermediateConfigState {
         private final String key;
         private final Map<String, Configuration> persistedConfigurations;
         private final Map<String, Configuration> inmemoryConfigurations;
@@ -88,15 +88,9 @@ public class ConfigState {
         private final Map<String, Configuration> changedFiles = new HashMap<>();
 
         public void updateConfigurations(Map<String, Configuration> updatedConfigs) {
-            ConfigState state = ConfigState.this;
-            persistedConfigurations.putAll(state.persistedConfigurations);
             persistedConfigurations.putAll(updatedConfigs);
 
-            inmemoryConfigurations.putAll(state.inmemoryConfigurations);
             inmemoryConfigurations.putAll(updatedConfigs);
-
-            processedConfiguration.putAll(state.processedConfiguration);
-            producedByFile.putAll(state.producedByFile);
 
             persistedConfigurations.entrySet().removeIf(entry -> isBlank(entry.getValue().getContent()));
             inmemoryConfigurations.entrySet().removeIf(entry -> isBlank(entry.getValue().getContent()));
