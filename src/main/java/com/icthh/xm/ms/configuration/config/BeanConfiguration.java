@@ -115,13 +115,13 @@ public class BeanConfiguration {
         @Qualifier("xm-config-rest-template") RestTemplate restTemplate,
         @Value("${spring.application.name}") String applicationName,
         XmConfigProperties xmConfigProperties,
-        JGitRepository jGitRepository
+        MemoryConfigStorage memoryConfigStorage
     ) {
-        ConfigurationItem configurationItem = jGitRepository.find(TENANTS_LIST_CONFIG_KEY);
+        var configuration = memoryConfigStorage.getConfig(TENANTS_LIST_CONFIG_KEY);
 
         return new TenantListRepository(
             restTemplate,
-            configurationItem.getData(),
+            configuration.orElse(new com.icthh.xm.commons.config.domain.Configuration(TENANTS_LIST_CONFIG_KEY, TENANT_LIST_STUB)),
             applicationName,
             xmConfigProperties
         ) {
