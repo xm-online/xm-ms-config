@@ -56,7 +56,7 @@ public class LepContextCastIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testLepContextCast() {
-        String prefix = "/config/tenants/TEST_TENANT/configuration/lep/test/";
+        String prefix = "/config/tenants/TEST_TENANT/config/lep/test/";
         String key = prefix + "ScriptWithAround$$around.groovy";
         String body = "import com.icthh.xm.ms.configuration.config.lep.LepContext;\nLepContext context = lepContext\nreturn ['context':context]";
         leps.onRefresh(key, body);
