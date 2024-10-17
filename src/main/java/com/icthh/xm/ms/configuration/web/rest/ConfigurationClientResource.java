@@ -152,7 +152,7 @@ public class ConfigurationClientResource {
     public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths,
                                                                                @RequestParam(name = "fetchAll", required = false, defaultValue = "false") Boolean fetchAll) {
         List<String> nonNullPaths = Optional.ofNullable(paths).orElseGet(Collections::emptyList);
-        Map<String, Configuration> configurations = configurationService.findConfigurations(nonNullPaths, fetchAll);
+        Map<String, Configuration> configurations = configurationService.findTenantConfigurations(nonNullPaths, fetchAll);
         return ResponseEntity.ok(configurations);
     }
 

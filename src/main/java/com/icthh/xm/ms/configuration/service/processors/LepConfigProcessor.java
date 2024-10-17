@@ -2,11 +2,12 @@ package com.icthh.xm.ms.configuration.service.processors;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.lep.LogicExtensionPoint;
+import com.icthh.xm.commons.lep.api.LepEngineSession;
+import com.icthh.xm.commons.lep.api.LepManagementService;
 import com.icthh.xm.commons.lep.spring.LepService;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
-import com.icthh.xm.lep.api.LepManager;
 import com.icthh.xm.ms.configuration.service.processors.lep.ConfigurationLepResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -21,8 +22,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static com.icthh.xm.commons.lep.XmLepConstants.THREAD_CONTEXT_KEY_AUTH_CONTEXT;
-import static com.icthh.xm.commons.lep.XmLepConstants.THREAD_CONTEXT_KEY_TENANT_CONTEXT;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static java.util.Collections.emptyList;
@@ -32,11 +31,11 @@ import static java.util.Collections.emptyList;
 @LepService(group = "processors")
 @ConditionalOnProperty("application.lep.processor-enabled")
 @RequiredArgsConstructor
-public class LepConfigProcessor implements PrivateConfigurationProcessor {
+public class LepConfigProcessor implements TenantConfigurationProcessor {
 
     private final TenantContextHolder tenantContextHolder;
     private final XmAuthenticationContextHolder authContextHolder;
-    private final LepManager lepManager;
+    private final LepManagementService lepManager;
     private final AntPathMatcher matcher = new AntPathMatcher();
     @Setter(onMethod = @__(@Autowired))
     private LepConfigProcessor self;
@@ -88,18 +87,11 @@ public class LepConfigProcessor implements PrivateConfigurationProcessor {
         }
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         return tenantContextHolder.getPrivilegedContext().execute(TenantContextUtils.buildTenant(tenantKey), () -> {
-            lepManager.beginThreadContext(threadContext -> {
-                threadContext.setValue(THREAD_CONTEXT_KEY_TENANT_CONTEXT, tenantContextHolder.getContext());
-                threadContext.setValue(THREAD_CONTEXT_KEY_AUTH_CONTEXT, authContextHolder.getContext());
-            });
-
-            try {
+            try (LepEngineSession context = lepManager.beginThreadContext()) {
                 return task.get();
             } catch (Throwable e) {
                 log.error("Error process configuration", e);
                 throw e;
-            } finally {
-                lepManager.endThreadContext();
             }
         });
     }

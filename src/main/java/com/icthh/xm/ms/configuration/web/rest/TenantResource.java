@@ -5,7 +5,7 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.ms.configuration.domain.TenantState;
-import com.icthh.xm.ms.configuration.service.TenantAliasService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import com.icthh.xm.ms.configuration.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class TenantResource {
 
     private final TenantService tenantService;
 
-    private final TenantAliasService tenantAliasService;
+    private final TenantAliasTreeService tenantAliasService;
 
     @PostMapping(value = "/tenants/{serviceName}")
     @Timed

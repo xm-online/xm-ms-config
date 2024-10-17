@@ -270,6 +270,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-lep:${xm_commons_version}"
+    implementation "com.icthh.xm.commons:xm-commons-lep-groovy:${xm_commons_version}"
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:${jgit_version}") {
         exclude group: 'com.jcraft', module: 'jsch'

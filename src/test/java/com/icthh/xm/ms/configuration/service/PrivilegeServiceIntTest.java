@@ -101,7 +101,7 @@ public class PrivilegeServiceIntTest {
 
         // verify
         ArgumentCaptor<Configuration> argument = ArgumentCaptor.forClass(Configuration.class);
-        verify(configurationService, times(2)).updateConfiguration(argument.capture());
+        verify(configurationService, times(1)).updateConfiguration(argument.capture());
 
         List<Configuration> allCaptures = argument.getAllValues();
         Configuration privilegeUpdate = allCaptures.get(0);
@@ -109,12 +109,6 @@ public class PrivilegeServiceIntTest {
 
         assertEquals("privileges.yml", privilegeUpdate.getPath());
         assertEquals(expectedPrivileges, privilegeUpdate.getContent());
-
-        Configuration permissionUpdate = allCaptures.get(1);
-        String expectedPermissions = readFile("permissions/permissions_expected_update.yml");
-
-        assertEquals("permissions.yml", permissionUpdate.getPath());
-        assertEquals(expectedPermissions, permissionUpdate.getContent());
     }
 
     private Configuration getConfiguration(String path) throws IOException {

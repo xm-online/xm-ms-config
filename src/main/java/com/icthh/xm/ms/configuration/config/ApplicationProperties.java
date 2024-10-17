@@ -30,6 +30,7 @@ public class ApplicationProperties {
 
     private Boolean envConfigExternalizationEnabled;
     private Integer updateConfigWaitTimeSecond = 120;
+    private Integer versionCacheMaxSize = 100;
 
     @Getter
     @Setter

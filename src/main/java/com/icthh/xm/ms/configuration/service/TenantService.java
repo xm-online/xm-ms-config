@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 public class TenantService {
 
     private static final String CONFIG_LIST_STORAGE = "/config/tenants/tenants-list.json";
+    public static final String OPERATION_TARGET = "tenant list";
 
     private final ObjectMapper om = new ObjectMapper();
 
@@ -42,7 +43,7 @@ public class TenantService {
     }
 
     public void addTenant(String serviceName, String tenantKey) {
-        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), OPERATION_TARGET, () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.putIfAbsent(serviceName, new HashSet<>());
@@ -53,7 +54,7 @@ public class TenantService {
     }
 
     public void updateTenant(String serviceName, TenantState tenant) {
-        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), OPERATION_TARGET, () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.getOrDefault(serviceName, new HashSet<>()).remove(tenant);
@@ -64,7 +65,7 @@ public class TenantService {
     }
 
     public void deleteTenant(String serviceName, String tenantKey) {
-        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), () -> {
+        runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), OPERATION_TARGET, () -> {
             Map<String, Set<TenantState>> tenantsList = getTenantsList();
 
             tenantsList.getOrDefault(serviceName, new HashSet<>()).remove(new TenantState(tenantKey, "SUSPENDED"));
