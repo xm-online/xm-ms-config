@@ -73,7 +73,6 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
         if (!content.equals(originalContent)) {
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
-            targetStorage.remove(configuration.getPath());
             return emptyList();
         }
     }
