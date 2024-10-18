@@ -11,6 +11,11 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
 
 @Slf4j
 @Component
@@ -30,6 +35,13 @@ public class ConfigVersionDeserializer {
             return mapper.readValue(value, ConfigVersion.class);
         } catch (JsonProcessingException e) {
             log.warn("Error parse version: {}", value, e);
+
+            RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+            if (requestAttributes instanceof ServletRequestAttributes) {
+                HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+                log.info("ConfigVersionDeserializer: remoteAddress: [{}], value: [{}]", request.getRemoteAddr(), value);
+            }
+
             // when during migration old config server send update to new config server
             return new ConfigVersion(value);
         }

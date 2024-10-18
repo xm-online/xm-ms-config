@@ -65,7 +65,6 @@ public class PrivilegeService {
                      appName);
         } else {
             if (updateAppPrivilegesConfig(appName, privileges)) {
-                updateAppPermissionsConfig(appName, privileges);
                 log.info("[{}] Privileges config was updated, app/ms: '{}'",
                          getRequestSourceTypeLogName(requestContextHolder), appName);
             }
@@ -115,63 +114,6 @@ public class PrivilegeService {
     private static Map<String, Collection<Privilege>> parsePrivilegesConfig(String yml) {
         // TreeMap for editable map instance and key sorting (ymlToPrivileges returns unmodifiable map)
         return new TreeMap<>(PrivilegeMapper.ymlToPrivileges(yml));
-    }
-
-    private void updateAppPermissionsConfig(String appName, Set<Privilege> newPrivileges) {
-        // Get new privileges keys
-        List<String> newPrivilegeKeys = newPrivileges.stream().map(Privilege::getKey).collect(Collectors.toList());
-
-        // for each tenant update his permissions.yml
-        tenantService.getTenants(appName).forEach(tenantState -> {
-            Tenant currentTenant = TenantContextUtils.buildTenant(tenantState.getName());
-            // execute in tenant context
-            tenantContextHolder.getPrivilegedContext().execute(currentTenant,
-                                                               () ->
-                                                                   updateTenantPermissions(appName,
-                                                                                           currentTenant.getTenantKey(),
-                                                                                           newPrivilegeKeys));
-        });
-    }
-
-    private void updateTenantPermissions(String appName, TenantKey tenantKey, List<String> newPrivilegeKeys) {
-        log.info("[{}] Updating permissions for tenant: '{}', app/ms: '{}'",
-                 getRequestSourceTypeLogName(requestContextHolder), tenantKey.getValue(), appName);
-
-        // get permissions config text
-        Optional<String> oldPermissionsYml = getConfig(tenantKey.getValue(), properties.getPermissionsSpecPath());
-
-        // if yaml text exist and not blank
-        oldPermissionsYml.filter(StringUtils::isNotBlank).ifPresent(oldPermissionsYmlData -> {
-            // parse permissions.yml to list
-            List<Permission> oldPermissions = permissionMappingService.ymlToPermissionsList(oldPermissionsYmlData);
-
-            syncPermissionsWithPrivileges(tenantKey.getValue(), appName, newPrivilegeKeys, oldPermissions);
-        });
-    }
-
-
-    private void syncPermissionsWithPrivileges(String tenantKeyValue,
-                                               String appName,
-                                               List<String> newPrivilegeKeys,
-                                               List<Permission> oldPermissions) {
-        // for each value (permission) perform closure and collect permissions as set
-        Set<Permission> newPermissions = oldPermissions.stream()
-            .peek(syncPermission(appName, newPrivilegeKeys)).collect(Collectors.toSet());
-
-        updateConfig(tenantKeyValue,
-                     properties.getPermissionsSpecPath(),
-                     PermissionMapper.permissionsToYml(newPermissions));
-    }
-
-    private Consumer<Permission> syncPermission(String appName, List<String> newPrivilegeKeys) {
-        return permission -> {
-            // check permissions only for specified app
-            if (appName.equalsIgnoreCase(permission.getMsName())) {
-                // for non existed privileges mark permission as deleted
-                boolean isPrivilegeDeleted = !newPrivilegeKeys.contains(permission.getPrivilegeKey());
-                permission.setDeleted(isPrivilegeDeleted);
-            }
-        };
     }
 
     private Optional<String> getConfig(String tenantKeyValue, String path) {

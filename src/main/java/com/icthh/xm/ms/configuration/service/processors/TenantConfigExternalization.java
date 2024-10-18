@@ -30,7 +30,7 @@ import static org.springframework.core.Ordered.LOWEST_PRECEDENCE;
 @Slf4j
 @Component
 @Order(LOWEST_PRECEDENCE)
-public class TenantConfigExternalization implements PrivateConfigurationProcessor {
+public class TenantConfigExternalization implements TenantConfigurationProcessor {
 
     private final AntPathMatcher matcher = new AntPathMatcher();
     private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -49,9 +49,8 @@ public class TenantConfigExternalization implements PrivateConfigurationProcesso
                                                     Map<String, Configuration> targetStorage,
                                                     Set<Configuration> configToReprocess) {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
-        Map<String, Object> configMap = mapper.readValue(configuration.getContent(),
-                new TypeReference<Map<String, Object>>() {
-        });
+        String content = targetStorage.getOrDefault(configuration.getPath(), configuration).getContent();
+        Map<String, Object> configMap = mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
 
         if (configMap != null && isEnvPresent(tenant + "_")) {
             processConfigMap(tenant, configMap);

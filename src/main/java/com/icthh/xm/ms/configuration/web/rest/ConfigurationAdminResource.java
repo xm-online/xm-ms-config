@@ -111,7 +111,7 @@ public class ConfigurationAdminResource {
                                                             HttpServletRequest request) {
         String path = extractPath(request).substring(INMEMORY.length());
         Configuration configuration = new Configuration(path, content);
-        configurationService.updateConfigurationInMemory(configuration);
+        configurationService.updateConfigurationInMemory(List.of(configuration));
         return ResponseEntity.ok().build();
     }
 

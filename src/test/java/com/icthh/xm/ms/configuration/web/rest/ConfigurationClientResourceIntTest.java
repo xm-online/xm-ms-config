@@ -4,16 +4,18 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -26,7 +28,7 @@ import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
-import com.icthh.xm.ms.configuration.service.TenantAliasService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -44,7 +46,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
@@ -73,7 +74,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private TenantAliasService tenantAliasService;
+    private TenantAliasTreeService tenantAliasService;
 
     @Autowired
     ConfigurationService configurationService;
@@ -287,6 +288,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
             .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
             .contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
             .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
@@ -297,7 +299,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testGetTreeConfigurationsByPaths() {
         Configuration config = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        tenantAliasService.processConfiguration(config, Map.of(), Map.of(), Set.of());
+        tenantAliasService.updateAliasTree(config);
 
         String path = CONFIG + TENANTS + "/MAIN/my-config.yml";
         String path2 = CONFIG + TENANTS + "/" + TENANT_NAME + "/my-config.yml";
@@ -355,11 +357,12 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful());
 
-        Map<String, Configuration> configurationMap = configurationService.findConfigurations(List.of(), true);
+        Map<String, Configuration> configurationMap = configurationService.findTenantConfigurations(List.of(), true);
         assertEquals(updatedContent, configurationMap.get(path).getContent());
         assertFalse(configurationMap.containsKey(path2));
         assertFalse(configurationMap.containsKey(path3));
         assertFalse(configurationMap.containsKey(path4));
+        assertTrue(configurationMap.containsKey(normalisedPath4));
         assertFalse(configurationMap.containsKey(CONFIG + TENANTS + "/ANOTHER_TENANT/my-config3.yml"));
         assertEquals("will be created", configurationMap.get(normalisedPath4).getContent());
     }
