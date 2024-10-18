@@ -119,6 +119,7 @@ public class ConfigState {
                 Set<String> produced = producedByFile.computeIfAbsent(configuration.getPath(), it -> new HashSet<>());
                 produced.addAll(processedByConfig.keySet());
                 processedConfiguration.putAll(processedByConfig);
+                changedFiles.putAll(processedByConfig);
             }
         }
     }
