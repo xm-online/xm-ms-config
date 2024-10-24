@@ -14,4 +14,9 @@ public class FileUtils {
         return new String(encoded, StandardCharsets.UTF_8);
     }
 
+    @SneakyThrows
+    public static long countOfFilesInDirectoryRecursively(String directoryPath) {
+        return Files.walk(Paths.get(directoryPath)).filter(Files::isRegularFile).count();
+    }
+
 }

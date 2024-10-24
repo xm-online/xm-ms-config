@@ -117,7 +117,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         configsByTenants.forEach((tenant, configs) -> {
             addDeletedConfiguration(actualConfigs, tenant);
         });
-        Set<String> updated = saveConfigs(actualConfigs);
+        Set<String> updated = saveConfigs(actualConfigs, true);
         log.info("Full configuration refresh inmemory finished in {} ms", stopWatch.getTime());
         return updated;
     }
@@ -128,7 +128,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         log.info("Configuration refresh inmemory for tenant {} started", tenant);
         actualConfigs = filterByTenant(actualConfigs, tenant);
         addDeletedConfiguration(actualConfigs, tenant);
-        Set<String> updated = saveConfigs(actualConfigs);
+        Set<String> updated = saveConfigs(actualConfigs, true);
         log.info("Configuration refresh inmemory for tenant {} finished in {} ms", tenant, stopWatch.getTime());
         return updated;
     }
@@ -136,7 +136,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     @Override
     public Set<String> replaceByConfigurationInTenants(List<Configuration> actualConfigs, List<String> tenants) {
         tenants.forEach(tenant -> addDeletedConfiguration(actualConfigs, tenant));
-        return saveConfigs(actualConfigs);
+        return saveConfigs(actualConfigs, true);
     }
 
     /**
@@ -146,6 +146,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
      */
     @Override
     public Set<String> saveConfigs(List<Configuration> configs) {
+        return saveConfigs(configs, false);
+    }
+
+    private Set<String> saveConfigs(List<Configuration> configs, boolean fullReload) {
         StopWatch stopWatch = StopWatch.createStarted();
         log.info("Save configurations to inmemory storage configs.size: {}", configs.size());
         log.info("Try to acquire lock for update configuration");
@@ -164,7 +168,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             });
 
             // global config processing
-            applyTenantAlias(forUpdate);
+            applyTenantAlias(forUpdate, fullReload);
 
             forUpdate.keySet().forEach(tenant -> {
                 // tenant config processing
@@ -237,7 +241,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return tenantsList;
     }
 
-    private void applyTenantAlias(Map<String, IntermediateConfigState> forUpdate) {
+    private void applyTenantAlias(Map<String, IntermediateConfigState> forUpdate, boolean fullReload) {
         StopWatch stopWatch = StopWatch.createStarted();
         List<String> tenants = extendsTenantList(forUpdate.keySet());
         log.info("Start apply alias for tenants {}", tenants);
@@ -246,13 +250,36 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             var state = requestUpdate(tenant, forUpdate);
             TenantAliasTree.TenantAlias tenantAlias = tenantAliasTree.getTenants().get(tenant);
             if (tenantAlias != null && tenantAlias.getParent() != null) {
-                IntermediateConfigState parent = forUpdate.get(tenantAlias.getParent().getKey());
-                Map<String, Configuration> parentConfigs = parent == null ? Map.of() : parent.getChangedFiles();
+                String parentKey = tenantAlias.getParent().getKey();
+                IntermediateConfigState parent = forUpdate.get(parentKey);
+                Map<String, Configuration> parentConfigs = getParentConfigs(fullReload, parentKey, parent, state);
                 Map<String, Configuration> childConfigs = toChildConfigs(tenant, parentConfigs);
                 state.addParentConfigurationByAliases(childConfigs);
             }
         });
         log.info("Apply alias for tenants finished in {} ms", stopWatch.getTime());
+    }
+
+    private Map<String, Configuration> getParentConfigs(boolean fullReload, String parentKey,
+                                                               IntermediateConfigState parent, IntermediateConfigState child) {
+        if (fullReload) {
+            if (parent == null) {
+                ConfigState parentState = tenantConfigStates.get(parentKey);
+                return parentState == null ? Map.of() : parentState.getInmemoryConfigurations();
+            }
+            return parent.getInmemoryConfigurations();
+        }
+
+        if (parent == null) {
+            return Map.of();
+        }
+        Map<String, Configuration> parentConfigsToUpdate = new HashMap<>(parent.getChangedFiles());
+        child.getChangedFiles().keySet().stream().filter(it -> !parentConfigsToUpdate.containsKey(it)).forEach(path -> {
+            String parentPath = getPathInTenant(path, parentKey);
+            Configuration config = parent.getInmemoryConfigurations().get(parentPath);
+            parentConfigsToUpdate.put(parentPath, new Configuration(parentPath, config.getContent()));
+        });
+        return parentConfigsToUpdate;
     }
 
     private Map<String, Configuration> toChildConfigs(String tenant, Map<String, Configuration> updatedConfigs) {
