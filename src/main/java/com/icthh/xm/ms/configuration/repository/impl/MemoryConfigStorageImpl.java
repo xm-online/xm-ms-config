@@ -41,6 +41,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     // same for /commons folder and for root config, don't change value
     public static final String COMMONS_CONFIG = "commons";
+    public static final String FEATURES_CONFIG = "features";
 
     private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
 
@@ -161,6 +162,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 Map<String, Configuration> updatedConfigs = configsByTenants.get(tenant);
                 var updateConfigState = requestUpdate(tenant, forUpdate);
                 updateConfigState.updateConfigurations(updatedConfigs);
+                Optional.ofNullable(configsByTenants.get(FEATURES_CONFIG))
+                    .ifPresent(updateConfigState::updateConfigurations);
             });
 
             // global config processing
