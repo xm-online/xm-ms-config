@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
+import static com.icthh.xm.ms.configuration.utils.FileUtils.countOfFilesInDirectoryRecursively;
 import static com.icthh.xm.ms.configuration.utils.FileUtils.readFileToString;
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
@@ -269,6 +270,9 @@ public class JGitRepository implements PersistenceConfigRepository {
         this.rootDirectory = repositoryFolder;
         if (oldDirectory != null) {
             deleteRecursively(oldDirectory);
+        }
+        if (log.isInfoEnabled()) {
+            log.info("Count of config files {}", countOfFilesInDirectoryRecursively(rootDirectory.getAbsolutePath() + "/config"));
         }
     }
 
