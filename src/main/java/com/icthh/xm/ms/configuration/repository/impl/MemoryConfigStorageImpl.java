@@ -261,7 +261,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private Map<String, Configuration> getParentConfigs(boolean fullReload, String parentKey,
-                                                               IntermediateConfigState parent, IntermediateConfigState child) {
+                                                        IntermediateConfigState parent, IntermediateConfigState child) {
         if (fullReload) {
             if (parent == null) {
                 ConfigState parentState = tenantConfigStates.get(parentKey);
