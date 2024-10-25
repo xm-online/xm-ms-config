@@ -60,6 +60,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.GitCommand;
 import org.eclipse.jgit.api.PullCommand;
 import org.eclipse.jgit.api.PushCommand;
+import org.eclipse.jgit.api.RmCommand;
 import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.StatusCommand;
 import org.eclipse.jgit.api.TransportCommand;
@@ -505,11 +506,22 @@ public class JGitRepository implements PersistenceConfigRepository {
                 return lastCommit;
             }
 
-            AddCommand addCmd = git.add().setUpdate(true);
+            AddCommand addCmd = git.add();
             for (String file : filePatterns) {
                 addCmd.addFilepattern(file);
             }
             addCmd.call();
+
+            Set<String> fileToRemove = new HashSet<>();
+            fileToRemove.addAll(status.getMissing());
+            fileToRemove.addAll(status.getRemoved());
+            if (!fileToRemove.isEmpty()) {
+                RmCommand rm = git.rm();
+                for (String file : fileToRemove) {
+                    rm.addFilepattern(file);
+                }
+                rm.call();
+            }
 
             RevCommit commit = git.commit().setMessage(commitMsg).call();
 
