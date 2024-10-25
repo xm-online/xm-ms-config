@@ -505,7 +505,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                 return lastCommit;
             }
 
-            AddCommand addCmd = git.add();
+            AddCommand addCmd = git.add().setUpdate(true);
             for (String file : filePatterns) {
                 addCmd.addFilepattern(file);
             }
