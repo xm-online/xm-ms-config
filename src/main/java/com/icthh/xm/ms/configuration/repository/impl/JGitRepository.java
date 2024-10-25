@@ -1,6 +1,8 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
+import static com.icthh.xm.ms.configuration.utils.FileUtils.countOfFilesInDirectoryRecursively;
+import static com.icthh.xm.ms.configuration.utils.FileUtils.listOfFilesInDirectoryRecursively;
 import static com.icthh.xm.ms.configuration.utils.FileUtils.readFileToString;
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
@@ -263,12 +265,16 @@ public class JGitRepository implements PersistenceConfigRepository {
                 cloneCommand.setDepth(gitProperties.getDepth());
             }
             cloneCommand.call().close();
+            executeGitAction("checkout", this::checkout);
             return null;
         });
 
         this.rootDirectory = repositoryFolder;
         if (oldDirectory != null) {
             deleteRecursively(oldDirectory);
+        }
+        if (log.isInfoEnabled()) {
+            log.info("Count of config files {}", countOfFilesInDirectoryRecursively(rootDirectory.getAbsolutePath() + "/config"));
         }
     }
 
@@ -464,7 +470,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     @SneakyThrows
-    private void checkout(Git git) throws RefNotFoundException {
+    private Void checkout(Git git) throws RefNotFoundException {
         String branchName = gitProperties.getBranchName();
         if (!branchName.equals(git.getRepository().getBranch())) {
             git.clean().setForce(true).call();
@@ -474,6 +480,7 @@ public class JGitRepository implements PersistenceConfigRepository {
                 .setProgressMonitor(NullProgressMonitor.INSTANCE)
                 .setForceRefUpdate(true).call();
         }
+        return null;
     }
 
     @SneakyThrows
