@@ -1,11 +1,15 @@
 package com.icthh.xm.ms.configuration.utils;
 
-import lombok.SneakyThrows;
-
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FileUtils {
 
     @SneakyThrows
@@ -16,7 +20,19 @@ public class FileUtils {
 
     @SneakyThrows
     public static long countOfFilesInDirectoryRecursively(String directoryPath) {
-        return Files.walk(Paths.get(directoryPath)).filter(Files::isRegularFile).count();
+        Path start = Paths.get(directoryPath);
+        if (!start.toFile().exists()) {
+            log.warn("Directory {} does not exist", directoryPath);
+            return 0;
+        }
+        return Files.walk(start).filter(Files::isRegularFile).count();
+    }
+
+    @SneakyThrows
+    public static List<String> listOfFilesInDirectoryRecursively(String directoryPath) {
+        return Files.walk(Paths.get(directoryPath))
+            .map(Path::toString)
+            .collect(Collectors.toList());
     }
 
 }
