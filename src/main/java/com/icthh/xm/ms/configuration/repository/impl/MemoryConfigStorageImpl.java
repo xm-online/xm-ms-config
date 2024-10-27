@@ -217,7 +217,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         Set<Configuration> configToReprocess = new HashSet<>();
         for(Configuration configuration : configurations) {
             for(var processor: configurationProcessors) {
-                var configs = processor.safeRun(configuration, state, configToReprocess);
+                Map<String, Configuration> configs = processor.safeRun(configuration, state, configToReprocess);
                 state.addProcessedConfiguration(configuration, configs);
             }
         }
