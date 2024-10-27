@@ -215,13 +215,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private void processConfigurations(Collection<Configuration> configurations, IntermediateConfigState state) {
         state.cleanProcessedConfiguration(toPathsList(configurations));
         Set<Configuration> configToReprocess = new HashSet<>();
-        for(Configuration configuration : configurations) {
+        configurations.forEach(configuration -> {
             for(var processor: configurationProcessors) {
                 var configs = processor.safeRun(configuration, state, configToReprocess);
                 state.addProcessedConfiguration(configuration, configs);
             }
-        }
-
+        });
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
         }
