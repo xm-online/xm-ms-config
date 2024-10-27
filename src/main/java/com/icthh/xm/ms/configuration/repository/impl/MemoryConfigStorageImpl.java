@@ -216,12 +216,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         state.cleanProcessedConfiguration(toPathsList(configurations));
         Set<Configuration> configToReprocess = new HashSet<>();
         for(Configuration configuration : configurations) {
-            Set<Configuration> toProcess = new HashSet<>(); // prevents modifying configToReprocess during the iteration
             for(var processor: configurationProcessors) {
-                var configs = processor.safeRun(configuration, state, toProcess);
-                state.addProcessedConfiguration(configuration, configs);
+                var configs = processor.safeRun(configuration, state, configToReprocess);
+//                state.addProcessedConfiguration(configuration, configs);
             }
-            configToReprocess.addAll(toProcess);
         }
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
