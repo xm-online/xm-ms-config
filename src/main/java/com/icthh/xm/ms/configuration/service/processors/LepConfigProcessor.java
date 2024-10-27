@@ -51,7 +51,8 @@ public class LepConfigProcessor implements TenantConfigurationProcessor {
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage,
-                                                    Set<Configuration> configToReprocess) {
+                                                    Set<Configuration> configToReprocess,
+                                                    Map<String, Configuration> features) {
         return runWithLepContext(configuration,
                 () -> self.processConfigurationWithResolver(configuration, originalStorage, targetStorage),
                 emptyList());

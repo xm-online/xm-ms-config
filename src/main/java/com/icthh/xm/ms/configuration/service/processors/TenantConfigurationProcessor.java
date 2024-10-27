@@ -21,7 +21,8 @@ public interface TenantConfigurationProcessor {
     List<Configuration> processConfiguration(Configuration configuration,
                                              Map<String, Configuration> originalStorage,
                                              Map<String, Configuration> targetStorage,
-                                             Set<Configuration> configToReprocess);
+                                             Set<Configuration> configToReprocess,
+                                             Map<String, Configuration> features);
 
     default Map<String, Configuration> safeRun(Configuration configuration,
                                                IntermediateConfigState state,
@@ -33,7 +34,8 @@ public interface TenantConfigurationProcessor {
 
             var processed = state.getProcessedConfiguration();
             var inMemory = state.getInmemoryConfigurations();
-            var configurations = processConfiguration(configuration, inMemory, processed, configToReprocess);
+            var features = state.getFeaturesConfigurations();
+            var configurations = processConfiguration(configuration, inMemory, processed, configToReprocess, features);
             return configurations.stream().collect(toMap(Configuration::getPath, identity()));
         } catch (Exception e) {
             log.error("Error run processor", e);

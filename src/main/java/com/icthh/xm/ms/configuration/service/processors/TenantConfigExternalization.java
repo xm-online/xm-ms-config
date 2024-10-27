@@ -47,7 +47,8 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage,
-                                                    Set<Configuration> configToReprocess) {
+                                                    Set<Configuration> configToReprocess,
+                                                    Map<String, Configuration> features) {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         String content = targetStorage.getOrDefault(configuration.getPath(), configuration).getContent();
         Map<String, Object> configMap = mapper.readValue(content, new TypeReference<Map<String, Object>>() {});

@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class ConfigState {
     @Getter
     private final Map<String, Configuration> inmemoryConfigurations; // configuration with tenant alias and with features
     private final Map<String, Configuration> processedConfiguration;
+    private final Map<String, Configuration> featuresConfigurations;
     // to identify which processed configuration created by processing of which configuration
     private final Map<String, Set<String>> producedByFile;
 
@@ -30,6 +32,7 @@ public class ConfigState {
         this.persistedConfigurations = Map.of();
         this.inmemoryConfigurations = Map.of();
         this.processedConfiguration = Map.of();
+        this.featuresConfigurations = Map.of();
         this.producedByFile = Map.of();
     }
 
@@ -38,6 +41,7 @@ public class ConfigState {
         this.persistedConfigurations = Map.copyOf(state.persistedConfigurations);
         this.inmemoryConfigurations = Map.copyOf(state.inmemoryConfigurations);
         this.processedConfiguration = Map.copyOf(state.processedConfiguration);
+        this.featuresConfigurations = Map.copyOf(state.featuresConfigurations);
         this.producedByFile = Map.copyOf(state.producedByFile);
     }
 
@@ -61,7 +65,8 @@ public class ConfigState {
             new HashMap<>(persistedConfigurations),
             new HashMap<>(inmemoryConfigurations),
             new HashMap<>(processedConfiguration),
-            new HashMap<>(producedByFile)
+            new HashMap<>(producedByFile),
+            new HashMap<>(featuresConfigurations)
         );
     }
 
@@ -84,10 +89,12 @@ public class ConfigState {
         private final Map<String, Configuration> inmemoryConfigurations;
         private final Map<String, Configuration> processedConfiguration;
         private final Map<String, Set<String>> producedByFile;
+        private final Map<String, Configuration> featuresConfigurations;
 
         private final Map<String, Configuration> changedFiles = new HashMap<>();
 
-        public void updateConfigurations(Map<String, Configuration> updatedConfigs) {
+        public void updateConfigurations(Map<String, Configuration> updatedConfigs,
+                                         Map<String, Configuration> featuresConfig) {
             persistedConfigurations.putAll(updatedConfigs);
 
             inmemoryConfigurations.putAll(updatedConfigs);
@@ -96,6 +103,8 @@ public class ConfigState {
             inmemoryConfigurations.entrySet().removeIf(entry -> isBlank(entry.getValue().getContent()));
 
             changedFiles.putAll(updatedConfigs);
+
+            Optional.ofNullable(featuresConfig).ifPresent(featuresConfigurations::putAll);
         }
 
         public void addParentConfigurationByAliases(Map<String, Configuration> parentConfigs) {

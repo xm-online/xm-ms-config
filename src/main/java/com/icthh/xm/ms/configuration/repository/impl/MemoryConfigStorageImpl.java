@@ -161,9 +161,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             tenants.forEach(tenant -> {
                 Map<String, Configuration> updatedConfigs = configsByTenants.get(tenant);
                 var updateConfigState = requestUpdate(tenant, forUpdate);
-                updateConfigState.updateConfigurations(updatedConfigs);
-                Optional.ofNullable(configsByTenants.get(FEATURES_CONFIG))
-                    .ifPresent(updateConfigState::updateConfigurations);
+                updateConfigState.updateConfigurations(updatedConfigs, configsByTenants.get(FEATURES_CONFIG));
             });
 
             // global config processing
