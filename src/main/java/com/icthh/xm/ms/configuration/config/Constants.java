@@ -35,7 +35,4 @@ public final class Constants {
     public static final String REFRESH = "/refresh";
     public static final String RECLONE = "/reclone";
 
-    public static final String TENANTS_TOKEN = "tenants";
-    public static final String EXTERNAL_TOKEN = "externals";
-
 }

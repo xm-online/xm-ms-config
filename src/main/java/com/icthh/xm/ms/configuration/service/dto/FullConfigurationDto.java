@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.icthh.xm.ms.configuration.config.Constants.EXTERNAL_TOKEN;
 import static com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl.COMMONS_CONFIG;
 
 @Getter
@@ -31,7 +30,8 @@ public class FullConfigurationDto {
     }
 
     public void computeExternalIfAbsent(Configuration configuration) {
-        this.externalConfigs.computeIfAbsent(EXTERNAL_TOKEN, k -> new HashSet<>()).add(configuration);
+        String key = configuration.getPath().split("/")[2];
+        this.externalConfigs.computeIfAbsent(key, k -> new HashSet<>()).add(configuration);
     }
 
     public void computeTenantIfAbsent(String key, Configuration configuration) {

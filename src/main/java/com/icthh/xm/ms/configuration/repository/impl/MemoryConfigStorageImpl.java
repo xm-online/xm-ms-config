@@ -17,7 +17,6 @@ import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigState.IntermediateConfigState;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
-import com.icthh.xm.ms.configuration.service.dto.FullConfigurationDto;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
@@ -156,7 +155,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), "memory storage", () -> {
             log.info("Lock acquired for update configuration in {} ms", stopWatch.getTime());
 
-            FullConfigurationDto fullConfiguration = getFullConfiguration(configs);
+            var fullConfiguration = getFullConfiguration(configs, applicationProperties.getExcludeConfigPatterns());
             this.externalConfigs.putAll(fullConfiguration.getExternalConfigs());
 
             Set<String> changedFiles = fullConfiguration.getChangedFiles();

@@ -2,7 +2,6 @@ package com.icthh.xm.ms.configuration.utils;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
-import static com.icthh.xm.ms.configuration.config.Constants.EXTERNALS;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl.COMMONS_CONFIG;
 import static java.util.stream.Collectors.toList;
@@ -10,6 +9,8 @@ import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import com.icthh.xm.ms.configuration.service.dto.FullConfigurationDto;
@@ -30,7 +31,6 @@ public final class ConfigPathUtils {
     private final AntPathMatcher matcher = new AntPathMatcher();
     private static final String TENANT_NAME = "tenantName";
     private static final String TENANT_PREFIX = CONFIG + TENANTS + "/";
-    private static final String EXTERNAL_PATTERN = CONFIG + EXTERNALS + "/**";
     private static final String PATTERN = getTenantPathPrefix() + "{" + TENANT_NAME + "}/*/**";
 
     public static String getTenantPathPrefix(TenantContextHolder tenantContextHolder) {
@@ -82,26 +82,29 @@ public final class ConfigPathUtils {
         return matcher.match(PATTERN, path);
     }
 
-    public static boolean isExternalPath(String path) {
-        return matcher.match(EXTERNAL_PATTERN, path);
-    }
-
-    public static FullConfigurationDto getFullConfiguration(List<Configuration> configurations) {
+    public static FullConfigurationDto getFullConfiguration(List<Configuration> configurations,
+                                                            List<String> excludeFilePatterns) {
         FullConfigurationDto fullConfigurationDto = new FullConfigurationDto();
-        for (Configuration configuration : configurations) {
-            if (isExternalPath(configuration.getPath())) {
-                fullConfigurationDto.computeExternalIfAbsent(configuration);
-            } else {
-                String tenantName = getTenantName(configuration.getPath()).orElse(COMMONS_CONFIG);
-                fullConfigurationDto.computeTenantIfAbsent(tenantName, configuration);
-                fullConfigurationDto.addChangedFiles(configuration.getPath());
-            }
-        }
+        configurations.stream()
+            .filter(c -> isNotExcludedConfig(c.getPath(), excludeFilePatterns))
+            .forEach(configuration -> {
+                if (configuration.getPath().startsWith(TENANT_PREFIX)) {
+                    String tenantName = getTenantName(configuration.getPath()).orElse(COMMONS_CONFIG);
+                    fullConfigurationDto.computeTenantIfAbsent(tenantName, configuration);
+                    fullConfigurationDto.addChangedFiles(configuration.getPath());
+                } else {
+                    fullConfigurationDto.computeExternalIfAbsent(configuration);
+                }
+            });
         return fullConfigurationDto;
     }
 
+    public static boolean isNotExcludedConfig(String path, List<String> excludeFilePatterns) {
+        return excludeFilePatterns == null || excludeFilePatterns.stream().noneMatch(fp ->  matcher.match(fp, path));
+    }
+
     public static Map<String, Map<String, Configuration>> getTenants(List<Configuration> configurations) {
-        return getFullConfiguration(configurations).getTenantsConfigs();
+        return getFullConfiguration(configurations, new ArrayList<>()).getTenantsConfigs();
     }
 
     public static Map<String, Set<String>> getPathsByTenants(Collection<String> paths) {

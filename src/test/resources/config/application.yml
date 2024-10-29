@@ -112,4 +112,4 @@ application:
         tenant-script-storage: XM_MS_CONFIG
         processor-enabled: true
     excludeConfigPatterns:
-        - "/config/excluded/**"
+        - "/config/tenants/excluded/**"
