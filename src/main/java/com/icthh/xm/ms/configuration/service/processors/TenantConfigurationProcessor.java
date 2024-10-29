@@ -15,6 +15,11 @@ import org.slf4j.LoggerFactory;
 public interface TenantConfigurationProcessor {
 
     Logger log = LoggerFactory.getLogger(TenantConfigurationProcessor.class);
+    Integer DEFAULT_PRIORITY = 100;
+
+    default Integer getPriority() {
+        return DEFAULT_PRIORITY;
+    }
 
     boolean isSupported(Configuration configuration);
 
@@ -22,11 +27,12 @@ public interface TenantConfigurationProcessor {
                                              Map<String, Configuration> originalStorage,
                                              Map<String, Configuration> targetStorage,
                                              Set<Configuration> configToReprocess,
-                                             Map<String, Configuration> features);
+                                             Map<String, Set<Configuration>> externalConfigs);
 
     default Map<String, Configuration> safeRun(Configuration configuration,
                                                IntermediateConfigState state,
-                                               Set<Configuration> configToReprocess) {
+                                               Set<Configuration> configToReprocess,
+                                               Map<String, Set<Configuration>> external) {
         try {
             if(configuration == null || isBlank(configuration.getContent()) || !isSupported(configuration)) {
                 return Map.of();
@@ -34,8 +40,7 @@ public interface TenantConfigurationProcessor {
 
             var processed = state.getProcessedConfiguration();
             var inMemory = state.getInmemoryConfigurations();
-            var features = state.getFeaturesConfigurations();
-            var configurations = processConfiguration(configuration, inMemory, processed, configToReprocess, features);
+            var configurations = processConfiguration(configuration, inMemory, processed, configToReprocess, external);
             return configurations.stream().collect(toMap(Configuration::getPath, identity()));
         } catch (Exception e) {
             log.error("Error run processor", e);

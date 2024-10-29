@@ -57,7 +57,7 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage,
                                                     Set<Configuration> configToReprocess,
-                                                    Map<String, Configuration> features) {
+                                                    Map<String, Set<Configuration>> externalConfigs) {
 
         Map<String, String> tenantEnvs = new HashMap<>();
         Map<String, String> tenantProfile = buildTenantProfile(configuration, originalStorage);

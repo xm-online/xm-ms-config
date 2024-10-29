@@ -27,11 +27,15 @@ public final class Constants {
     public static final String PRIVATE = "/private";
     public static final String API_PREFIX = "/api";
     public static final String TENANTS = "/tenants";
+    public static final String EXTERNALS = "/externals";
     public static final String CONFIG = "/config";
     public static final String INMEMORY = "/inmemory";
     public static final String PROFILE = "/profile";
     public static final String PUBLIC_KEY_FILE = "/public.cer";
     public static final String REFRESH = "/refresh";
     public static final String RECLONE = "/reclone";
+
+    public static final String TENANTS_TOKEN = "tenants";
+    public static final String EXTERNAL_TOKEN = "externals";
 
 }

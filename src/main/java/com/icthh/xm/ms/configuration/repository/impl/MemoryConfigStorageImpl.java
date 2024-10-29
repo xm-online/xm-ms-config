@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.filterByTenant;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getFullConfiguration;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathsByTenants;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenants;
@@ -16,10 +17,12 @@ import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigState.IntermediateConfigState;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
+import com.icthh.xm.ms.configuration.service.dto.FullConfigurationDto;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,9 +44,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     // same for /commons folder and for root config, don't change value
     public static final String COMMONS_CONFIG = "commons";
-    public static final String FEATURES_CONFIG = "features";
 
     private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
+    private final Map<String, Set<Configuration>> externalConfigs = new ConcurrentHashMap<>();
 
     private final List<TenantConfigurationProcessor> configurationProcessors;
     private final TenantAliasTreeStorage tenantAliasTreeStorage;
@@ -153,15 +156,18 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), "memory storage", () -> {
             log.info("Lock acquired for update configuration in {} ms", stopWatch.getTime());
 
-            Set<String> changedFiles = new HashSet<>(toPathsList(configs));
-            Map<String, Map<String, Configuration>> configsByTenants = getTenants(configs);
+            FullConfigurationDto fullConfiguration = getFullConfiguration(configs);
+            this.externalConfigs.putAll(fullConfiguration.getExternalConfigs());
+
+            Set<String> changedFiles = fullConfiguration.getChangedFiles();
+            Map<String, Map<String, Configuration>> configsByTenants = fullConfiguration.getTenantsConfigs();
 
             Map<String, IntermediateConfigState> forUpdate = new HashMap<>();
             List<String> tenants = new ArrayList<>(configsByTenants.keySet());
             tenants.forEach(tenant -> {
                 Map<String, Configuration> updatedConfigs = configsByTenants.get(tenant);
                 var updateConfigState = requestUpdate(tenant, forUpdate);
-                updateConfigState.updateConfigurations(updatedConfigs, configsByTenants.get(FEATURES_CONFIG));
+                updateConfigState.updateConfigurations(updatedConfigs);
             });
 
             // global config processing
@@ -184,6 +190,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     @Override
     public void clear() {
         tenantConfigStates.clear();
+        externalConfigs.clear();
     }
 
     private IntermediateConfigState requestUpdate(String tenant, Map<String, IntermediateConfigState> forUpdate) {
@@ -217,10 +224,12 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         Set<Configuration> configToReprocess = new HashSet<>();
         var changedConfigurationFiles = new ArrayList<>(configurations); // prevents modifying during iteration
         for(Configuration configuration : changedConfigurationFiles) {
-            for(var processor: configurationProcessors) {
-                var configs = processor.safeRun(configuration, state, configToReprocess);
-                state.addProcessedConfiguration(configuration, configs);
-            }
+            configurationProcessors.stream()
+                .sorted(Comparator.comparing(TenantConfigurationProcessor::getPriority))
+                .forEach(processor -> {
+                    var configs = processor.safeRun(configuration, state, configToReprocess, externalConfigs);
+                    state.addProcessedConfiguration(configuration, configs);
+                });
         }
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
