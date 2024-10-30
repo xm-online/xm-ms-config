@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +37,7 @@ public class EnvConfigExternalizationFromFileUnitTest {
         applicationProperties.setEnvConfigExternalizationEnabled(true);
 
         List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile()
-            .processConfiguration(configuration, originalStorage, emptyMap(), new HashSet<>());
+            .processConfiguration(configuration, originalStorage, emptyMap(), new HashSet<>(), new HashMap<>());
         assertEquals(TestUtil.loadFile("someConfigFromFileExpected"), processedConfigurations.get(0).getContent());
     }
 }

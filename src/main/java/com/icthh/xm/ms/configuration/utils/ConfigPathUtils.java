@@ -9,11 +9,14 @@ import static java.util.stream.Collectors.toSet;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+
+import java.util.ArrayList;
 import java.util.HashSet;
+
+import com.icthh.xm.ms.configuration.service.dto.FullConfigurationDto;
 import lombok.experimental.UtilityClass;
 import org.springframework.util.AntPathMatcher;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -79,17 +82,29 @@ public final class ConfigPathUtils {
         return matcher.match(PATTERN, path);
     }
 
+    public static FullConfigurationDto getFullConfiguration(List<Configuration> configurations,
+                                                            List<String> excludeFilePatterns) {
+        FullConfigurationDto fullConfigurationDto = new FullConfigurationDto();
+        configurations.stream()
+            .filter(c -> isNotExcludedConfig(c.getPath(), excludeFilePatterns))
+            .forEach(configuration -> {
+                if (configuration.getPath().startsWith(TENANT_PREFIX)) {
+                    String tenantName = getTenantName(configuration.getPath()).orElse(COMMONS_CONFIG);
+                    fullConfigurationDto.computeTenantIfAbsent(tenantName, configuration);
+                    fullConfigurationDto.addChangedFiles(configuration.getPath());
+                } else {
+                    fullConfigurationDto.computeExternalIfAbsent(configuration);
+                }
+            });
+        return fullConfigurationDto;
+    }
+
+    public static boolean isNotExcludedConfig(String path, List<String> excludeFilePatterns) {
+        return excludeFilePatterns == null || excludeFilePatterns.stream().noneMatch(fp ->  matcher.match(fp, path));
+    }
+
     public static Map<String, Map<String, Configuration>> getTenants(List<Configuration> configurations) {
-        Map<String, Map<String, Configuration>> byTenants = new HashMap<>();
-        for (Configuration configuration : configurations) {
-            Optional<String> tenantName = getTenantName(configuration.getPath());
-            tenantName
-                .ifPresentOrElse(
-                    tenant -> byTenants.computeIfAbsent(tenant, k -> new HashMap<>()).put(configuration.getPath(), configuration),
-                    () -> byTenants.computeIfAbsent(COMMONS_CONFIG, k -> new HashMap<>()).put(configuration.getPath(), configuration)
-                );
-        }
-        return byTenants;
+        return getFullConfiguration(configurations, new ArrayList<>()).getTenantsConfigs();
     }
 
     public static Map<String, Set<String>> getPathsByTenants(Collection<String> paths) {

@@ -298,6 +298,11 @@ wrapper {
 task stage(dependsOn: 'bootWar') {
 }
 
-compileJava.dependsOn processResources
+compileJava {
+    dependsOn processResources
+    // add method parameters names to .class (used by LEP scripts)
+    options.compilerArgs << '-parameters'
+}
+
 processResources.dependsOn cleanResources,bootBuildInfo
 bootBuildInfo.mustRunAfter cleanResources

@@ -1,13 +1,13 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
@@ -28,7 +28,7 @@ public class EnvConfigExternalizationUnitTest {
 
         Configuration configuration = new Configuration("/config/someConfig", TestUtil.loadFile("someConfig"));
         List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile()
-                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>());
+                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
         assertEquals(TestUtil.loadFile("someConfigExpected"), processedConfigurations.get(0).getContent());
     }
 

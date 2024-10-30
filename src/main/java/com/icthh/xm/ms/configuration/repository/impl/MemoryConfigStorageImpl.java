@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.filterByTenant;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getFullConfiguration;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathsByTenants;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenants;
@@ -20,6 +21,7 @@ import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProce
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +45,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public static final String COMMONS_CONFIG = "commons";
 
     private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
+    private final Map<String, Set<Configuration>> externalConfigs = new ConcurrentHashMap<>();
 
     private final List<TenantConfigurationProcessor> configurationProcessors;
     private final TenantAliasTreeStorage tenantAliasTreeStorage;
@@ -156,8 +159,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), "memory storage", () -> {
             log.info("Lock acquired for update configuration in {} ms", stopWatch.getTime());
 
-            Set<String> changedFiles = new HashSet<>(toPathsList(configs));
-            Map<String, Map<String, Configuration>> configsByTenants = getTenants(configs);
+            var fullConfiguration = getFullConfiguration(configs, applicationProperties.getExcludeConfigPatterns());
+            this.externalConfigs.putAll(fullConfiguration.getExternalConfigs());
+
+            Set<String> changedFiles = fullConfiguration.getChangedFiles();
+            Map<String, Map<String, Configuration>> configsByTenants = fullConfiguration.getTenantsConfigs();
 
             Map<String, IntermediateConfigState> forUpdate = new HashMap<>();
             List<String> tenants = new ArrayList<>(configsByTenants.keySet());
@@ -187,6 +193,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     @Override
     public void clear() {
         tenantConfigStates.clear();
+        externalConfigs.clear();
     }
 
     private IntermediateConfigState requestUpdate(String tenant, Map<String, IntermediateConfigState> forUpdate) {
@@ -218,13 +225,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private void processConfigurations(Collection<Configuration> configurations, IntermediateConfigState state) {
         state.cleanProcessedConfiguration(toPathsList(configurations));
         Set<Configuration> configToReprocess = new HashSet<>();
-        for(Configuration configuration : configurations) {
-            for(var processor: configurationProcessors) {
-                var configs = processor.safeRun(configuration, state, configToReprocess);
-                state.addProcessedConfiguration(configuration, configs);
-            }
+        var changedConfigurationFiles = new ArrayList<>(configurations); // prevents modifying during iteration
+        for(Configuration configuration : changedConfigurationFiles) {
+            configurationProcessors.stream()
+                .sorted(Comparator.comparing(TenantConfigurationProcessor::getPriority))
+                .forEach(processor -> {
+                    var configs = processor.safeRun(configuration, state, configToReprocess, externalConfigs);
+                    state.addProcessedConfiguration(configuration, configs);
+                });
         }
-
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
         }

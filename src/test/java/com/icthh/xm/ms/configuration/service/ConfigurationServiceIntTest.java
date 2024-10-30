@@ -34,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -178,31 +179,31 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.deleteConfigurations(paths);
         memoryConfigStorage.clear();
 
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
-        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/excluded/file", "3\n"));
 
         Mockito.reset(configTopicProducer);
 
         configurationService.refreshConfiguration();
-        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(List.of(
-                "/config/file2", "/config/file1"
-        )));
+        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), argThat(a -> a.containsAll(List.of(
+            "/config/tenants/file2", "/config/tenants/file1"
+        ))));
     }
 
     @Test
     @SneakyThrows
     public void testUpdateFromZipFile() {
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file3", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file3", "1\n"));
         ConfigVersion commit = configurationService.updateConfigurationsFromZip(
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         String version = new ObjectMapper().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
-            "/config/file1", new Configuration("/config/file1", "1\n"),
-            "/config/file2", new Configuration("/config/file2", "2\n")
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ), configurationMap);
     }
 
@@ -210,14 +211,30 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testExcludeConfig() {
         memoryConfigStorage.clear();
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
-        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/excluded/file", "3\n"));
 
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
-                "/config/file1", new Configuration("/config/file1", "1\n"),
-                "/config/file2", new Configuration("/config/file2", "2\n")
+                "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+                "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
+        ));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testNonTenantFilesOutOfScope() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/dir/file4", "4\n"));
+
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
+        assertEquals(configurationMap, Map.of(
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ));
     }
 
