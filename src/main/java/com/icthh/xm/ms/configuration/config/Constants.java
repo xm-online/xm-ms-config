@@ -27,7 +27,6 @@ public final class Constants {
     public static final String PRIVATE = "/private";
     public static final String API_PREFIX = "/api";
     public static final String TENANTS = "/tenants";
-    public static final String EXTERNALS = "/externals";
     public static final String CONFIG = "/config";
     public static final String INMEMORY = "/inmemory";
     public static final String PROFILE = "/profile";
