@@ -223,6 +223,22 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     @Test
+    @SneakyThrows
+    public void testNonTenantFilesOutOfScope() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/dir/file4", "4\n"));
+
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
+        assertEquals(configurationMap, Map.of(
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
+        ));
+    }
+
+    @Test
     public void testExternalizationWhenOnlyTenantProfileUpdated() {
         memoryConfigStorage.clear();
 
