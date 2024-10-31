@@ -101,6 +101,11 @@ public class MemoryConfigStorageExcludeConfigDecorator implements MemoryConfigSt
     }
 
     @Override
+    public Optional<Set<Configuration>> getExternalConfig(String configKey) {
+        return memoryConfigStorage.getExternalConfig(configKey);
+    }
+
+    @Override
     public void clear() {
         memoryConfigStorage.clear();
     }
