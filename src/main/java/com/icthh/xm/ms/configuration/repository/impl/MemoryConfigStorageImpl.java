@@ -99,7 +99,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Optional<Set<Configuration>> getExternalConfig(String configKey) {
-        return Optional.of(this.externalConfigs.get(configKey));
+        return Optional.ofNullable(this.externalConfigs.get(configKey));
     }
 
     @Override
