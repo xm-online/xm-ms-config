@@ -17,6 +17,8 @@ public interface MemoryConfigStorage {
     List<Configuration> getConfigs(Collection<String> path);
     List<Configuration> getConfigsFromTenant(String tenant);
 
+    Optional<Set<Configuration>> getExternalConfig(String configKey);
+
     Set<String> saveConfigs(List<Configuration> configs);
     Set<String> remove(Collection<String> paths);
 

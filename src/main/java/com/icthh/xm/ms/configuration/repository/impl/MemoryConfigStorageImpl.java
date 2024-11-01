@@ -98,6 +98,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Override
+    public Optional<Set<Configuration>> getExternalConfig(String configKey) {
+        return Optional.ofNullable(this.externalConfigs.get(configKey));
+    }
+
+    @Override
     public List<Configuration> getConfigs(Collection<String> path) {
         return getByPaths(path, ConfigState::getInmemoryConfigurations);
     }

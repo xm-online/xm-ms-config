@@ -158,6 +158,10 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return memoryStorage.getConfig(path);
     }
 
+    public Set<Configuration> findExternalConfiguration(String configurationKey) {
+        return memoryStorage.getExternalConfig(configurationKey).orElse(Set.of());
+    }
+
     public Map<String, Configuration> findTenantConfigurations(List<String> paths, Boolean fetchAll) {
         if (!fetchAll && paths.isEmpty()) {
             return Map.of();
