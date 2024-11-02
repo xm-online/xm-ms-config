@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.addAllByKey;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.filterByTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
@@ -90,8 +91,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Optional<Configuration> getConfig(String path) {
-        List<Configuration> configs = getByPaths(List.of(path), ConfigState::getInmemoryConfigurations);
-        return configs.stream().findFirst();
+        if (path.startsWith(TENANT_PREFIX)) {
+            List<Configuration> configs = getByPaths(List.of(path), ConfigState::getInmemoryConfigurations);
+            return configs.stream().findFirst();
+        } else {
+            String key = path.split("/")[2];
+            return this.externalConfigs.getOrDefault(key, Set.of()).stream()
+                .filter(config -> config.getPath().equals(path))
+                .findFirst();
+        }
     }
 
     @Override
@@ -106,8 +114,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Override
-    public List<Configuration> getConfigs(Collection<String> path) {
-        return getByPaths(path, ConfigState::getInmemoryConfigurations);
+    public List<Configuration> getConfigs(String tenant, Collection<String> paths) {
+        Map<String, Configuration> configs = tenantConfigStates.get(tenant).getInmemoryConfigurations();
+        return paths.stream().map(configs::get).collect(toList());
     }
 
     @Override

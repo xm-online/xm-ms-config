@@ -14,7 +14,7 @@ public interface MemoryConfigStorage {
     Optional<Configuration> getProcessedConfig(String path);
 
     Optional<Configuration> getConfig(String path);
-    List<Configuration> getConfigs(Collection<String> path);
+    List<Configuration> getConfigs(String tenant, Collection<String> path);
     List<Configuration> getConfigsFromTenant(String tenant);
 
     Optional<Set<Configuration>> getExternalConfig(String configKey);

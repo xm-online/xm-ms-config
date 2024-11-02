@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
+import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,6 +34,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -236,6 +238,41 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
             "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
             "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateExternalFiles() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/dir/file4", "4\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file5", "5\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file6", "6\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file7", "7\n"));
+
+        Set<Configuration> configurations = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file6", "6\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), configurations);
+
+        configurationService.updateConfiguration(new Configuration("/config/smth/file6", ""));
+        Set<Configuration> updated = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), updated);
+
+        Optional<Configuration> file3 = configurationService.findConfiguration("/config/file3");
+        assertTrue(file3.isPresent());
+        assertEquals("3\n", file3.get().getContent());
+
+        Optional<Configuration> file4 = configurationService.findConfiguration("/config/dir/file4");
+        assertTrue(file4.isPresent());
+        assertEquals("4\n", file4.get().getContent());
     }
 
     @Test

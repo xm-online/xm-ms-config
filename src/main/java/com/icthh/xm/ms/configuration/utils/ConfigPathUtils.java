@@ -116,7 +116,9 @@ public final class ConfigPathUtils {
     }
 
     public static <T> void addAllByKey(Map<String, Set<T>> map, String key, Set<T> value) {
-        map.computeIfAbsent(key, k -> new HashSet<>()).addAll(value);
+        Set<T> configs = map.computeIfAbsent(key, k -> new HashSet<>());
+        configs.removeAll(value); // remove old configs by path
+        configs.addAll(value); // add new configs
     }
 
     public static Set<String> getTenantsByPaths(Collection<String> paths) {

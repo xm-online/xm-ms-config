@@ -91,8 +91,8 @@ public class MemoryConfigStorageExcludeConfigDecorator implements MemoryConfigSt
     }
 
     @Override
-    public List<Configuration> getConfigs(Collection<String> path) {
-        return memoryConfigStorage.getConfigs(path);
+    public List<Configuration> getConfigs(String tenant, Collection<String> path) {
+        return memoryConfigStorage.getConfigs(tenant, path);
     }
 
     @Override
