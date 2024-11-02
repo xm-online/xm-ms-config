@@ -1,23 +1,25 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONFIGURATION_LOCK;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.addAllByKey;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.filterByTenant;
-import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getFullConfiguration;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathsByTenants;
-import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenants;
 import static java.util.Collections.emptyMap;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.repository.impl.ConfigState.IntermediateConfigState;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
+import com.icthh.xm.ms.configuration.service.dto.FullConfigurationDto;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
+import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import com.icthh.xm.ms.configuration.utils.LockUtils;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -45,7 +48,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public static final String COMMONS_CONFIG = "commons";
 
     private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
-    private final Map<String, Set<Configuration>> externalConfigs = new ConcurrentHashMap<>();
+    private volatile Map<String, Set<Configuration>> externalConfigs = Map.of();
 
     private final List<TenantConfigurationProcessor> configurationProcessors;
     private final TenantAliasTreeStorage tenantAliasTreeStorage;
@@ -121,13 +124,33 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     public Set<String> replaceByConfiguration(List<Configuration> actualConfigs) {
         StopWatch stopWatch = StopWatch.createStarted();
         log.info("Full configuration refresh inmemory started");
-        Map<String, Map<String, Configuration>> configsByTenants = getTenants(actualConfigs);
+
+        var fullConfiguration = getFullConfiguration(actualConfigs);
+        addDeletedExternalConfiguration(fullConfiguration);
+        Map<String, Map<String, Configuration>> configsByTenants = fullConfiguration.getTenantsConfigs();
         configsByTenants.forEach((tenant, configs) -> {
             addDeletedConfiguration(actualConfigs, tenant);
         });
         Set<String> updated = saveConfigs(actualConfigs, true);
         log.info("Full configuration refresh inmemory finished in {} ms", stopWatch.getTime());
         return updated;
+    }
+
+    private Set<Configuration> addDeletedExternalConfiguration(FullConfigurationDto fullConfiguration) {
+        Map<String, Set<Configuration>> newExternalConfigs = fullConfiguration.getExternalConfigs();
+        var externalConfigs = new HashMap<>(this.externalConfigs);
+
+        Set<Configuration> result = new HashSet<>();
+        Set<String> externalConfigKeys = externalConfigs.keySet();
+        for (String key: externalConfigKeys) {
+            Set<Configuration> newConfigs = newExternalConfigs.getOrDefault(key, Set.of());
+            Set<Configuration> oldConfigs = externalConfigs.get(key);
+            oldConfigs.stream()
+                .filter(c -> !newConfigs.contains(c))
+                .map(it -> new Configuration(it.getPath(), ""))
+                .forEach(result::add);
+        }
+        return result;
     }
 
     @Override
@@ -159,13 +182,15 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     private Set<String> saveConfigs(List<Configuration> configs, boolean fullReload) {
         StopWatch stopWatch = StopWatch.createStarted();
+
         log.info("Save configurations to inmemory storage configs.size: {}", configs.size());
+        var fullConfiguration = getFullConfiguration(configs);
+
         log.info("Try to acquire lock for update configuration");
         return LockUtils.runWithLock(lock, applicationProperties.getUpdateConfigWaitTimeSecond(), "memory storage", () -> {
-            log.info("Lock acquired for update configuration in {} ms", stopWatch.getTime());
+            log.info("Lock acquired for update configuration after {} ms", stopWatch.getTime());
 
-            var fullConfiguration = getFullConfiguration(configs, applicationProperties.getExcludeConfigPatterns());
-            this.externalConfigs.putAll(fullConfiguration.getExternalConfigs());
+            updateExternalConfigs(fullConfiguration.getExternalConfigs());
 
             Set<String> changedFiles = fullConfiguration.getChangedFiles();
             Map<String, Map<String, Configuration>> configsByTenants = fullConfiguration.getTenantsConfigs();
@@ -195,10 +220,25 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         });
     }
 
+    private void updateExternalConfigs(Map<String, Set<Configuration>> updatedConfigs) {
+        Map<String, Set<Configuration>> resultConfigs = new HashMap<>();
+        externalConfigs.forEach((key, c) -> addAllByKey(resultConfigs, key, c));
+        updatedConfigs.forEach((key, c) -> addAllByKey(resultConfigs, key, c));
+        resultConfigs.values().forEach(configs -> configs.removeIf(config -> isBlank(config.getContent())));
+
+        var mapWithImmutableValue = new HashMap<String, Set<Configuration>>();
+        resultConfigs.forEach((key, value) -> mapWithImmutableValue.put(key, Set.copyOf(value)));
+        this.externalConfigs = Map.copyOf(mapWithImmutableValue);
+    }
+
+    private FullConfigurationDto getFullConfiguration(List<Configuration> configs) {
+        return ConfigPathUtils.getFullConfiguration(configs, applicationProperties.getExcludeConfigPatterns());
+    }
+
     @Override
     public void clear() {
         tenantConfigStates.clear();
-        externalConfigs.clear();
+        externalConfigs = Map.of();
     }
 
     private IntermediateConfigState requestUpdate(String tenant, Map<String, IntermediateConfigState> forUpdate) {
@@ -208,7 +248,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private static <K, I, O> Map<K, O> convertMapValue(Map<K, I> forUpdate, Function<I, O> mapper) {
-        return forUpdate.entrySet().stream().collect(toMap(Map.Entry::getKey, entry -> mapper.apply(entry.getValue())));
+        return forUpdate.entrySet().stream().collect(toMap(Entry::getKey, entry -> mapper.apply(entry.getValue())));
     }
 
     private static <O> BinaryOperator<O> mergeOverride() {

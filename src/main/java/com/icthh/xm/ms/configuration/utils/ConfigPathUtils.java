@@ -103,10 +103,6 @@ public final class ConfigPathUtils {
         return excludeFilePatterns == null || excludeFilePatterns.stream().noneMatch(fp ->  matcher.match(fp, path));
     }
 
-    public static Map<String, Map<String, Configuration>> getTenants(List<Configuration> configurations) {
-        return getFullConfiguration(configurations, new ArrayList<>()).getTenantsConfigs();
-    }
-
     public static Map<String, Set<String>> getPathsByTenants(Collection<String> paths) {
         Map<String, Set<String>> byTenants = new HashMap<>();
         for (String path : paths) {
@@ -117,6 +113,10 @@ public final class ConfigPathUtils {
                 );
         }
         return byTenants;
+    }
+
+    public static <T> void addAllByKey(Map<String, Set<T>> map, String key, Set<T> value) {
+        map.computeIfAbsent(key, k -> new HashSet<>()).addAll(value);
     }
 
     public static Set<String> getTenantsByPaths(Collection<String> paths) {
