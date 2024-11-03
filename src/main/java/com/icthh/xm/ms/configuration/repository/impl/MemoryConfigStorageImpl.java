@@ -135,7 +135,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         log.info("Full configuration refresh inmemory started");
 
         var fullConfiguration = getFullConfiguration(actualConfigs);
-        addDeletedExternalConfiguration(fullConfiguration);
+        var deletedExternalConfigs = getDeletedExternalConfiguration(fullConfiguration);
+        actualConfigs.addAll(deletedExternalConfigs);
         Map<String, Map<String, Configuration>> configsByTenants = fullConfiguration.getTenantsConfigs();
         configsByTenants.forEach((tenant, configs) -> {
             addDeletedConfiguration(actualConfigs, tenant);
@@ -145,7 +146,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return updated;
     }
 
-    private Set<Configuration> addDeletedExternalConfiguration(FullConfigurationDto fullConfiguration) {
+    private Set<Configuration> getDeletedExternalConfiguration(FullConfigurationDto fullConfiguration) {
         Map<String, Set<Configuration>> newExternalConfigs = fullConfiguration.getExternalConfigs();
         var externalConfigs = new HashMap<>(this.externalConfigs);
 
