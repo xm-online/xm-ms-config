@@ -172,11 +172,12 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             .filter(this::isConfigUnderTenant)
             .collect(toList());
 
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
         if (fetchAll) {
-            return memoryStorage.getConfigsFromTenant(getRequiredTenantKeyValue(tenantContextHolder)).stream()
+            return memoryStorage.getConfigsFromTenant(tenant).stream()
                 .collect(toMap(Configuration::getPath, identity()));
         } else {
-            return memoryStorage.getConfigs(paths).stream().collect(toMap(Configuration::getPath, identity()));
+            return memoryStorage.getConfigs(tenant, paths).stream().collect(toMap(Configuration::getPath, identity()));
         }
     }
 

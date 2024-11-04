@@ -237,7 +237,7 @@ public class ConfigurationServiceUnitTest {
         List<String> paths = List.of("/config/tenants/TENANT_NAME/folder/../../OTHER_TENANT/subfolder", "/invalid/path",
             "/config/tenants/TENANT_NAME/folder/subfolder/../configfile.yml", "/config/tenants/TENANT_NAME/folder/configfile2.yml");
         List<String> okPaths = List.of("/config/tenants/TENANT_NAME/folder/configfile.yml", "/config/tenants/TENANT_NAME/folder/configfile2.yml");
-        when(memoryStorage.getConfigs(eq(okPaths))).thenReturn(List.of(
+        when(memoryStorage.getConfigs(eq("TENANT_NAME"), eq(okPaths))).thenReturn(List.of(
             new Configuration("/config/tenants/TENANT_NAME/folder/configfile.yml", "content"),
             new Configuration("/config/tenants/TENANT_NAME/folder/configfile2.yml", "content2")
         ));
@@ -248,7 +248,7 @@ public class ConfigurationServiceUnitTest {
             "/config/tenants/TENANT_NAME/folder/configfile.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile.yml", "content"),
             "/config/tenants/TENANT_NAME/folder/configfile2.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile2.yml", "content2")
         ), result);
-        verify(memoryStorage).getConfigs(eq(okPaths));
+        verify(memoryStorage).getConfigs(eq("TENANT_NAME"), eq(okPaths));
         verifyZeroInteractions(persistenceRepository);
         verifyNoMoreInteractions(memoryStorage);
     }
