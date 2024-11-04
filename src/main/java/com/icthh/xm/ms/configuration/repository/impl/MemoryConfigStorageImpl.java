@@ -278,9 +278,9 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     private void processConfigurations(Collection<Configuration> configurations, IntermediateConfigState state) {
+        var changedConfigurationFiles = new ArrayList<>(configurations); // copy list before modification in clean and in iteration
         state.cleanProcessedConfiguration(toPathsList(configurations));
         Set<Configuration> configToReprocess = new HashSet<>();
-        var changedConfigurationFiles = new ArrayList<>(configurations); // prevents modifying during iteration
         for(Configuration configuration : changedConfigurationFiles) {
             configurationProcessors.stream()
                 .sorted(Comparator.comparing(TenantConfigurationProcessor::getPriority))
