@@ -109,6 +109,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Override
+    public Set<String> getTenants() {
+        return tenantConfigStates.keySet();
+    }
+
+    @Override
     public Optional<Set<Configuration>> getExternalConfig(String configKey) {
         return Optional.ofNullable(this.externalConfigs.get(configKey));
     }
