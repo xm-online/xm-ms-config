@@ -11,9 +11,13 @@ import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,6 +78,20 @@ public class TenantConfigMockConfiguration {
     @Bean
     public ApplicationReadyEventListener applicationReadyEventListener(){
         return mock(ApplicationReadyEventListener.class);
+    }
+
+    public static AtomicBoolean failOnRefresh = new AtomicBoolean(false);
+    @Bean
+    @Primary
+    public ConfigTopicProducer configTopicProducer() {
+        return new ConfigTopicProducer(null, null) {
+            @Override
+            public void notifyConfigurationChanged(ConfigVersion version, List<String> paths) {
+                if (failOnRefresh.get()) {
+                    throw new RuntimeException("notifyConfigurationChanged not implemented");
+                }
+            }
+        };
     }
 
     @Qualifier("xm-config-rest-template")

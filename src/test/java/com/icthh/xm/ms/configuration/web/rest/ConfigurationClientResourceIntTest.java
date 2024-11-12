@@ -53,9 +53,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "LIFETENANT";
 
-    @MockBean
-    private ConfigTopicProducer configTopicProducer;
-
     @ClassRule
     public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
 

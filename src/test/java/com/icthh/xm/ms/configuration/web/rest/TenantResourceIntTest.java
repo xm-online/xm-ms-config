@@ -42,9 +42,6 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "SUBMAIN";
 
-    @MockBean
-    private ConfigTopicProducer configTopicProducer;
-
     @Autowired
     private TenantResource tenantResource;
 

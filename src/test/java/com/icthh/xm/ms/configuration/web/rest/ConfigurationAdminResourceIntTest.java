@@ -43,9 +43,6 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
     private static final String FULL_PATH_PREFIX = CONFIG + TENANTS;
 
-    @MockBean
-    private ConfigTopicProducer configTopicProducer;
-
     @Autowired
     private ConfigurationAdminResource configurationAdminResource;
 
