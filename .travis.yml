@@ -28,7 +28,7 @@ script:
     fi
   - TAG_ARGS=""
   - for TAG in $TAGS; do
-        TAG_ARGS="$TAG_ARGS -t registry.gitlab.com/xmedigital/xm-enterprise/xm-ms-ee-config:$TAG"
+        TAG_ARGS="$TAG_ARGS -t $DOCKER_REPO:$TAG"
     done
   - docker buildx build --platform linux/amd64,linux/arm64,linux/arm64/v8 \
         $TAG_ARGS \
@@ -56,3 +56,4 @@ branches:
   only:
     - master
     - main
+    - arm
