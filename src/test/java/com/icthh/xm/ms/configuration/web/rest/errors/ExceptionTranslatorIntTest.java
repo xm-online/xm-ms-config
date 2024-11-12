@@ -30,9 +30,6 @@ public class ExceptionTranslatorIntTest extends AbstractSpringBootTest {
     @Autowired
     private ExceptionTranslator exceptionTranslator;
 
-    @MockBean
-    private ConfigTopicProducer configTopicProducer;
-
     private MockMvc mockMvc;
 
     @Before

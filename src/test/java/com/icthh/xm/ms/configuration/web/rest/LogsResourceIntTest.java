@@ -24,9 +24,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
  */
 public class LogsResourceIntTest extends AbstractSpringBootTest {
 
-    @MockBean
-    private ConfigTopicProducer configTopicProducer;
-
     private MockMvc restLogsMockMvc;
 
     @Before

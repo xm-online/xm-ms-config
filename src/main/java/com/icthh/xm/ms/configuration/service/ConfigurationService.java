@@ -5,6 +5,7 @@ import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_IN_M
 import static com.icthh.xm.ms.configuration.domain.ConfigVersion.UNDEFINED_VERSION;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
+import static java.lang.Boolean.TRUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
@@ -92,7 +93,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     @Override
     public void afterPropertiesSet() {
-        refreshConfiguration();
+        boolean sendRefreshOnStartup = TRUE.equals(applicationProperties.getSendRefreshOnStartup());
+        refreshConfiguration(sendRefreshOnStartup);
     }
 
     @Override
@@ -148,7 +150,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public Optional<Configuration> findProcessedConfiguration(String path, Boolean processed) {
-        if (Boolean.TRUE.equals(processed)) {
+        if (TRUE.equals(processed)) {
             return memoryStorage.getProcessedConfig(path);
         }
         return findConfiguration(path);
@@ -233,11 +235,17 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void refreshConfiguration() {
+        refreshConfiguration(true);
+    }
+
+    private void refreshConfiguration(boolean sendNotification) {
         ConfigurationList configurationList = persistenceRepository.findAll();
         handleAliasTreeUpdate(configurationList);
         Set<String> updated = memoryStorage.replaceByConfiguration(configurationList.getData());
         version.addVersion(configurationList.getVersion());
-        notifyChanged(configurationList.getVersion(), updated);
+        if (sendNotification) {
+            notifyChanged(configurationList.getVersion(), updated);
+        }
     }
 
     public void refreshConfiguration(String path) {
