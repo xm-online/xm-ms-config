@@ -1,6 +1,6 @@
 language: java
 jdk:
-- oraclejdk11
+- gradle:6-jdk11
 install: true
 addons:
   sonarcloud:
