@@ -154,6 +154,10 @@ application:
     lep:
         tenant-script-storage: XM_MS_CONFIG
         processor-enabled: false
+    env-externalization-blacklist:
+        - APPLICATION_GIT_SSH_PASS_PHRASE
+        - APPLICATION_GIT_PASSWORD
+        - APPLICATION_GIT_PRIVATE_KEY
 
 gracefulShutdown:
     enabled: false
