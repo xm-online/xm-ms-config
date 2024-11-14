@@ -27,6 +27,7 @@ script:
         TAGS="$PROJECT_VERSION $PROJECT_VERSION-$TRAVIS_BUILD_NUMBER $(echo $PROJECT_VERSION | awk -F '.' '{printf $1"."$2" "$1}') latest";
     fi
   - TAG_ARGS=""
+  - echo $PROJECT_VERSION
   - for TAG in $TAGS;
     do
         TAG_ARGS="$TAG_ARGS -t $DOCKER_REPO:$TAG";
