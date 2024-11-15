@@ -6,3 +6,5 @@ ${environment.variableThatNotDefined}
 ${environment.variableThatNotDefinedWithDefault:-DEFAULT_VALUE}
 ${environment.variableThatDefined}
 ${environment.variableFromFile}
+${environment.filteredVariable}
+${environment.filteredVariableWithDefault:-FILTERED_DEF_VALUE}
