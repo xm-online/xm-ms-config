@@ -104,8 +104,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigsFromTenant(String tenant) {
-        Collection<Configuration> values = tenantConfigStates.get(tenant).getInmemoryConfigurations().values();
-        return List.copyOf(values);
+        return Optional.ofNullable(tenantConfigStates.get(tenant))
+            .map(ConfigState::getInmemoryConfigurations)
+            .map(configs -> List.copyOf(configs.values()))
+            .orElse(List.of());
     }
 
     @Override
@@ -120,7 +122,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigs(String tenant, Collection<String> paths) {
-        Map<String, Configuration> configs = tenantConfigStates.get(tenant).getInmemoryConfigurations();
+        Map<String, Configuration> configs = Optional.ofNullable(tenantConfigStates.get(tenant))
+            .map(ConfigState::getInmemoryConfigurations)
+            .orElse(Map.of());
+
         return paths.stream().map(configs::get).collect(toList());
     }
 
