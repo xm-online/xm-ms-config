@@ -7,7 +7,6 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.commons.exceptions.BusinessException;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
@@ -17,6 +16,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -69,7 +69,7 @@ public class ConfigMapResource {
 
     private void assertUpdateConfigurationAvailable() {
         if (!applicationProperties.isUpdateConfigAvailable()) {
-            throw new BusinessException("Configuration update is not available");
+            throw new AccessDeniedException("Configuration update is not available");
         }
     }
 
