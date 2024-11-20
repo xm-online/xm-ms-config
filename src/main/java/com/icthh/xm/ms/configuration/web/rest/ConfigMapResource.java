@@ -7,7 +7,9 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.exceptions.BusinessException;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
@@ -33,6 +35,7 @@ import java.util.Map;
 public class ConfigMapResource {
 
     private final ConfigurationService configurationService;
+    private final ApplicationProperties applicationProperties;
 
     @GetMapping("/config_map")
     @Timed
@@ -49,10 +52,12 @@ public class ConfigMapResource {
         return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
+    @Deprecated(forRemoval = true)
     @PutMapping(value = "/config")
     @Timed
     public ResponseEntity<Void> updateConfiguration(@RequestBody Configuration configuration,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
+        assertUpdateConfigurationAvailable();
         try {
             configurationService.updateConfiguration(configuration, oldConfigHash);
         } catch (ConcurrentConfigModificationException e) {
@@ -60,6 +65,12 @@ public class ConfigMapResource {
             return ResponseEntity.status(CONFLICT).build();
         }
         return ResponseEntity.ok().build();
+    }
+
+    private void assertUpdateConfigurationAvailable() {
+        if (!applicationProperties.isUpdateConfigAvailable()) {
+            throw new BusinessException("Configuration update is not available");
+        }
     }
 
     @Data

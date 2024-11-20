@@ -135,6 +135,7 @@ xm-config.enabled: true
 xm-config:
     xm-config-url: http://config
     kafka-config-topic: config_topic
+    kafka-config-queue: config_queue
 
 tenant.reject-suspended: false
 
@@ -147,6 +148,10 @@ application:
     kafka-metadata-max-age: 60000 #in milliseconds
     versionCacheMaxSize: 100
     retry:
+        max-attempts: 3
+        delay: 10000 #in milliseconds
+        multiplier: 2
+    config-queue-retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
         multiplier: 2
