@@ -147,6 +147,7 @@ application:
     kafka-system-queue: system_queue
     kafka-metadata-max-age: 60000 #in milliseconds
     versionCacheMaxSize: 100
+    update-config-available: true
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
