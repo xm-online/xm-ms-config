@@ -23,6 +23,7 @@ public class ApplicationProperties {
 
     private GitProperties git;
     private final Retry retry = new Retry();
+    private final Retry configQueueRetry = new Retry();
 
     private Boolean adminApiRestrictionEnabled;
     private List<String> superTenantsList;
@@ -30,6 +31,7 @@ public class ApplicationProperties {
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
     private Integer kafkaMetadataMaxAge;
+    private boolean updateConfigAvailable = true;
 
     private Boolean envConfigExternalizationEnabled;
     private Integer updateConfigWaitTimeSecond = 120;

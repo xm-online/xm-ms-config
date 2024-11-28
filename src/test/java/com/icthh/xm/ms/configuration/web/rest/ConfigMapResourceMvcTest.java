@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -40,6 +41,8 @@ public class ConfigMapResourceMvcTest {
     private MockMvc mockMvc;
     @MockBean
     private ConfigurationService configurationService;
+    @MockBean
+    private ApplicationProperties applicationProperties;
 
     @Test
     @SneakyThrows
@@ -92,6 +95,8 @@ public class ConfigMapResourceMvcTest {
     @Test
     @SneakyThrows
     public void updateConfigMapWithCommit() {
+        when(applicationProperties.isUpdateConfigAvailable()).thenReturn(true);
+
         mockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "someHash").content(toJson(new Configuration("somePath", "some content")))
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk());

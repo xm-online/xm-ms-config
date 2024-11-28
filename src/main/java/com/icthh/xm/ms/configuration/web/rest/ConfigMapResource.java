@@ -8,6 +8,7 @@ import static org.springframework.http.HttpStatus.CONFLICT;
 import com.codahale.metrics.annotation.Timed;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
@@ -15,6 +16,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -33,6 +35,7 @@ import java.util.Map;
 public class ConfigMapResource {
 
     private final ConfigurationService configurationService;
+    private final ApplicationProperties applicationProperties;
 
     @GetMapping("/config_map")
     @Timed
@@ -49,10 +52,12 @@ public class ConfigMapResource {
         return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
+    @Deprecated(forRemoval = true)
     @PutMapping(value = "/config")
     @Timed
     public ResponseEntity<Void> updateConfiguration(@RequestBody Configuration configuration,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
+        assertUpdateConfigurationAvailable();
         try {
             configurationService.updateConfiguration(configuration, oldConfigHash);
         } catch (ConcurrentConfigModificationException e) {
@@ -60,6 +65,12 @@ public class ConfigMapResource {
             return ResponseEntity.status(CONFLICT).build();
         }
         return ResponseEntity.ok().build();
+    }
+
+    private void assertUpdateConfigurationAvailable() {
+        if (!applicationProperties.isUpdateConfigAvailable()) {
+            throw new AccessDeniedException("Configuration update is not available");
+        }
     }
 
     @Data
