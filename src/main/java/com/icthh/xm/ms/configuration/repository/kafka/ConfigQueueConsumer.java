@@ -6,7 +6,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.icthh.xm.commons.config.client.repository.message.ConfigurationUpdateMessage;
 import com.icthh.xm.commons.config.domain.ConfigQueueEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
-import com.icthh.xm.commons.messaging.event.system.SystemEventType;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.ms.configuration.topic.ConfigurationUpdateEventProcessor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +24,8 @@ import static com.icthh.xm.ms.configuration.domain.RequestSourceType.CONFIG_QUEU
 @Slf4j
 @Component
 public class ConfigQueueConsumer {
+
+    private static final String UPDATE_CONFIG = "UPDATE_CONFIG";
 
     private final ConfigurationUpdateEventProcessor configurationUpdateEventProcessor;
     private final XmRequestContextHolder requestContextHolder;
@@ -68,7 +69,7 @@ public class ConfigQueueConsumer {
 
     private void processEventByType(ConfigQueueEvent event) throws IOException {
         switch (event.getEventType().toUpperCase()) {
-            case SystemEventType.UPDATE_CONFIG:
+            case UPDATE_CONFIG:
                 ConfigurationUpdateMessage message = buildConfigUpdateMessage(event.getData());
                 configurationUpdateEventProcessor.process(message, event.getTenantKey());
                 break;
