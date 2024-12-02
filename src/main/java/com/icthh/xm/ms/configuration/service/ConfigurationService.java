@@ -179,7 +179,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             return memoryStorage.getConfigsFromTenant(tenant).stream()
                 .collect(toMap(Configuration::getPath, identity()));
         } else {
-            return memoryStorage.getConfigs(tenant, paths).stream().collect(toMap(Configuration::getPath, identity()));
+            return memoryStorage.getConfigs(tenant, paths).stream()
+                .filter(Objects::nonNull)
+                .collect(toMap(Configuration::getPath, identity()));
         }
     }
 
