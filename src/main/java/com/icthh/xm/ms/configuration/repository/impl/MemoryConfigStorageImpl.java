@@ -126,7 +126,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             .map(ConfigState::getInmemoryConfigurations)
             .orElse(Map.of());
 
-        return paths.stream().map(configs::get).collect(toList());
+        return paths.stream().map(configs::get).filter(Objects::nonNull).collect(toList());
     }
 
     @Override
