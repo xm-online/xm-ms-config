@@ -114,6 +114,7 @@ public class ConfigState {
                 changedFiles.putAll(produced.stream().collect(toMap(it -> it, processedConfiguration::get)));
                 produced.forEach(processedConfiguration::remove);
                 producedByFile.remove(path);
+                processedConfiguration.remove(path);
             });
         }
 
