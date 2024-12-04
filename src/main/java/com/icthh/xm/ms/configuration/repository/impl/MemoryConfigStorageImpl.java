@@ -297,10 +297,21 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 .forEach(processor -> {
                     var configs = processor.safeRun(configuration, state, configToReprocess, externalConfigs);
                     state.addProcessedConfiguration(configuration, configs);
+                    addProducedFileToProcessingQueueIfExist(configuration, state, configToReprocess);
                 });
         }
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
+        }
+    }
+
+    private void addProducedFileToProcessingQueueIfExist(Configuration configuration,
+                                                         IntermediateConfigState state,
+                                                         Set<Configuration> configToReprocess) {
+        Optional<String> producedByFile = state.getProducedByFile(configuration.getPath());
+        if (producedByFile.isPresent() && !producedByFile.get().equals(configuration.getPath())) {
+            Configuration producedConfiguration = state.getInmemoryConfigurations().get(producedByFile.get());
+            configToReprocess.add(producedConfiguration);
         }
     }
 

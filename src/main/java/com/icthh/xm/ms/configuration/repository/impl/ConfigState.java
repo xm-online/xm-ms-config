@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -114,7 +115,6 @@ public class ConfigState {
                 changedFiles.putAll(produced.stream().collect(toMap(it -> it, processedConfiguration::get)));
                 produced.forEach(processedConfiguration::remove);
                 producedByFile.remove(path);
-                processedConfiguration.remove(path);
             });
         }
 
@@ -125,6 +125,16 @@ public class ConfigState {
                 processedConfiguration.putAll(processedByConfig);
                 changedFiles.putAll(processedByConfig);
             }
+        }
+
+        public Optional<String> getProducedByFile(String path) {
+            if (!processedConfiguration.containsKey(path)) {
+                return Optional.empty();
+            }
+            return producedByFile.entrySet().stream()
+                .filter(e -> e.getValue().contains(path))
+                .map(Map.Entry::getKey)
+                .findFirst();
         }
     }
 
