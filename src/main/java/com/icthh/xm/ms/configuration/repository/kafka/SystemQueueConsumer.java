@@ -14,6 +14,7 @@ import com.icthh.xm.commons.permission.domain.Privilege;
 import com.icthh.xm.commons.permission.domain.mapper.PrivilegeMapper;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.ms.configuration.service.PrivilegeService;
+import com.icthh.xm.ms.configuration.service.UpdateJwkEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -33,9 +34,11 @@ import java.util.Set;
 @Service
 public class SystemQueueConsumer {
 
-    private final PrivilegeService privilegeService;
+    public static final String JWK_UPDATE = "JWK_UPDATE";
 
+    private final PrivilegeService privilegeService;
     private final XmRequestContextHolder requestContextHolder;
+    private final UpdateJwkEventService jwkEventService;
 
     private void initRequestContextSourceType() {
         requestContextHolder.getPrivilegedContext().putValue(REQUEST_SOURCE_TYPE, SYSTEM_QUEUE);
@@ -72,7 +75,9 @@ public class SystemQueueConsumer {
                     case SystemEventType.MS_PRIVILEGES:
                         onEventMsPrivileges(event);
                         break;
-
+                    case JWK_UPDATE:
+                        jwkEventService.consumerEvent(event);
+                        break;
                     default:
                         log.info("System event ignored with type='{}', source='{}', event_id='{}'",
                                  event.getEventType(), event.getMessageSource(), event.getEventId());

@@ -33,6 +33,8 @@ public class ApplicationProperties {
     private Integer versionCacheMaxSize = 100;
     private Boolean sendRefreshOnStartup;
 
+    private Integer jwkUpdateDebounceSeconds = 30;
+
     @Getter
     @Setter
     public static class GitProperties {
