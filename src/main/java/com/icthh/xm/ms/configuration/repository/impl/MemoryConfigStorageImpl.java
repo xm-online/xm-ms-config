@@ -104,8 +104,10 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigsFromTenant(String tenant) {
-        Collection<Configuration> values = tenantConfigStates.get(tenant).getInmemoryConfigurations().values();
-        return List.copyOf(values);
+        return Optional.ofNullable(tenantConfigStates.get(tenant))
+            .map(ConfigState::getInmemoryConfigurations)
+            .map(configs -> List.copyOf(configs.values()))
+            .orElse(List.of());
     }
 
     @Override
@@ -120,8 +122,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public List<Configuration> getConfigs(String tenant, Collection<String> paths) {
-        Map<String, Configuration> configs = tenantConfigStates.get(tenant).getInmemoryConfigurations();
-        return paths.stream().map(configs::get).collect(toList());
+        Map<String, Configuration> configs = Optional.ofNullable(tenantConfigStates.get(tenant))
+            .map(ConfigState::getInmemoryConfigurations)
+            .orElse(Map.of());
+
+        return paths.stream().map(configs::get).filter(Objects::nonNull).collect(toList());
     }
 
     @Override
@@ -292,10 +297,21 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 .forEach(processor -> {
                     var configs = processor.safeRun(configuration, state, configToReprocess, externalConfigs);
                     state.addProcessedConfiguration(configuration, configs);
+                    addProducedFileToProcessingQueueIfExist(configuration, state, configToReprocess);
                 });
         }
         if (!configToReprocess.isEmpty()) {
             processConfigurations(configToReprocess, state);
+        }
+    }
+
+    private void addProducedFileToProcessingQueueIfExist(Configuration configuration,
+                                                         IntermediateConfigState state,
+                                                         Set<Configuration> configToReprocess) {
+        Optional<String> producedByFile = state.getProducedByFile(configuration.getPath());
+        if (producedByFile.isPresent() && !producedByFile.get().equals(configuration.getPath())) {
+            Configuration producedConfiguration = state.getInmemoryConfigurations().get(producedByFile.get());
+            configToReprocess.add(producedConfiguration);
         }
     }
 

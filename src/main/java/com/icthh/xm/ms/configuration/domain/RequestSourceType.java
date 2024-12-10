@@ -8,7 +8,8 @@ import java.util.Objects;
 public enum RequestSourceType {
 
     WEB_SERVICE("ws"),
-    SYSTEM_QUEUE("sysqueue");
+    SYSTEM_QUEUE("sysqueue"),
+    CONFIG_QUEUE("confqueue");
 
     private final String name;
 
