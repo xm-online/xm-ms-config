@@ -37,8 +37,10 @@ public class ApplicationProperties {
     private Integer updateConfigWaitTimeSecond = 120;
     private Integer versionCacheMaxSize = 100;
     private Boolean sendRefreshOnStartup;
+    private Integer jwkUpdateDebounceSeconds = 30;
 
     private Set<String> envExternalizationBlacklist = emptySet();
+
 
     @Getter
     @Setter

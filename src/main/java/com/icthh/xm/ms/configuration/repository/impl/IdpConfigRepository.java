@@ -1,28 +1,32 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN;
+import static org.springframework.util.CollectionUtils.isEmpty;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.client.api.RefreshableConfiguration;
 import com.icthh.xm.commons.domain.idp.IdpConfigUtils;
 import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer;
+import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.Features;
 import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig.IdpConfigContainer.IdpPublicClientConfig;
-import com.icthh.xm.ms.configuration.service.JwksService;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
-import org.springframework.util.CollectionUtils;
-
+import com.icthh.xm.ms.configuration.service.UpdateJwkEventService;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN;
+import java.util.concurrent.ScheduledFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 
 /**
  * This class reads and process IDP clients public configuration for each tenant.
@@ -34,9 +38,6 @@ import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_C
 public class IdpConfigRepository implements RefreshableConfiguration {
 
     private static final String KEY_TENANT = "tenant";
-    private static final String IDP_EMPTY_CONFIG = "idp:";
-
-    private final JwksService jwksService;
 
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     private final AntPathMatcher matcher = new AntPathMatcher();
@@ -46,13 +47,16 @@ public class IdpConfigRepository implements RefreshableConfiguration {
      */
     private final Map<String, Map<String, IdpPublicClientConfig>> idpClientConfigs = new ConcurrentHashMap<>();
 
-    /**
-     * In memory storage.
-     * Stores information about tenant IDP clients public configuration that currently in process.
-     * <p/>
-     * We need to store this information in memory to avoid corruption previously registered in-memory tenant clients config
-     */
-    private final Map<String, Map<String, IdpPublicClientConfig>> tmpValidIdpClientPublicConfigs = new ConcurrentHashMap<>();
+    private final UpdateJwkEventService jwksService;
+    private final ThreadPoolTaskScheduler scheduler = createScheduler();
+    private final Map<String, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    private final UpdateJwkEventService updateJwkEventService;
+
+    private static ThreadPoolTaskScheduler createScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.initialize();
+        return scheduler;
+    }
 
     @Override
     public boolean isListeningConfiguration(String updatedKey) {
@@ -73,84 +77,85 @@ public class IdpConfigRepository implements RefreshableConfiguration {
         try {
             String tenantKey = extractTenantKeyFromPath(configKey);
 
-            List<IdpPublicClientConfig> rawIdpPublicClientConfigs =
-                processPublicClientsConfiguration(tenantKey, configKey, config);
+            IdpPublicConfig idpPublicConfig = parseConfig(tenantKey, config);
 
-            boolean isRawClientsConfigurationEmpty = CollectionUtils.isEmpty(rawIdpPublicClientConfigs);
-            boolean isValidClientsConfigurationEmpty = CollectionUtils.isEmpty(tmpValidIdpClientPublicConfigs.get(tenantKey));
+            Map<String, IdpPublicClientConfig> oldClients = getIdpClientConfigsByTenantKey(tenantKey);
+            Map<String, IdpPublicClientConfig> newConfigs = processPublicClientsConfiguration(configKey, idpPublicConfig);
+            scheduleUpdateByTtl(configKey, newConfigs, idpPublicConfig, tenantKey);
 
-            if (isRawClientsConfigurationEmpty && isValidClientsConfigurationEmpty) {
-                log.warn("For tenant [{}] provided IDP public client configs not present." +
+            if (isEmpty(newConfigs)) {
+                log.warn("For tenant {} provided IDP public client configs not present." +
                     "Removing client configs from storage and jwks keys from file system", tenantKey);
-                //remove all previously created jwks keys from storage
-                jwksService.deletePublicJwksConfigurations(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
                 idpClientConfigs.remove(tenantKey);
-                return;
+            } else {
+                log.info("Update IDP public clients for tenant {} to {}", tenantKey, newConfigs.keySet());
+                idpClientConfigs.put(tenantKey, newConfigs);
             }
 
-            if (isValidClientsConfigurationEmpty) {
-                log.info("For tenant [{}] provided IDP public client configs not applied.", tenantKey);
-                return;
-            }
-            //remove all previously created jwks keys from storage
-            jwksService.deletePublicJwksConfigurations(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
-            updateInMemoryConfig(tenantKey);
-            jwksService.createPublicJwksConfiguration(tenantKey, getIdpClientConfigsByTenantKey(tenantKey));
-
+            jwksService.sendEvent(tenantKey, oldClients.keySet(), newConfigs);
         } catch (Exception e) {
-            log.error("Error occurred during processing idp config: {}, {}", e.getMessage(), e);
+            log.error("Error occurred during processing idp config: {}", e.getMessage(), e);
         }
-
     }
 
-    private List<IdpPublicClientConfig> processPublicClientsConfiguration(String tenantKey, String configKey, String config) {
+    private void scheduleUpdateByTtl(String configKey, Map<String, IdpPublicClientConfig> config, IdpPublicConfig idpPublicConfig, String tenantKey) {
+        var existsJob = tasks.remove(tenantKey);
+        if (existsJob != null) {
+            log.info("Cancel scheduled update for tenant [{}]", tenantKey);
+            existsJob.cancel(false);
+        }
+
+        int jwkTtl = getJwkTtl(idpPublicConfig);
+        if (jwkTtl < 0 || isEmpty(config)) {
+            log.warn("JWK TTL is not set for tenant [{}]. JWK update will not be scheduled", tenantKey);
+            return;
+        }
+
+        var future = scheduler.schedule(() -> {
+            log.info("Start scheduled update for tenant [{}]", tenantKey);
+            updateJwkEventService.emitUpdateEvent(configKey);
+        }, Instant.now().plusSeconds(jwkTtl));
+        tasks.put(tenantKey, future);
+        log.info("Scheduled update for tenant [{}] in [{}] seconds", tenantKey, jwkTtl);
+    }
+
+    private Integer getJwkTtl(IdpPublicConfig idpPublicConfig) {
+        return Optional.ofNullable(idpPublicConfig)
+            .map(IdpPublicConfig::getConfig)
+            .map(IdpConfigContainer::getFeatures)
+            .map(Features::getJwkTtl)
+            .orElse(-1);
+    }
+
+    private Map<String, IdpPublicClientConfig> processPublicClientsConfiguration(String configKey, IdpPublicConfig config) {
         if (!matcher.match(IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN, configKey)) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
 
         List<IdpPublicClientConfig> rawIdpPublicClientConfigs =
-            Optional.ofNullable(parseConfig(tenantKey, config, IdpPublicConfig.class))
+            Optional.ofNullable(config)
             .map(IdpPublicConfig::getConfig)
-            .map(IdpPublicConfig.IdpConfigContainer::getClients)
+            .map(IdpConfigContainer::getClients)
             .orElseGet(Collections::emptyList);
 
+        Map<String, IdpPublicClientConfig> idpClientPublicConfigs = new HashMap<>();
         rawIdpPublicClientConfigs
             .stream()
             .filter(IdpConfigUtils::isPublicClientConfigValid)
-            .forEach(publicIdpConf -> setIdpPublicClientConfig(tenantKey, publicIdpConf));
+            .forEach(publicIdpConf -> idpClientPublicConfigs.put(publicIdpConf.getKey(), publicIdpConf));
 
-        return rawIdpPublicClientConfigs;
+        return idpClientPublicConfigs;
     }
 
     @SneakyThrows
-    private <T> T parseConfig(String tenantKey, String config, Class<T> configType) {
-        T parsedConfig;
+    private IdpPublicConfig parseConfig(String tenantKey, String config) {
         try {
-            parsedConfig = objectMapper.readValue(config, configType);
+            return objectMapper.readValue(config, IdpPublicConfig.class);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong during attempt to read config [{}] for tenant [{}]. " +
                 "Creating default config.", config, tenantKey, e);
-            parsedConfig = objectMapper.readValue(IDP_EMPTY_CONFIG, configType);
+            return new IdpPublicConfig();
         }
-        return parsedConfig;
-    }
-
-    private void setIdpPublicClientConfig(String tenantKey, IdpPublicClientConfig publicConfig) {
-        tmpValidIdpClientPublicConfigs
-            .computeIfAbsent(tenantKey, key -> new HashMap<>())
-            .put(publicConfig.getKey(), publicConfig);
-    }
-
-    /**
-     * <p>
-     * Basing on input configuration method removes all previously registered clients for specified tenant
-     * to avoid redundant clients registration presence
-     * </p>
-     *
-     * @param tenantKey tenant key
-     */
-    private void updateInMemoryConfig(String tenantKey) {
-        idpClientConfigs.put(tenantKey, tmpValidIdpClientPublicConfigs.remove(tenantKey));
     }
 
     private String extractTenantKeyFromPath(String configKey) {
@@ -159,7 +164,8 @@ public class IdpConfigRepository implements RefreshableConfiguration {
             .get(KEY_TENANT);
     }
 
-    public Map<String, IdpPublicClientConfig> getIdpClientConfigsByTenantKey(String tenantKey) {
-        return idpClientConfigs.getOrDefault(tenantKey, new HashMap<>());
+    private Map<String, IdpPublicClientConfig> getIdpClientConfigsByTenantKey(String tenantKey) {
+        return idpClientConfigs.getOrDefault(tenantKey, Map.of());
     }
+
 }
