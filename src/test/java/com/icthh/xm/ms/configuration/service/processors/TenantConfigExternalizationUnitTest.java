@@ -91,6 +91,14 @@ public class TenantConfigExternalizationUnitTest {
     }
 
     @Test
+    public void overrideBoolean() {
+        String value = "false";
+        environmentVariables.set("XM_integrateWith3rdParty", value);
+        Object actual = overrideParameterAndReturnResult(asList("integrateWith3rdParty"));
+        assertEquals(false, actual);
+    }
+
+    @Test
     public void overrideLongNumbers() {
         String value = "" + 1236484563242346716L;
         environmentVariables.set("XM_inviteExpireTime", value);
