@@ -135,6 +135,7 @@ xm-config.enabled: true
 xm-config:
     xm-config-url: http://config
     kafka-config-topic: config_topic
+    kafka-config-queue: config_queue
 
 tenant.reject-suspended: false
 
@@ -145,7 +146,13 @@ application:
     kafka-enabled: true
     kafka-system-queue: system_queue
     kafka-metadata-max-age: 60000 #in milliseconds
+    versionCacheMaxSize: 100
+    update-config-available: true
     retry:
+        max-attempts: 3
+        delay: 10000 #in milliseconds
+        multiplier: 2
+    config-queue-retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
         multiplier: 2
@@ -153,6 +160,10 @@ application:
     lep:
         tenant-script-storage: XM_MS_CONFIG
         processor-enabled: false
+    env-externalization-blacklist:
+        - APPLICATION_GIT_SSH_PASS_PHRASE
+        - APPLICATION_GIT_PASSWORD
+        - APPLICATION_GIT_PRIVATE_KEY
 
 gracefulShutdown:
     enabled: false

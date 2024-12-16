@@ -1,0 +1,44 @@
+---
+idp:
+  features:
+    jwkTtl: 3
+    stateful: false
+  clients:
+    - key: TestClient1
+      name: name1
+      clientId: clientId1
+      redirectUri: redirectUri1
+      openIdConfig:
+        issuer: https://test1.com
+        authorizationEndpoint:
+          uri: https://test1.com
+          responseType: code
+        tokenEndpoint:
+          uri: https://test1.com
+          grantType: authorization_code
+        userinfoEndpoint:
+          uri: https://test1.com
+          userNameAttributeName: email
+        endSessionEndpoint:
+          uri: https://test1.com
+        jwksEndpoint:
+          uri: https://test1.com/certs
+    - key: TestClient2
+      name: name2
+      clientId: clientId2
+      redirectUri: redirectUri2
+      openIdConfig:
+          issuer: https://test2.com
+          authorizationEndpoint:
+              uri: https://test2.com
+              responseType: code
+          tokenEndpoint:
+              uri: https://test2.com
+              grantType: authorization_code
+          userinfoEndpoint:
+              uri: https://test2.com
+              userNameAttributeName: email
+          endSessionEndpoint:
+              uri: https://test2.com
+          jwksEndpoint:
+              uri: https://test2.com/certs

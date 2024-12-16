@@ -1,33 +1,35 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface MemoryConfigStorage {
 
-    Map<String, Configuration> getPrivateConfigs();
+    Map<String, Configuration> getProcessedConfigs();
+    Map<String, Configuration> getProcessedConfigs(Collection<String> paths);
+    Optional<Configuration> getProcessedConfig(String path);
 
-    List<Configuration> getConfigList();
+    Optional<Configuration> getConfig(String path);
+    List<Configuration> getConfigs(String tenant, Collection<String> path);
+    List<Configuration> getConfigsFromTenant(String tenant);
 
-    Configuration getConfigByPath(String path);
+    Set<String> getTenants();
 
-    List<String> removeExactOrByPrefix(String path);
+    Optional<Set<Configuration>> getExternalConfig(String configKey);
 
-    Set<String> getConfigPathsList(String tenant);
+    Set<String> saveConfigs(List<Configuration> configs);
+    Set<String> remove(Collection<String> paths);
 
-    void reprocess(String tenant);
+    Set<String> replaceByConfiguration(List<Configuration> actualConfigs);
+    Set<String> replaceByConfigurationInTenant(List<Configuration> actualConfigs, String tenant);
+    Set<String> replaceByConfigurationInTenants(List<Configuration> actualConfigs, List<String> tenants);
 
-    boolean removeConfig(String path);
+    default void clear() {
+        replaceByConfiguration(List.of());
+    }
 
-    void clear();
-
-    Set<String> updateConfig(String path, Configuration config);
-
-    Set<String> updateConfigs(List<Configuration> configs);
-
-    Set<String> refreshStorage(List<Configuration> actualConfigs);
-
-    Set<String> refreshStorage(List<Configuration> actualConfigs, String tenant);
 }

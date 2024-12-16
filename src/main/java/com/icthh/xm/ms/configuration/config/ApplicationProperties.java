@@ -7,6 +7,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+
+import static java.util.Collections.emptySet;
 
 /**
  * Properties specific to JHipster.
@@ -20,6 +23,7 @@ public class ApplicationProperties {
 
     private GitProperties git;
     private final Retry retry = new Retry();
+    private final Retry configQueueRetry = new Retry();
 
     private Boolean adminApiRestrictionEnabled;
     private List<String> superTenantsList;
@@ -27,9 +31,16 @@ public class ApplicationProperties {
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
     private Integer kafkaMetadataMaxAge;
+    private boolean updateConfigAvailable = true;
 
     private Boolean envConfigExternalizationEnabled;
     private Integer updateConfigWaitTimeSecond = 120;
+    private Integer versionCacheMaxSize = 100;
+    private Boolean sendRefreshOnStartup;
+    private Integer jwkUpdateDebounceSeconds = 30;
+
+    private Set<String> envExternalizationBlacklist = emptySet();
+
 
     @Getter
     @Setter

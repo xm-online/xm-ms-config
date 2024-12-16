@@ -4,7 +4,6 @@ import com.icthh.xm.commons.logging.util.MdcUtils;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.ms.configuration.client.OAuth2InterceptedFeignConfiguration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.DefaultProfileUtil;
 import io.github.jhipster.config.JHipsterConstants;
@@ -16,7 +15,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.core.env.Environment;
 
 import javax.annotation.PostConstruct;
@@ -27,9 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 @ComponentScan(
-    value = "com.icthh.xm",
-    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE,
-        classes = OAuth2InterceptedFeignConfiguration.class)
+    value = "com.icthh.xm"
 )
 @SpringBootApplication
 @EnableConfigurationProperties({ApplicationProperties.class})

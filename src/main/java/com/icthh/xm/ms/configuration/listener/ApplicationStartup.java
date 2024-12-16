@@ -1,8 +1,10 @@
 package com.icthh.xm.ms.configuration.listener;
 
+import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import com.icthh.xm.commons.permission.inspector.PrivilegeInspector;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import com.icthh.xm.ms.configuration.repository.kafka.ConfigQueueConsumer;
 import com.icthh.xm.ms.configuration.repository.kafka.SystemQueueConsumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,8 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     private final ApplicationProperties applicationProperties;
     private final ConsumerFactory<String, String> consumerFactory;
     private final SystemQueueConsumer systemQueueConsumer;
+    private final ConfigQueueConsumer configQueueConsumer;
+    private final XmConfigProperties xmConfigProperties;
     private final KafkaProperties kafkaProperties;
     private final PrivilegeInspector privilegeInspector;
 
@@ -43,10 +47,11 @@ public class ApplicationStartup implements ApplicationListener<ApplicationReadyE
     }
 
     private void createKafkaConsumers() {
-        createSystemConsumer(applicationProperties.getKafkaSystemQueue(), systemQueueConsumer::consumeEvent);
+        createKafkaConsumer(applicationProperties.getKafkaSystemQueue(), systemQueueConsumer::consumeEvent);
+        createKafkaConsumer(xmConfigProperties.getKafkaConfigQueue(), configQueueConsumer::consumeEvent);
     }
 
-    private void createSystemConsumer(String name, MessageListener<String, String> consumeEvent) {
+    private void createKafkaConsumer(String name, MessageListener<String, String> consumeEvent) {
         log.info("Creating kafka consumer for topic {}", name);
         ContainerProperties containerProps = new ContainerProperties(name);
 

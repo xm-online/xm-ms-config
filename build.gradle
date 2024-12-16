@@ -263,6 +263,7 @@ dependencies {
     implementation "io.dropwizard.metrics:metrics-servlet"
     implementation "io.dropwizard.metrics:metrics-servlets"
 
+    implementation "com.icthh.xm.commons:xm-commons-config:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-idp:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-i18n:${xm_commons_version}"
@@ -270,6 +271,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-lep:${xm_commons_version}"
+    implementation "com.icthh.xm.commons:xm-commons-lep-groovy:${xm_commons_version}"
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:${jgit_version}") {
         exclude group: 'com.jcraft', module: 'jsch'
@@ -297,6 +299,11 @@ wrapper {
 task stage(dependsOn: 'bootWar') {
 }
 
-compileJava.dependsOn processResources
+compileJava {
+    dependsOn processResources
+    // add method parameters names to .class (used by LEP scripts)
+    options.compilerArgs << '-parameters'
+}
+
 processResources.dependsOn cleanResources,bootBuildInfo
 bootBuildInfo.mustRunAfter cleanResources

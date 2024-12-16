@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_ENV_PATTERN;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME;
@@ -33,17 +35,18 @@ import static org.apache.commons.text.StringSubstitutor.replace;
 
 @Slf4j
 @Component
-public class EnvConfigExternalizationFromFile implements PrivateConfigurationProcessor {
+public class EnvConfigExternalizationFromFile implements TenantConfigurationProcessor {
 
     private final Map<String, String> environment;
     private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
     private final Map<String, TenantProfileEntry> tenantProfileCash = new ConcurrentHashMap<>();
     private final AntPathMatcher matcher = new AntPathMatcher();
 
-    public EnvConfigExternalizationFromFile() {
-        Map<String, String> env = new HashMap<>();
-        getenv().forEach((key, value) -> env.put("environment." + key, value));
-        this.environment = env;
+    public EnvConfigExternalizationFromFile(ApplicationProperties applicationProperties) {
+        Set<String> blacklist = applicationProperties.getEnvExternalizationBlacklist();
+        this.environment = getenv().entrySet().stream()
+            .filter(e -> !blacklist.contains(e.getKey()))
+            .collect(Collectors.toMap(e -> "environment." + e.getKey(), Map.Entry::getValue));
     }
 
     @Override
@@ -56,7 +59,8 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
     public List<Configuration> processConfiguration(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage,
-                                                    Set<Configuration> configToReprocess) {
+                                                    Set<Configuration> configToReprocess,
+                                                    Map<String, Set<Configuration>> externalConfigs) {
 
         Map<String, String> tenantEnvs = new HashMap<>();
         Map<String, String> tenantProfile = buildTenantProfile(configuration, originalStorage);
@@ -73,7 +77,6 @@ public class EnvConfigExternalizationFromFile implements PrivateConfigurationPro
         if (!content.equals(originalContent)) {
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
-            targetStorage.remove(configuration.getPath());
             return emptyList();
         }
     }

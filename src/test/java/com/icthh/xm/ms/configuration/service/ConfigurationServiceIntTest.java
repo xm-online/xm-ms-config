@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
+import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,13 +28,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 
-import static com.icthh.xm.ms.configuration.service.TenantAliasService.TENANT_ALIAS_CONFIG;
+import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -50,6 +53,9 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @Autowired
     MemoryConfigStorage memoryConfigStorage;
+
+    @Autowired
+    TenantAliasRefreshableConfiguration tenantAliasRefreshableConfiguration;
 
     @Autowired
     JGitRepository repository;
@@ -157,11 +163,11 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Configuration mainValue = mockConfig("MAIN", "mainValue", "/some-config.yml");
         String content = mainValue.getContent();
 
-        configurationService.updateConfigurationInMemory(mainValue);
+        configurationService.updateConfigurationInMemory(List.of(mainValue));
 
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
-        doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
         verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(filesList("/some-config.yml")));
+        doAssertions(() -> assertAllFromMain(content, privateMap, "/some-config.yml"));
     }
 
     @Test
@@ -175,31 +181,31 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.deleteConfigurations(paths);
         memoryConfigStorage.clear();
 
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
-        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/excluded/file", "3\n"));
 
         Mockito.reset(configTopicProducer);
 
         configurationService.refreshConfiguration();
-        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), eq(List.of(
-                "/config/file2", "/config/file1"
-        )));
+        verify(configTopicProducer).notifyConfigurationChanged(any(ConfigVersion.class), argThat(a -> a.containsAll(List.of(
+            "/config/tenants/file2", "/config/tenants/file1"
+        ))));
     }
 
     @Test
     @SneakyThrows
     public void testUpdateFromZipFile() {
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file3", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file3", "1\n"));
         ConfigVersion commit = configurationService.updateConfigurationsFromZip(
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         String version = new ObjectMapper().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
-                "/config/file1", new Configuration("/config/file1", "1\n"),
-                "/config/file2", new Configuration("/config/file2", "2\n")
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ), configurationMap);
     }
 
@@ -207,15 +213,105 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testExcludeConfig() {
         memoryConfigStorage.clear();
-        configurationService.updateConfiguration(new Configuration("/config/file1", "1\n"));
-        configurationService.updateConfiguration(new Configuration("/config/file2", "2\n"));
-        configurationService.updateConfiguration(new Configuration("/config/excluded/file", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/excluded/file", "3\n"));
 
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
-                "/config/file1", new Configuration("/config/file1", "1\n"),
-                "/config/file2", new Configuration("/config/file2", "2\n")
+                "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+                "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testNonTenantFilesOutOfScope() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/dir/file4", "4\n"));
+
+        Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
+        assertEquals(configurationMap, Map.of(
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
+        ));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateExternalFiles() {
+        memoryConfigStorage.clear();
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file1", "1\n"));
+        configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "2\n"));
+        configurationService.updateConfiguration(new Configuration("/config/file3", "3\n"));
+        configurationService.updateConfiguration(new Configuration("/config/dir/file4", "4\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file5", "5\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file6", "6\n"));
+        configurationService.updateConfiguration(new Configuration("/config/smth/file7", "7\n"));
+
+        Set<Configuration> configurations = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file6", "6\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), configurations);
+
+        configurationService.updateConfiguration(new Configuration("/config/smth/file6", ""));
+        Set<Configuration> updated = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), updated);
+
+        Optional<Configuration> file3 = configurationService.findConfiguration("/config/file3");
+        assertTrue(file3.isPresent());
+        assertEquals("3\n", file3.get().getContent());
+
+        Optional<Configuration> file4 = configurationService.findConfiguration("/config/dir/file4");
+        assertTrue(file4.isPresent());
+        assertEquals("4\n", file4.get().getContent());
+    }
+
+    @Test
+    @SneakyThrows
+    public void testUpdateExternalFilesDuringFullRefresh() {
+        memoryConfigStorage.clear();
+        repository.saveAll(List.of(
+            new Configuration("/config/tenants/file1", "1\n"),
+            new Configuration("/config/tenants/file2", "2\n"),
+            new Configuration("/config/file3", "3\n"),
+            new Configuration("/config/dir/file4", "4\n"),
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file6", "6\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), Map.of());
+        configurationService.refreshConfiguration();
+
+        Set<Configuration> configurations = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file6", "6\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), configurations);
+
+        repository.deleteAll(List.of("/config/smth/file6"));
+        configurationService.refreshConfiguration();
+        Set<Configuration> updated = configurationService.findExternalConfiguration("smth");
+        assertEquals(Set.of(
+            new Configuration("/config/smth/file5", "5\n"),
+            new Configuration("/config/smth/file7", "7\n")
+        ), updated);
+
+        Optional<Configuration> file3 = configurationService.findConfiguration("/config/file3");
+        assertTrue(file3.isPresent());
+        assertEquals("3\n", file3.get().getContent());
+
+        Optional<Configuration> file4 = configurationService.findConfiguration("/config/dir/file4");
+        assertTrue(file4.isPresent());
+        assertEquals("4\n", file4.get().getContent());
     }
 
     @Test
@@ -226,9 +322,9 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         String tenantEnvValuePath = "/config/tenants/XM/tenant-profile.yml";
         Configuration tenantProfile = new Configuration(tenantEnvValuePath, TestUtil.loadFile("/tenant-profile.yml"));
 
-        configurationService.updateConfigurationInMemory(mainValue);
+        configurationService.updateConfigurationInMemory(List.of(mainValue));
         // update tenant profile after main value
-        configurationService.updateConfigurationInMemory(tenantProfile);
+        configurationService.updateConfigurationInMemory(List.of(tenantProfile));
 
         String content = mockConfig("XM", "VALUE_FROM_FILE", "/some-config.yml").getContent();
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(mainValue.getPath()));
@@ -243,8 +339,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         String tenantEnvValuePath = "/config/tenants/MAIN/tenant-profile.yml";
         Configuration tenantProfile = new Configuration(tenantEnvValuePath, TestUtil.loadFile("/tenant-profile.yml"));
 
-        configurationService.updateConfigurationInMemory(tenantProfile);
-        configurationService.updateConfigurationInMemory(mainValue);
+        configurationService.updateConfigurationInMemory(List.of(tenantProfile));
+        configurationService.updateConfigurationInMemory(List.of(mainValue));
 
         String content = mockConfig("MAIN", "VALUE_FROM_FILE", "/some-config.yml").getContent();
 
@@ -252,15 +348,16 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         assertEquals(content, privateMap.get(pathInTenant("MAIN", "/some-config.yml")).getContent());
 
         Configuration configWithoutVariables = mockConfig("MAIN", "SOME_MOCK_VALUE", "/some-config.yml");
-        configurationService.updateConfigurationInMemory(configWithoutVariables);
+        configurationService.updateConfigurationInMemory(List.of(configWithoutVariables));
         Map<String, Configuration> newPrivateMap = configurationService.getConfigurationMap(null, filesList("/some-config.yml"));
         assertEquals(configWithoutVariables.getContent(), newPrivateMap.get(pathInTenant("MAIN", "/some-config.yml")).getContent());
     }
 
     private Map<String, Configuration> getPromPublicApi() {
-        return filesList("/tenant-config.yml").stream().map(configurationService::findConfiguration)
-                .filter(Optional::isPresent).map(Optional::get)
-                .collect(toMap(Configuration::getPath, identity()));
+        List<String> strings = filesList("/tenant-config.yml");
+        List<Configuration> configList = strings.stream().map(configurationService::findConfiguration)
+            .filter(Optional::isPresent).map(Optional::get).collect(toList());
+        return configList.stream().collect(toMap(Configuration::getPath, identity()));
     }
 
     private void doAssertions(Runnable assertion) {
@@ -293,8 +390,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     private void loadTenantAliasConfig() {
-        Configuration configuration = new Configuration(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
-        configurationService.updateConfigurationInMemory(configuration);
+        tenantAliasRefreshableConfiguration.onRefresh(TENANT_ALIAS_CONFIG, loadFile("tenantAliasTree.yml"));
     }
 
     private Configuration mockTenantConfig(String tenant, String specialValue) {

@@ -16,7 +16,7 @@
 
 spring:
     application:
-        name: configuration
+        name: config
     jackson:
         serialization.write_dates_as_timestamps: false
     cache:
@@ -92,7 +92,7 @@ jhipster:
 # https://jhipster.github.io/common-application-properties/
 # ===================================================================
 
-xm-config.enabled: true
+xm-config.enabled: false
 xm-config:
     xm-config-url: http://config
     kafka-config-topic: config_topic
@@ -112,4 +112,5 @@ application:
         tenant-script-storage: XM_MS_CONFIG
         processor-enabled: true
     excludeConfigPatterns:
-        - "/config/excluded/**"
+        - "/config/tenants/excluded/**"
+    jwk-update-debounce-seconds: 2

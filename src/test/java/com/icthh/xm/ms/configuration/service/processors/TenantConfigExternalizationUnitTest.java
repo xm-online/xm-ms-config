@@ -15,6 +15,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -126,7 +127,7 @@ public class TenantConfigExternalizationUnitTest {
     private Object overrideParameterAndReturnResult(List<String> path) {
         Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", TestUtil.loadFile("tenant-config.yml"));
         List<Configuration> processedConfigurations = new TenantConfigExternalization()
-                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>());
+                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
         Configuration processedConfiguration = configuration;
         if (!processedConfigurations.isEmpty()) {
             processedConfiguration = processedConfigurations.get(0);
