@@ -2,8 +2,8 @@ package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static com.icthh.xm.ms.configuration.utils.FileUtils.countOfFilesInDirectoryRecursively;
-import static com.icthh.xm.ms.configuration.utils.FileUtils.listOfFilesInDirectoryRecursively;
 import static com.icthh.xm.ms.configuration.utils.FileUtils.readFileToString;
+import static com.icthh.xm.ms.configuration.utils.FileUtils.writeAsString;
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
@@ -343,7 +343,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             byte[] content = loader.getBytes();
             revWalk.dispose();
 
-            return new String(content, UTF_8);
+            return writeAsString(path, content);
         }
     }
 

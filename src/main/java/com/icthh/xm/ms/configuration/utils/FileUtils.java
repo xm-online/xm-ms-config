@@ -1,13 +1,16 @@
 package com.icthh.xm.ms.configuration.utils;
 
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class FileUtils {
@@ -15,7 +18,17 @@ public class FileUtils {
     @SneakyThrows
     public static String readFileToString(String filePath) {
         byte[] encoded = Files.readAllBytes(Paths.get(filePath));
-        return new String(encoded, StandardCharsets.UTF_8);
+        return writeAsString(filePath, encoded);
+    }
+
+    public static String writeAsString(String filePath, byte[] content) {
+        List<String> binaryFileTypes = ApplicationProperties.get().getBinaryFileTypes();
+
+        if (binaryFileTypes.stream().anyMatch(filePath::endsWith)) {
+            return Base64.getEncoder().encodeToString(content);
+        }
+
+        return new String(content, StandardCharsets.UTF_8);
     }
 
     @SneakyThrows

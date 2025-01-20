@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.config;
 import com.icthh.xm.commons.lep.TenantScriptStorage;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.Collections;
@@ -19,7 +20,9 @@ import static java.util.Collections.emptySet;
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 @Getter
 @Setter
-public class ApplicationProperties {
+public class ApplicationProperties implements InitializingBean {
+
+    private static ApplicationProperties instance;
 
     private GitProperties git;
     private final Retry retry = new Retry();
@@ -28,6 +31,7 @@ public class ApplicationProperties {
     private Boolean adminApiRestrictionEnabled;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
+    private List<String> binaryFileTypes;
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
     private Integer kafkaMetadataMaxAge;
@@ -41,6 +45,14 @@ public class ApplicationProperties {
 
     private Set<String> envExternalizationBlacklist = emptySet();
 
+    @Override
+    public void afterPropertiesSet() {
+        instance = this;
+    }
+
+    public static ApplicationProperties get() {
+        return instance;
+    }
 
     @Getter
     @Setter
