@@ -23,12 +23,12 @@ public class FileUtils {
 
     public static String writeAsString(String filePath, byte[] content) {
         List<String> binaryFileTypes = ApplicationProperties.get().getBinaryFileTypes();
-
-        if (binaryFileTypes.stream().anyMatch(filePath::endsWith)) {
-            return Base64.getEncoder().encodeToString(content);
-        }
-
-        return new String(content, StandardCharsets.UTF_8);
+        return binaryFileTypes
+            .stream()
+            .filter(filePath::endsWith)
+            .findAny()
+            .map(s -> Base64.getEncoder().encodeToString(content))
+            .orElse(new String(content, StandardCharsets.UTF_8));
     }
 
     @SneakyThrows
