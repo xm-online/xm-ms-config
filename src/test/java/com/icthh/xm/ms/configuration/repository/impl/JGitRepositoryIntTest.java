@@ -11,18 +11,26 @@ import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.security.internal.SpringSecurityXmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.Base64;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
 
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.core.io.ClassPathResource;
 
 public class JGitRepositoryIntTest {
 
@@ -35,7 +43,9 @@ public class JGitRepositoryIntTest {
     @Rule
     public TemporaryFolder initTestGitFolder = new TemporaryFolder();
 
-    private GitProperties gitProperties = new GitProperties();
+    private final GitProperties gitProperties = new GitProperties();
+    private final ApplicationProperties applicationProperties = new ApplicationProperties();
+    private final FileService fileService = new FileService(applicationProperties);
 
     TenantContextHolder tenantContextHolder = new DefaultTenantContextHolder();
     XmAuthenticationContextHolder authenticationContextHolder = new SpringSecurityXmAuthenticationContextHolder();
@@ -52,6 +62,25 @@ public class JGitRepositoryIntTest {
         jGitRepository.save(new Configuration(path, "3"));
         assertEquals("3", jGitRepository.find(path).getData().getContent());
         assertEquals("2", jGitRepository.find(path, ref).getContent());
+    }
+
+    @Test
+    public void test() throws IOException {
+        applicationProperties.setBinaryFileTypes(List.of(".docx"));
+
+        String sourceFile = "simple_binary.docx";
+        String targetFile = "test.docx";
+
+        setUpRepositories(gitProperties);
+
+        File source = new ClassPathResource(sourceFile).getFile();
+        File target = configGitFolder.newFile(targetFile);
+        Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+        String encoded = jGitRepository.find(targetFile).getData().getContent();
+
+        byte[] bytes = Files.readAllBytes(source.toPath());
+        assertEquals(Base64.getEncoder().encodeToString(bytes), encoded);
     }
 
     @Test
@@ -100,7 +129,7 @@ public class JGitRepositoryIntTest {
 
         jGitRepository = new JGitRepository(gitProps, new ReentrantLock(),
             tenantContextHolder, authenticationContextHolder,
-            requestContextHolder) {
+            requestContextHolder, fileService) {
             @Override
             @SneakyThrows
             protected File createGitWorkDirectory() {
@@ -115,7 +144,7 @@ public class JGitRepositoryIntTest {
 
         jGitRepository = new JGitRepository(gitProps, new ReentrantLock(),
             tenantContextHolder, authenticationContextHolder,
-            requestContextHolder) {
+            requestContextHolder, fileService) {
             @Override
             @SneakyThrows
             protected File createGitWorkDirectory() {

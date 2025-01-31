@@ -1,9 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
-import static com.icthh.xm.ms.configuration.utils.FileUtils.countOfFilesInDirectoryRecursively;
-import static com.icthh.xm.ms.configuration.utils.FileUtils.readFileToString;
-import static com.icthh.xm.ms.configuration.utils.FileUtils.writeAsString;
+import static com.icthh.xm.ms.configuration.service.FileService.countOfFilesInDirectoryRecursively;
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceLogName;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.getRequestSourceTypeLogName;
@@ -35,6 +33,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
+import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.utils.Task;
 import java.io.File;
 import java.io.IOException;
@@ -110,16 +109,20 @@ public class JGitRepository implements PersistenceConfigRepository {
 
     private final XmRequestContextHolder requestContextHolder;
 
+    private final FileService fileService;
+
     public JGitRepository(GitProperties gitProperties,
                           Lock lock,
                           TenantContextHolder tenantContextHolder,
                           XmAuthenticationContextHolder authenticationContextHolder,
-                          XmRequestContextHolder requestContextHolder) {
+                          XmRequestContextHolder requestContextHolder,
+                          FileService fileService) {
         this.gitProperties = gitProperties;
         this.lock = lock;
         this.requestContextHolder = requestContextHolder;
         this.tenantContextHolder = tenantContextHolder;
         this.authenticationContextHolder = authenticationContextHolder;
+        this.fileService = fileService;
 
         log.info("Git branch to use {}", gitProperties.getBranchName());
         cloneRepository();
@@ -162,7 +165,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("[{}] Find configuration by path: {}", getRequestSourceTypeLogName(requestContextHolder), path);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             String commit = pull();
-            String content = readFileToString(getAbsolutePath(path));
+            String content = fileService.readFileToString(getAbsolutePath(path));
             return new ConfigurationItem(new ConfigVersion(commit), new Configuration(path, content));
         });
     }
@@ -318,7 +321,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private Configuration fileToConfiguration(File file) {
-        String content = readFileToString(file.getAbsolutePath());
+        String content = fileService.readFileToString(file.getAbsolutePath());
         String path = StringUtils.replaceChars(getRelativePath(file), File.separator, "/");
         return new Configuration(path, content);
     }
@@ -343,7 +346,7 @@ public class JGitRepository implements PersistenceConfigRepository {
             byte[] content = loader.getBytes();
             revWalk.dispose();
 
-            return writeAsString(path, content);
+            return fileService.writeAsString(path, content);
         }
     }
 
@@ -363,7 +366,7 @@ public class JGitRepository implements PersistenceConfigRepository {
         }
 
         String path = configuration.getPath();
-        String content = readFileToString(getAbsolutePath(path));
+        String content = fileService.readFileToString(getAbsolutePath(path));
         String expectedOldConfigHash = sha1Hex(content);
         log.debug("Expected hash {}, actual hash {}", expectedOldConfigHash, oldConfigHash);
         if (!expectedOldConfigHash.equals(oldConfigHash)) {

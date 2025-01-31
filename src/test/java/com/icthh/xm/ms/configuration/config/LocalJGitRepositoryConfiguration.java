@@ -13,6 +13,7 @@ import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
 import javax.annotation.PreDestroy;
 
+import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
@@ -33,14 +34,16 @@ public class LocalJGitRepositoryConfiguration {
     public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
                                                         TenantContextHolder tenantContextHolder,
                                                         XmAuthenticationContextHolder authenticationContextHolder,
-                                                        XmRequestContextHolder requestContextHolder) {
+                                                        XmRequestContextHolder requestContextHolder,
+                                                        FileService fileService) {
         createGitRepository(serverGitFolder, initTestGitFolder, applicationProperties.getGit());
         ReentrantLock lock = new ReentrantLock();
         return new JGitRepository(applicationProperties.getGit(),
             lock,
             tenantContextHolder,
             authenticationContextHolder,
-            requestContextHolder) {
+            requestContextHolder,
+            fileService) {
             @Override
             protected void cloneRepository() {
                 if (isNotBlank(applicationProperties.getGit().getUri())) {

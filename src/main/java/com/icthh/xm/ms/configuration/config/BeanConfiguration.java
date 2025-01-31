@@ -13,7 +13,6 @@ import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.request.spring.config.XmRequestContextConfiguration;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
@@ -26,6 +25,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -53,9 +54,10 @@ public class BeanConfiguration {
                                                         @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
                                                         TenantContextHolder tenantContextHolder,
                                                         XmAuthenticationContextHolder authenticationContextHolder,
-                                                        XmRequestContextHolder requestContextHolder) {
-        return new JGitRepository(applicationProperties.getGit(), lock,
-            tenantContextHolder, authenticationContextHolder, requestContextHolder);
+                                                        XmRequestContextHolder requestContextHolder,
+                                                        FileService fileService) {
+        return new JGitRepository(applicationProperties.getGit(), lock, tenantContextHolder,
+            authenticationContextHolder, requestContextHolder, fileService);
     }
 
     @Bean

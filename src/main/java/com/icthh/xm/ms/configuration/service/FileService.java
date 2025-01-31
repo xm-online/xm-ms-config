@@ -1,8 +1,10 @@
-package com.icthh.xm.ms.configuration.utils;
+package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -13,17 +15,21 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class FileUtils {
+@Component
+@RequiredArgsConstructor
+public class FileService {
+
+    private final ApplicationProperties applicationProperties;
 
     @SneakyThrows
-    public static String readFileToString(String filePath) {
+    public String readFileToString(String filePath) {
         byte[] encoded = Files.readAllBytes(Paths.get(filePath));
         return writeAsString(filePath, encoded);
     }
 
-    public static String writeAsString(String filePath, byte[] content) {
-        List<String> binaryFileTypes = ApplicationProperties.get().getBinaryFileTypes();
-        return binaryFileTypes
+    public String writeAsString(String filePath,
+                                       byte[] content) {
+        return applicationProperties.getBinaryFileTypes()
             .stream()
             .filter(filePath::endsWith)
             .findAny()
