@@ -28,6 +28,7 @@ public class ApplicationProperties {
     private Boolean adminApiRestrictionEnabled;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
+    private List<String> binaryFileTypes = Collections.emptyList();
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
     private Integer kafkaMetadataMaxAge;
@@ -40,7 +41,6 @@ public class ApplicationProperties {
     private Integer jwkUpdateDebounceSeconds = 30;
 
     private Set<String> envExternalizationBlacklist = emptySet();
-
 
     @Getter
     @Setter
