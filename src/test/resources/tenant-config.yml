@@ -4,6 +4,8 @@ valueForReplace: VALUE_FOR_REPLACE
 
 clientCabinetBaseUrl: someclientCabinetBaseUrlValue
 
+integrateWith3rdParty: true
+
 payment:
   liqpay:
     public_key: VVVVVVVVVALUE
