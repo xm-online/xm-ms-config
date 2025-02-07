@@ -99,10 +99,10 @@ jhipster:
 application:
     adminApiRestrictionEnabled: true
     git:
-        uri:
+        uri: /home/ssenko/work/xm-ms-config-repository
         login:
         password:
-        branch-name:
+        branch-name: ee-test
         max-wait-time-second: 30
         depth: 50
 
