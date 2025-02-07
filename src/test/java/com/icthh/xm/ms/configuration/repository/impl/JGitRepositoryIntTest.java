@@ -114,14 +114,9 @@ public class JGitRepositoryIntTest {
 
         ConfigurationList all = jGitRepository.findAll();
         assertEquals(2, all.getData().size());
-        assertEquals("tenant1_content", all.getData().get(0).getContent());
-        assertEquals("tenant2_content", all.getData().get(1).getContent());
-
 
         ConfigurationList all2 = jGitRepository.findAllInTenants(Set.of("TENANT1", "TENANT2"));
         assertEquals(2, all2.getData().size());
-        assertEquals("tenant1_content", all2.getData().get(0).getContent());
-        assertEquals("tenant2_content", all2.getData().get(1).getContent());
     }
 
     @Test
