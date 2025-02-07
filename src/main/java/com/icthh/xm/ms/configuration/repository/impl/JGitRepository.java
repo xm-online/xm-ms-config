@@ -146,16 +146,14 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private ConfigurationList readFromDirectory(String relativePath) {
-        File rootDirectory = this.rootDirectory;
-        File directory = Paths.get(rootDirectory.getAbsolutePath(), relativePath).toFile();
-        return readConfigsFromDirectories(List.of(directory));
+        return readConfigsFromDirectories(List.of(relativePath));
     }
 
     @Override
     public ConfigurationList findAllInTenants(Set<String> tenants) {
         log.info("[{}] Find configurations in tenants {}", getRequestSourceTypeLogName(requestContextHolder), tenants);
-        List<File> directories = tenants.stream()
-            .map(tenant -> Paths.get(rootDirectory.getAbsolutePath(), TENANT_PREFIX, tenant).toFile())
+        List<String> directories = tenants.stream()
+            .map(tenant -> Paths.get(TENANT_PREFIX, tenant).toString())
             .collect(toList());
         return readConfigsFromDirectories(directories);
     }
@@ -288,13 +286,13 @@ public class JGitRepository implements PersistenceConfigRepository {
         deleteRecursively(rootDirectory);
     }
 
-    private ConfigurationList readConfigsFromDirectories(List<File> directories) {
-        var paths = directories.stream().map(this::getRelativePath).collect(toList());
-        log.info("[{}] Find configurations in directory {}", getRequestSourceTypeLogName(requestContextHolder), paths);
+    private ConfigurationList readConfigsFromDirectories(List<String> relativeDirectoryPaths) {
+        log.info("[{}] Find configurations in directory {}", getRequestSourceTypeLogName(requestContextHolder), relativeDirectoryPaths);
         return runWithLock(lock, gitProperties.getMaxWaitTimeSecond(), GIT_REPOSITORY, () -> {
             String commit = pull();
             List<Configuration> configurations = new ArrayList<>();
-            directories.forEach(directory -> configurations.addAll(internalReadFileSystemFolder(directory)));
+            relativeDirectoryPaths.stream().map(this::getAbsolutePath)
+                .forEach(directory -> configurations.addAll(internalReadFileSystemFolder(new File(directory))));
             return new ConfigurationList(new ConfigVersion(commit), configurations);
         });
     }

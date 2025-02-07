@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
 
@@ -99,6 +100,23 @@ public class JGitRepositoryIntTest {
         ConfigVersion commit2 = jGitRepository.save(new Configuration(path, "unchanged_content"));
         assertEquals("Expected then save return last commit when no files changed", commit1,
             commit2);
+    }
+
+    @Test
+    public void testFindInDirectoryWhenRecloneEnabled() {
+        setUpRepositories(gitProperties);
+        String path1 = "/config/tenants/TENANT1/somefile";
+        String path2 = "/config/tenants/TENANT2/somefile";
+        jGitRepository.save(new Configuration(path1, "tenant1_content"));
+        jGitRepository.save(new Configuration(path2, "tenant2_content"));
+
+        gitProperties.setCloneRepositoryOnUpdate(true);
+
+        ConfigurationList all = jGitRepository.findAll();
+        assertEquals(2, all.getData().size());
+
+        ConfigurationList all2 = jGitRepository.findAllInTenants(Set.of("TENANT1", "TENANT2"));
+        assertEquals(2, all2.getData().size());
     }
 
     @Test
