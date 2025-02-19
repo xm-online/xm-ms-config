@@ -36,7 +36,7 @@ public class RoleNameProcessor implements TenantConfigurationProcessor {
 
     @Override
     public boolean isSupported(Configuration configuration) {
-        if (applicationProperties.getRoleNameProcessorDisabled()) {
+        if (Boolean.TRUE.equals(applicationProperties.getRoleNameProcessorDisabled())) {
             return false;
         }
         return matcher.match(ROLE_CONFIG_PATH, configuration.getPath());
