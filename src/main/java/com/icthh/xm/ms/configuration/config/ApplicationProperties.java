@@ -83,5 +83,6 @@ public class ApplicationProperties {
     }
 
     private List<String> excludeConfigPatterns;
+    private Boolean roleNameProcessorDisabled;
 
 }
