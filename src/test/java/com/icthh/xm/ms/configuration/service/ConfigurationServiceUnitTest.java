@@ -1,43 +1,39 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.commons.tenant.TenantContextUtils.buildTenant;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.Tenant;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ConfigurationServiceUnitTest {
+import static com.icthh.xm.commons.tenant.TenantContextUtils.buildTenant;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
     public static final String TENANT_NAME = "tenant";
     @InjectMocks
@@ -118,7 +114,7 @@ public class ConfigurationServiceUnitTest {
                 new Configuration("path2", "content2")
             )
         ));
-        verifyZeroInteractions(configTopicProducer);
+        verify(configTopicProducer, never());
     }
 
     @Test
@@ -135,7 +131,7 @@ public class ConfigurationServiceUnitTest {
 
         verify(persistenceRepository, never()).findAll();
         verify(memoryStorage, never()).replaceByConfiguration(anyList());
-        verifyZeroInteractions(configTopicProducer);
+        verify(configTopicProducer, never());
     }
 
     @Test
@@ -153,7 +149,7 @@ public class ConfigurationServiceUnitTest {
 
         verify(persistenceRepository, never()).findAll();
         verify(memoryStorage, never()).replaceByConfiguration(anyList());
-        verifyZeroInteractions(configTopicProducer);
+        verify(configTopicProducer, never());
     }
 
     @Test
@@ -167,7 +163,7 @@ public class ConfigurationServiceUnitTest {
         assertTrue(result.isPresent());
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
         verifyNoMoreInteractions(memoryStorage);
     }
 
@@ -184,7 +180,7 @@ public class ConfigurationServiceUnitTest {
         assertEquals("content", result.get().getContent());
         verify(persistenceRepository).find(eq(path), eq(version));
         verifyNoMoreInteractions(persistenceRepository);
-        verifyZeroInteractions(memoryStorage);
+        verify(memoryStorage, never());
     }
 
     @Test
@@ -199,7 +195,7 @@ public class ConfigurationServiceUnitTest {
         assertEquals("processedContent", result.get().getContent());
         verify(memoryStorage).getProcessedConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
     }
 
     @Test
@@ -214,7 +210,7 @@ public class ConfigurationServiceUnitTest {
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
     }
 
     @Test
@@ -229,7 +225,7 @@ public class ConfigurationServiceUnitTest {
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
     }
 
     @Test
@@ -249,7 +245,7 @@ public class ConfigurationServiceUnitTest {
             "/config/tenants/TENANT_NAME/folder/configfile2.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile2.yml", "content2")
         ), result);
         verify(memoryStorage).getConfigs(eq("TENANT_NAME"), eq(okPaths));
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
         verifyNoMoreInteractions(memoryStorage);
     }
 
@@ -266,7 +262,7 @@ public class ConfigurationServiceUnitTest {
             "/config/tenants/TENANT_NAME/folder/configfile.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile.yml", "content")
         ), result);
         verify(memoryStorage).getConfigsFromTenant(eq("TENANT_NAME"));
-        verifyZeroInteractions(persistenceRepository);
+        verify(persistenceRepository, never());
         verifyNoMoreInteractions(memoryStorage);
     }
 

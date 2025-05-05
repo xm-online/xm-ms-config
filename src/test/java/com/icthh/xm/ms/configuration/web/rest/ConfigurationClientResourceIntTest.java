@@ -1,5 +1,30 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextUtils;
+import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
+import lombok.SneakyThrows;
+import org.hamcrest.Matchers;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
+import java.util.Map;
+
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
@@ -19,33 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
-import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.commons.tenant.TenantContextUtils;
-import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.ConfigurationService;
-import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
-import lombok.SneakyThrows;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.List;
-import java.util.Map;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
@@ -79,13 +77,13 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Before
     public void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(configurationClientResource, configurationAdminResource)
-                .setControllerAdvice(exceptionTranslator)
-                .build();
+            .setControllerAdvice(exceptionTranslator)
+            .build();
         TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
     }
 
     @BeforeClass
-    public static void beforeClass () {
+    public static void beforeClass() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
     }
 
@@ -95,24 +93,24 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
                 .content("some content 78342578956234789562378946589237465892346576")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/subfolder/documentname")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("some content 78342578956234789562378946589237465892346576"))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(content().string("some content 78342578956234789562378946589237465892346576"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
     @SneakyThrows
     public void testAddDocument() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
-                    .content("some content")
-                    .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+                .content("some content")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("some content"))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(content().string("some content"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -121,15 +119,15 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .content("some content")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(put(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .content("some content 2")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("some content 2"))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(content().string("some content 2"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -139,15 +137,15 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .content(content)
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(put(API_PREFIX + PROFILE + "/folder/subfolder/documentname2?" + OLD_CONFIG_HASH + "=" + sha1Hex(content))
                 .content("some content 2")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("some content 2"))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(content().string("some content 2"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -157,11 +155,11 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname2")
                 .content(content)
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(put(API_PREFIX + PROFILE + "/folder/subfolder/documentname2?" + OLD_CONFIG_HASH + "=uncorrectHash")
                 .content("some content 2")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().isConflict());
+            .andExpect(status().isConflict());
     }
 
     @Test
@@ -170,12 +168,12 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname.yml")
                 .content("field: \"field value\"")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname.yml?toJson")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
-                .andExpect(jsonPath("$.field").value("field value"));
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$.field").value("field value"));
     }
 
     @Test
@@ -184,17 +182,17 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .content("some content")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("some content"))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(content().string("some content"))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(delete(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname3")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().isNotFound());
+            .andExpect(status().isNotFound());
     }
 
     @Test
@@ -202,30 +200,30 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     public void testWebappPublicConfigExternalization() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
-                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+                .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-public.yml?toJson&processed=true")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
-                .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
     @SneakyThrows
     public void testWebappPublicConfigExternalizationFromTenantProfile() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/tenant-profile.yml")
-                        .content("---\nenvironment:\n  VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE: expectedValue")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+                .content("---\nenvironment:\n  VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE: expectedValue")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
-            .content("varForReplaceFromTenantProfile: ${environment.VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE}")
-            .contentType(MediaType.TEXT_PLAIN))
+                .content("varForReplaceFromTenantProfile: ${environment.VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE}")
+                .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-public.yml?toJson&processed=true")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("{\"varForReplaceFromTenantProfile\":\"expectedValue\"}"))
-                .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"varForReplaceFromTenantProfile\":\"expectedValue\"}"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -233,13 +231,13 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     public void testWebappPrivateConfigExternalization() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
-                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+                .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson&processed=true")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
-                .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -247,13 +245,13 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     public void testPublicWebappConfigExternalization() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/public/config.yml")
-                        .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful());
+                .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/config.yml?toJson&processed=true")
-                        .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
-                .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"varForReplace\":\"expectedValue\"}"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -283,13 +281,13 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
-            .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
-            .contentType(MediaType.APPLICATION_JSON))
+                .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
+                .contentType(MediaType.APPLICATION_JSON))
             .andDo(print())
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
-            .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
-            .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,secondContent)));
+            .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath, secondPath)))
+            .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent, secondContent)));
     }
 
     @Test
@@ -368,23 +366,23 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void authorizedUserWithPermissionCanGetPrivateWebConfig() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
-                            .content("some: content")
-                            .contentType(MediaType.TEXT_PLAIN))
-               .andExpect(status().is2xxSuccessful());
+                .content("some: content")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
-                            .contentType(MediaType.TEXT_PLAIN))
-               .andExpect(content().string("{\"some\":\"content\"}"))
-               .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"some\":\"content\"}"))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
     @SneakyThrows
     public void getDefaultPrivateSettingIfNotExists() {
         mockMvc.perform(delete(API_PREFIX + PROFILE + "/webapp/settings-private.yml"))
-               .andExpect(status().is2xxSuccessful());
+            .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
-                            .contentType(MediaType.TEXT_PLAIN))
-               .andExpect(status().is2xxSuccessful());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
     }
 
     @Test
@@ -392,8 +390,8 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @WithMockUser(authorities = {"ANONYMOUS"})
     public void notAuthorizedUserCanNotGetPrivateWebConfig() {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-private.yml?toJson")
-                            .contentType(MediaType.TEXT_PLAIN))
-               .andExpect(status().isForbidden());
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().isForbidden());
     }
 
 

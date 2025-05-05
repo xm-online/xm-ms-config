@@ -5,7 +5,7 @@ import com.icthh.xm.ms.configuration.config.RequestContextKeys;
 import com.icthh.xm.ms.configuration.domain.RequestSourceType;
 import lombok.experimental.UtilityClass;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;

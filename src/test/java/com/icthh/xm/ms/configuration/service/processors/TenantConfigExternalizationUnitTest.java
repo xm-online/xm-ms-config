@@ -1,13 +1,9 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
 import org.junit.Before;
@@ -22,7 +18,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-public class TenantConfigExternalizationUnitTest {
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static org.junit.Assert.assertEquals;
+
+public class TenantConfigExternalizationUnitTest extends AbstractUnitTest {
 
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -119,15 +120,15 @@ public class TenantConfigExternalizationUnitTest {
     private Object overrideParameterAndReturnResult(List<String> path) {
         Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", TestUtil.loadFile("tenant-config.yml"));
         List<Configuration> processedConfigurations = new TenantConfigExternalization()
-                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
+            .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
         Configuration processedConfiguration = configuration;
         if (!processedConfigurations.isEmpty()) {
             processedConfiguration = processedConfigurations.get(0);
         }
         Map<String, Object> configMap = mapper.readValue(processedConfiguration.getContent(), Map.class);
         Object map = configMap;
-        for(String key: path) {
-            map = ((Map)map).get(key);
+        for (String key : path) {
+            map = ((Map) map).get(key);
         }
         return map;
     }

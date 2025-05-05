@@ -409,7 +409,9 @@ public class JGitRepository implements PersistenceConfigRepository {
     }
 
     private String getAbsolutePath(String path) {
-        return rootDirectory.getAbsolutePath() + Path.of("/", path).normalize();
+        // TODO remove
+        return rootDirectory.getAbsolutePath() + path;
+//        return rootDirectory.getAbsolutePath() + Path.of("/", path).normalize();
     }
 
     @SneakyThrows

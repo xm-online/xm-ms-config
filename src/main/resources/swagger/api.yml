@@ -1,0 +1,101 @@
+# API-first development with OpenAPI
+# This file will be used at compile time to generate Spring-MVC endpoint stubs using openapi-generator
+openapi: '3.0.1'
+info:
+  title: 'xm-ms-configuration'
+  version: 0.0.1
+servers:
+  - url: http://localhost:8081/api
+    description: Development server
+paths:
+  /exampleLepFunctionApiFirst:
+    post:
+      operationId: executeLepFunction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequest'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteResponse'
+      security:
+        - oAuth2Password: []
+components:
+  responses:
+    '400':
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      description: 'Bad request. Request invalid by business rules.'
+    '401':
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      description: 'Invalid access token'
+    '403':
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      description: 'Forbidden'
+    '404':
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      description: 'Not found'
+    '500':
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      description: 'Internal server error'
+  schemas:
+    ExecuteRequest:
+      type: object
+      properties:
+        testInput:
+          type: string
+    ExecuteResponse:
+      type: object
+      properties:
+        testOutput:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: number
+          description: 'Error code'
+        error_description:
+          type: string
+          description: 'Human readable error'
+        requestId:
+          type: string
+          description: 'Id of request to debug gloals'
+  securitySchemes:
+    oAuth2Password:
+      type: oauth2
+      flows:
+        password:
+          tokenUrl: http://uaa/oauth/token
+          scopes:
+            openapi: Default client scope
+    oAuth2ClientCredentials:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: http://uaa/oauth/token
+          scopes:
+            openapi: Default client scope
+
+security:
+  - oAuth2Password: []
+

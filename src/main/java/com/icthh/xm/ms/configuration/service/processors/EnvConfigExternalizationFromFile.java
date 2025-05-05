@@ -96,7 +96,7 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
             List<Configuration> toReprocess = originalStorage.values().stream()
                 .filter(config -> config.getPath().startsWith(tenantFolderPath))
                 .filter(config -> !config.getPath().equals(tenantProfilePath))
-                .collect(toList());
+                .toList();
             configToReprocess.addAll(toReprocess);
         }
     }

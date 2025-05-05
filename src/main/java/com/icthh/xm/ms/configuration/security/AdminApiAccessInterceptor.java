@@ -2,12 +2,12 @@ package com.icthh.xm.ms.configuration.security;
 
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
+import org.springframework.web.servlet.HandlerInterceptor;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
@@ -15,7 +15,7 @@ import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 @Component
 @RequiredArgsConstructor
-public class AdminApiAccessInterceptor extends HandlerInterceptorAdapter {
+public class AdminApiAccessInterceptor implements HandlerInterceptor {
 
     private final ApplicationProperties applicationProperties;
     private final TenantContextHolder tenantContextHolder;

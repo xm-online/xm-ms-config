@@ -1,10 +1,9 @@
 package com.icthh.xm.ms.configuration.config;
 
-import static com.icthh.xm.commons.config.client.repository.TenantListRepository.TENANTS_LIST_CONFIG_KEY;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
+import com.icthh.xm.commons.config.client.config.XmRestTemplateConfiguration;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
 import com.icthh.xm.commons.config.client.service.TenantAliasService;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
@@ -18,15 +17,9 @@ import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
+import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,6 +29,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static com.icthh.xm.commons.config.client.repository.TenantListRepository.TENANTS_LIST_CONFIG_KEY;
 
 @Slf4j
 @Configuration
@@ -86,13 +87,13 @@ public class BeanConfiguration {
                                                    Lock lock) {
 
         return new MemoryConfigStorageExcludeConfigDecorator(
-                new MemoryConfigStorageImpl(
-                    tenantConfigurationProcessors,
-                    tenantAliasTreeStorage,
-                    applicationProperties,
-                    lock
-                ),
-                applicationProperties
+            new MemoryConfigStorageImpl(
+                tenantConfigurationProcessors,
+                tenantAliasTreeStorage,
+                applicationProperties,
+                lock
+            ),
+            applicationProperties
         );
     }
 
@@ -111,33 +112,32 @@ public class BeanConfiguration {
         };
     }
 
-    @Bean
-    @Primary
-    public TenantListRepository tenantListRepository(
-        @Qualifier("xm-config-rest-template") RestTemplate restTemplate,
-        @Value("${spring.application.name}") String applicationName,
-        XmConfigProperties xmConfigProperties,
-        MemoryConfigStorage memoryConfigStorage
-    ) {
-        var configuration = memoryConfigStorage.getConfig(TENANTS_LIST_CONFIG_KEY);
-
-        return new TenantListRepository(
-            restTemplate,
-            configuration.orElse(new com.icthh.xm.commons.config.domain.Configuration(TENANTS_LIST_CONFIG_KEY, TENANT_LIST_STUB)),
-            applicationName,
-            xmConfigProperties
-        ) {
-            @Override
-            @SneakyThrows
-            public void onInit(String key, String config) {
-                Map<String, Set<TenantState>> tenants = parseTenantStates(config, objectMapper);
-                if (tenants.getOrDefault(applicationName, Set.of()).isEmpty()) {
-                    config = TENANT_LIST_STUB;
-                }
-                super.onInit(key, config);
-            }
-        };
-    }
+//    @Bean
+//    @Primary
+//    public TenantListRepository tenantListRepository(@Qualifier("xm-config-rest-template") RestTemplate restTemplate,
+//                                                     @Value("${spring.application.name}") String applicationName,
+//                                                     XmConfigProperties xmConfigProperties,
+//                                                     MemoryConfigStorage memoryConfigStorage) {
+//
+//        var configuration = memoryConfigStorage.getConfig(TENANTS_LIST_CONFIG_KEY);
+//
+//        return new TenantListRepository(
+//            restTemplate,
+//            configuration.orElse(new com.icthh.xm.commons.config.domain.Configuration(TENANTS_LIST_CONFIG_KEY, TENANT_LIST_STUB)),
+//            applicationName,
+//            xmConfigProperties
+//        ) {
+//            @Override
+//            @SneakyThrows
+//            public void onInit(String key, String config) {
+//                Map<String, Set<TenantState>> tenants = parseTenantStates(config, objectMapper);
+//                if (tenants.getOrDefault(applicationName, Set.of()).isEmpty()) {
+//                    config = TENANT_LIST_STUB;
+//                }
+//                super.onInit(key, config);
+//            }
+//        };
+//    }
 
 
 }

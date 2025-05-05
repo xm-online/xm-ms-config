@@ -1,14 +1,8 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
-import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -17,6 +11,11 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.Collections;
+
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigTopicProducerUnitTest {
@@ -41,6 +40,6 @@ public class ConfigTopicProducerUnitTest {
     public void notifyConfigurationChangedIfNoPaths() {
         producer.notifyConfigurationChanged(new ConfigVersion("commit"), Collections.emptyList());
 
-        verifyZeroInteractions(kafkaTemplate);
+        verify(kafkaTemplate, times(0));
     }
 }

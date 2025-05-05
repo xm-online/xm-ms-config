@@ -7,16 +7,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
-import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,6 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
@@ -173,10 +172,10 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     @Test
     public void testExcludeFileFromNotifications() {
         List<String> paths = repository.findAll()
-                .getData()
-                .stream()
-                .map(Configuration::getPath)
-                .collect(toList());
+            .getData()
+            .stream()
+            .map(Configuration::getPath)
+            .collect(toList());
 
         configurationService.deleteConfigurations(paths);
         memoryConfigStorage.clear();
@@ -200,7 +199,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "1\n"));
         configurationService.updateConfiguration(new Configuration("/config/tenants/file3", "1\n"));
         ConfigVersion commit = configurationService.updateConfigurationsFromZip(
-                new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
+            new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         String version = new ObjectMapper().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
@@ -219,8 +218,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
-                "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
-                "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
+            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ));
     }
 
@@ -414,12 +413,12 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     private List<String> filesList(String name) {
         // hash set for correct order in list
         return new ArrayList<>(new HashSet<>(
-                List.of(
-                        pathInTenant("MAIN", name),
-                        pathInTenant("SUBMAIN", name),
-                        pathInTenant("LIFETENANT", name),
-                        pathInTenant("ONEMORELIFETENANT", name)
-                )
+            List.of(
+                pathInTenant("MAIN", name),
+                pathInTenant("SUBMAIN", name),
+                pathInTenant("LIFETENANT", name),
+                pathInTenant("ONEMORELIFETENANT", name)
+            )
         ));
     }
 
