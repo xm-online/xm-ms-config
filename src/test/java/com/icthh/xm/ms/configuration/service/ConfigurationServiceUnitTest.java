@@ -114,7 +114,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
                 new Configuration("path2", "content2")
             )
         ));
-        verify(configTopicProducer, never());
+        verifyNoMoreInteractions(configTopicProducer);
     }
 
     @Test
@@ -131,14 +131,13 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
         verify(persistenceRepository, never()).findAll();
         verify(memoryStorage, never()).replaceByConfiguration(anyList());
-        verify(configTopicProducer, never());
+        verifyNoMoreInteractions(configTopicProducer);
     }
 
     @Test
     public void alignVersion_shouldNotUpdateConfigIfVersionInCache() {
         ConfigVersion version = new ConfigVersion("someVersion");
         when(configVersionDeserializer.from("someVersion")).thenReturn(version);
-        when(persistenceRepository.hasVersion(version)).thenReturn(false);
         versionCache.addVersion(version);
         when(memoryStorage.getProcessedConfigs()).thenReturn(Map.of(
             "path", new Configuration("path", "content"),
@@ -149,7 +148,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
         verify(persistenceRepository, never()).findAll();
         verify(memoryStorage, never()).replaceByConfiguration(anyList());
-        verify(configTopicProducer, never());
+        verifyNoMoreInteractions(configTopicProducer);
     }
 
     @Test
@@ -163,7 +162,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         assertTrue(result.isPresent());
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
         verifyNoMoreInteractions(memoryStorage);
     }
 
@@ -180,7 +179,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         assertEquals("content", result.get().getContent());
         verify(persistenceRepository).find(eq(path), eq(version));
         verifyNoMoreInteractions(persistenceRepository);
-        verify(memoryStorage, never());
+        verifyNoMoreInteractions(memoryStorage);
     }
 
     @Test
@@ -195,7 +194,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         assertEquals("processedContent", result.get().getContent());
         verify(memoryStorage).getProcessedConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
     }
 
     @Test
@@ -210,7 +209,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
     }
 
     @Test
@@ -225,7 +224,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         assertEquals("content", result.get().getContent());
         verify(memoryStorage).getConfig(eq(path));
         verifyNoMoreInteractions(memoryStorage);
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
     }
 
     @Test
@@ -245,7 +244,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
             "/config/tenants/TENANT_NAME/folder/configfile2.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile2.yml", "content2")
         ), result);
         verify(memoryStorage).getConfigs(eq("TENANT_NAME"), eq(okPaths));
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
         verifyNoMoreInteractions(memoryStorage);
     }
 
@@ -262,7 +261,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
             "/config/tenants/TENANT_NAME/folder/configfile.yml", new Configuration("/config/tenants/TENANT_NAME/folder/configfile.yml", "content")
         ), result);
         verify(memoryStorage).getConfigsFromTenant(eq("TENANT_NAME"));
-        verify(persistenceRepository, never());
+        verifyNoMoreInteractions(persistenceRepository);
         verifyNoMoreInteractions(memoryStorage);
     }
 

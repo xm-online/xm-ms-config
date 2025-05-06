@@ -8,6 +8,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StartUpRefreshIntTest extends AbstractSpringBootTest {
+
     @BeforeClass
     public static void init() {
         failOnRefresh.set(true);

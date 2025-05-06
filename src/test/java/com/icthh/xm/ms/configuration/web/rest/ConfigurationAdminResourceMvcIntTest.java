@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class ConfigurationAdminResourceMvcTest extends AbstractSpringBootTest {
+public class ConfigurationAdminResourceMvcIntTest extends AbstractSpringBootTest {
 
     @MockBean
     private ConfigurationService configurationService;

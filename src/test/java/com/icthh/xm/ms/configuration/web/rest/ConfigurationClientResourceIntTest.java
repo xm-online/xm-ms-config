@@ -91,12 +91,12 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @SneakyThrows
     public void testAddSetTenantPath() {
         mockMvc.perform(post(API_PREFIX + PROFILE + "/folder/subfolder/documentname")
-                .content("some content 78342578956234789562378946589237465892346576")
+                .content("very cool content")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/" + TENANT_NAME + "/folder/subfolder/documentname")
                 .contentType(MediaType.TEXT_PLAIN))
-            .andExpect(content().string("some content 78342578956234789562378946589237465892346576"))
+            .andExpect(content().string("very cool content"))
             .andExpect(status().is2xxSuccessful());
     }
 
@@ -285,7 +285,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andDo(print())
             .andExpect(status().is2xxSuccessful())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath, secondPath)))
             .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent, secondContent)));
     }
@@ -322,7 +322,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_hash")
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$..hashSum").value(Matchers.notNullValue()));
     }
 

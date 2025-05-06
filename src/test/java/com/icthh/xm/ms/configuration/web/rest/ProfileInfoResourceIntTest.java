@@ -45,7 +45,7 @@ public class ProfileInfoResourceIntTest extends AbstractSpringBootTest {
     public void getProfileInfoWithRibbon() throws Exception {
         restProfileMockMvc.perform(get("/api/profile-info"))
             .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE));
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
     }
 
     @Test
@@ -56,6 +56,6 @@ public class ProfileInfoResourceIntTest extends AbstractSpringBootTest {
 
         restProfileMockMvc.perform(get("/api/profile-info"))
             .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE));
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE));
     }
 }

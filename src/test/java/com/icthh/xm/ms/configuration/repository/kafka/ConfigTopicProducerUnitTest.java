@@ -12,8 +12,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.Collections;
 
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +39,6 @@ public class ConfigTopicProducerUnitTest {
     public void notifyConfigurationChangedIfNoPaths() {
         producer.notifyConfigurationChanged(new ConfigVersion("commit"), Collections.emptyList());
 
-        verify(kafkaTemplate, times(0));
+        verifyNoInteractions(kafkaTemplate);
     }
 }

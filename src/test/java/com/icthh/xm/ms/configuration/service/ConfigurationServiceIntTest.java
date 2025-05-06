@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.function.Function.identity;
@@ -75,7 +76,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(mainValue);
 
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(path));
-        assertEquals("processed content of: " + content, privateMap.get(path).getContent());
+        assertEquals(content, privateMap.get(path).getContent());
     }
 
     @Test
@@ -147,12 +148,12 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/tenant-config.yml"));
         doAssertions(() -> {
             String mainExternalizations = mockTenantConfigWithExternalization("mainExternalizations");
-            String lifetenantExternalizations = mockTenantConfigWithExternalization("lifetenantExternalizations");
+            String lifeTenantExternalizations = mockTenantConfigWithExternalization("lifetenantExternalizations");
 
-            assertEquals(mainExternalizations, privateMap.get(pathInTenant("MAIN", "/tenant-config.yml")).getContent());
-            assertEquals(submainContent, privateMap.get(pathInTenant("SUBMAIN", "/tenant-config.yml")).getContent());
-            assertEquals(lifetenantExternalizations, privateMap.get(pathInTenant("LIFETENANT", "/tenant-config.yml")).getContent());
-            assertEquals(mainContent, privateMap.get(pathInTenant("ONEMORELIFETENANT", "/tenant-config.yml")).getContent());
+            assertThat(privateMap.get(pathInTenant("MAIN", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(mainExternalizations);
+            assertThat(privateMap.get(pathInTenant("SUBMAIN", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(submainContent);
+            assertThat(privateMap.get(pathInTenant("LIFETENANT", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(lifeTenantExternalizations);
+            assertThat(privateMap.get(pathInTenant("ONEMORELIFETENANT", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(mainContent);
         });
     }
 

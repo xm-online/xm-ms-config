@@ -78,7 +78,7 @@ public class JGitRepositoryIntTest {
         File target = configGitFolder.newFile(targetFile);
         Files.copy(source.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-        String encoded = jGitRepository.find(targetFile).getData().getContent();
+        String encoded = jGitRepository.find(String.join("/", "", targetFile)).getData().getContent();
 
         byte[] bytes = Files.readAllBytes(source.toPath());
         assertEquals(Base64.getEncoder().encodeToString(bytes), encoded);

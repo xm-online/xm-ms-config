@@ -176,7 +176,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get("/api/tenants/tenant/services")
             .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andDo(result -> {
                 CollectionType stringSet = mapper.getTypeFactory().constructCollectionType(Set.class, String.class);
                 Set<String> services = mapper.readValue(result.getResponse().getContentAsString(), stringSet);
@@ -205,7 +205,6 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful())
             .andDo(result -> {
                 TenantAliasTree tenantAliasTree = mapper.readValue(result.getResponse().getContentAsString(), TenantAliasTree.class);
-
                 assertThat(tenantAliasTree.getTenantAliasTree()).isEqualTo(tenantAliasTreeExpected.getTenantAliasTree());
             });
     }

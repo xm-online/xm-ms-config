@@ -3,24 +3,20 @@ package com.icthh.xm.ms.configuration.service;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.permission.config.PermissionProperties;
 import com.icthh.xm.commons.permission.domain.Privilege;
-import com.icthh.xm.commons.permission.service.PermissionMappingService;
 import com.icthh.xm.commons.request.XmRequestContext;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.tenant.TenantContext;
 import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.config.RequestContextKeys;
 import com.icthh.xm.ms.configuration.domain.RequestSourceType;
 import com.icthh.xm.ms.configuration.domain.TenantState;
-import com.icthh.xm.ms.configuration.service.filter.AlwaysTruePermissionMsNameFilter;
 import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -31,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.icthh.xm.ms.configuration.domain.RequestSourceType.SYSTEM_QUEUE;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
@@ -53,14 +50,8 @@ public class PrivilegeServiceIntTest extends AbstractSpringBootTest {
     private TenantContext tenantContext;
     @Mock
     private XmRequestContext xmRequestContext;
-    @Spy
-    private DefaultTenantContextHolder tenantContextHolder;
     @Mock
     private XmRequestContextHolder requestContextHolder;
-    @Spy
-    private AlwaysTruePermissionMsNameFilter permissionMsNameFilter = new AlwaysTruePermissionMsNameFilter();
-    @Spy
-    private PermissionMappingService permissionMappingService = new PermissionMappingService(permissionMsNameFilter);
 
     @Before
     public void before() {
@@ -103,7 +94,7 @@ public class PrivilegeServiceIntTest extends AbstractSpringBootTest {
         String expectedPrivileges = readFile("privileges/privileges_expected_update.yml");
 
         assertEquals("privileges.yml", privilegeUpdate.getPath());
-        assertEquals(expectedPrivileges, privilegeUpdate.getContent());
+        assertThat(privilegeUpdate.getContent()).isEqualToNormalizingNewlines(expectedPrivileges);
     }
 
     private Configuration getConfiguration(String path) throws IOException {

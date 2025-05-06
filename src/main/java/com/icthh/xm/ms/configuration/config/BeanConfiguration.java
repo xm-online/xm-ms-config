@@ -111,33 +111,33 @@ public class BeanConfiguration {
             }
         };
     }
+/*
+    @Bean
+    @Primary
+    public TenantListRepository tenantListRepository(@Qualifier("xm-config-rest-template") RestTemplate restTemplate,
+                                                     @Value("${spring.application.name}") String applicationName,
+                                                     XmConfigProperties xmConfigProperties,
+                                                     MemoryConfigStorage memoryConfigStorage) {
 
-//    @Bean
-//    @Primary
-//    public TenantListRepository tenantListRepository(@Qualifier("xm-config-rest-template") RestTemplate restTemplate,
-//                                                     @Value("${spring.application.name}") String applicationName,
-//                                                     XmConfigProperties xmConfigProperties,
-//                                                     MemoryConfigStorage memoryConfigStorage) {
-//
-//        var configuration = memoryConfigStorage.getConfig(TENANTS_LIST_CONFIG_KEY);
-//
-//        return new TenantListRepository(
-//            restTemplate,
-//            configuration.orElse(new com.icthh.xm.commons.config.domain.Configuration(TENANTS_LIST_CONFIG_KEY, TENANT_LIST_STUB)),
-//            applicationName,
-//            xmConfigProperties
-//        ) {
-//            @Override
-//            @SneakyThrows
-//            public void onInit(String key, String config) {
-//                Map<String, Set<TenantState>> tenants = parseTenantStates(config, objectMapper);
-//                if (tenants.getOrDefault(applicationName, Set.of()).isEmpty()) {
-//                    config = TENANT_LIST_STUB;
-//                }
-//                super.onInit(key, config);
-//            }
-//        };
-//    }
+        var configuration = memoryConfigStorage.getConfig(TENANTS_LIST_CONFIG_KEY);
 
+        return new TenantListRepository(
+            restTemplate,
+            configuration.orElse(new com.icthh.xm.commons.config.domain.Configuration(TENANTS_LIST_CONFIG_KEY, TENANT_LIST_STUB)),
+            applicationName,
+            xmConfigProperties
+        ) {
+            @Override
+            @SneakyThrows
+            public void onInit(String key, String config) {
+                Map<String, Set<TenantState>> tenants = parseTenantStates(config, objectMapper);
+                if (tenants.getOrDefault(applicationName, Set.of()).isEmpty()) {
+                    config = TENANT_LIST_STUB;
+                }
+                super.onInit(key, config);
+            }
+        };
+    }
+*/
 
 }

@@ -6,6 +6,7 @@ import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
 import com.icthh.xm.commons.config.client.service.TenantAliasService;
 import com.icthh.xm.commons.config.client.service.TenantAliasServiceImpl;
+import com.icthh.xm.commons.lep.TenantScriptStorage;
 import com.icthh.xm.commons.lep.groovy.GroovyLepEngineConfiguration;
 import com.icthh.xm.commons.lep.spring.LepUpdateMode;
 import com.icthh.xm.commons.logging.config.LoggingConfigService;
@@ -16,8 +17,16 @@ import org.springframework.context.annotation.Bean;
 
 public class TestLepConfiguration extends GroovyLepEngineConfiguration {
 
+    @Value("${application.lep.tenant-script-storage}")
+    private TenantScriptStorage tenantScriptStorageType;
+
     public TestLepConfiguration(@Value("${spring.application.name}") String appName) {
         super(appName);
+    }
+
+    @Override
+    protected TenantScriptStorage getTenantScriptStorageType() {
+        return tenantScriptStorageType;
     }
 
     @Override

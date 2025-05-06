@@ -10,6 +10,7 @@ import com.icthh.xm.commons.config.client.listener.ApplicationReadyEventListener
 import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
+import com.icthh.xm.commons.security.jwt.TokenProvider;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
@@ -107,4 +108,15 @@ public class TenantConfigMockConfiguration {
         return mock(RestTemplate.class);
     }
 
+    @Bean
+    @Primary
+    public TokenProvider tokenProvider() {
+        return mock(TokenProvider.class);
+    }
+
+    @Bean
+    @Primary
+    public TenantContextHolder tenantContextHolder() {
+        return mock(TenantContextHolder.class);
+    }
 }

@@ -1,6 +1,5 @@
 package com.icthh.xm.ms.configuration.service;
 
-
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import org.junit.Test;

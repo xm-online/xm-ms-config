@@ -79,8 +79,8 @@ public class WebConfigurerUnitTest {
         env.setActiveProfiles(JHipsterConstants.SPRING_PROFILE_PRODUCTION);
         UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
 
-        assertThat(container.getMimeMappings().get("html")).isEqualTo("text/html;charset=utf-8");
-        assertThat(container.getMimeMappings().get("json")).isEqualTo("text/html;charset=utf-8");
+        assertThat(container.getMimeMappings().get("html")).isEqualTo("text/html");
+        assertThat(container.getMimeMappings().get("json")).isEqualTo("application/json");
 
         Builder builder = Undertow.builder();
         container.getBuilderCustomizers().forEach(c -> c.customize(builder));
@@ -91,9 +91,15 @@ public class WebConfigurerUnitTest {
     @Test
     public void testUndertowHttp2Enabled() {
         serverProperties.getHttp2().setEnabled(true);
+
         UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
+        container.addBuilderCustomizers(builder ->
+                builder.setServerOption(UndertowOptions.ENABLE_HTTP2, serverProperties.getHttp2().isEnabled())
+        );
+
         Builder builder = Undertow.builder();
         container.getBuilderCustomizers().forEach(c -> c.customize(builder));
+
         OptionMap.Builder serverOptions = (OptionMap.Builder) ReflectionTestUtils.getField(builder, "serverOptions");
         assertThat(serverOptions.getMap().get(UndertowOptions.ENABLE_HTTP2)).isTrue();
     }

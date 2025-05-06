@@ -56,17 +56,6 @@ management:
                 enabled: true
 
 jhipster:
-    async:
-        core-pool-size: 1
-        max-pool-size: 50
-        queue-capacity: 10000
-    # To test logstash appender
-    logging:
-        logstash:
-            enabled: true
-            host: localhost
-            port: 5000
-            queue-size: 512
     security:
         authentication:
             jwt:
@@ -78,10 +67,12 @@ jhipster:
             token-service-id: uaa
             client-id: internal
             client-secret: internal
-    metrics: # DropWizard Metrics configuration, used by MetricsConfiguration
-        logs: # Reports Dropwizard metrics in the logs
-            enabled: false
-            report-frequency: 60 # in seconds
+        content-security-policy: "default-src 'self'; frame-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com data:"
+    logging:
+        logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
+            enabled: true
+            host: localhost
+            port: 5000
 
 # ===================================================================
 # Application specific properties
@@ -94,11 +85,14 @@ jhipster:
 
 xm-config.enabled: false
 xm-config:
+    configMode: OWNER
     xm-config-url: http://config
     kafka-config-topic: config_topic
+    kafka-config-queue: config_queue
 
 application:
     super-tenants-list: XM, MANAGER
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config
     env-config-externalization-enabled: false
     kafka-enabled: false
     git:

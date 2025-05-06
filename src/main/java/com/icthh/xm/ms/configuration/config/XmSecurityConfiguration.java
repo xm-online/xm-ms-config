@@ -11,7 +11,6 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 
 @Configuration
-
 public class XmSecurityConfiguration extends SecurityConfiguration {
 
     public XmSecurityConfiguration(TokenProvider tokenProvider,

@@ -122,6 +122,9 @@ test {
         excludeCategories(testCategories)
     }
 
+    jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+
     // uncomment if the tests reports are not generated
     // see https://github.com/jhipster/generator-jhipster/pull/2771 and https://github.com/jhipster/generator-jhipster/pull/4484
     // ignoreFailures true
@@ -242,6 +245,7 @@ dependencies {
 
     implementation "com.icthh.xm.commons:xm-commons-lep:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-lep-groovy:${xm_commons_version}"
+    implementation "com.icthh.xm.commons:xm-commons-lep-annotation-processor:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-i18n:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-config:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-idp:${xm_commons_version}"

@@ -333,7 +333,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     private Boolean isConfigUnderTenant(String tenant, String configPath) {
         Path path = Path.of("/", configPath).normalize();
-        return path.startsWith(getTenantPathPrefix(tenant) + "/");
+        Path tenantPrefixPath = Path.of("/", getTenantPathPrefix(tenant) + "/").normalize();
+        return path.startsWith(tenantPrefixPath);
     }
 
     private Boolean isConfigUnderTenant(Configuration config) {

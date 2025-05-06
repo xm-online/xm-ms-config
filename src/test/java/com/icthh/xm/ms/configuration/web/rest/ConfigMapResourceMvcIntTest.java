@@ -12,6 +12,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -35,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
-public class ConfigMapResourceMvcTest extends AbstractSpringBootTest {
+public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
 
     @Autowired
     private ExceptionTranslator exceptionTranslator;
@@ -43,7 +44,7 @@ public class ConfigMapResourceMvcTest extends AbstractSpringBootTest {
     @MockBean
     private ConfigurationService configurationService;
 
-    @MockBean
+    @Mock
     private ApplicationProperties applicationProperties;
 
     private MockMvc restTaskMockMvc;

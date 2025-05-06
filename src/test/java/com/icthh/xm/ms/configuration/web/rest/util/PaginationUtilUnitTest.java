@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.web.rest.util;
 
 import static org.junit.Assert.*;
 
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import org.junit.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -16,7 +17,7 @@ import java.util.List;
  *
  * @see PaginationUtil
  */
-public class PaginationUtilUnitTest {
+public class PaginationUtilUnitTest extends AbstractUnitTest {
 
     @Test
     public void generatePaginationHttpHeadersTest() {

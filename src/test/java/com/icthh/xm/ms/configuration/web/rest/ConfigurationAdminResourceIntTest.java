@@ -355,7 +355,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT2/hash")
                 .contentType(MediaType.TEXT_PLAIN))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(content().json(new ObjectMapper().writeValueAsString(response)))
             .andExpect(status().is2xxSuccessful());
     }
@@ -369,7 +369,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.available").value("false"))
             .andExpect(status().is2xxSuccessful());
 
@@ -378,7 +378,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.available").value("true"))
             .andExpect(status().is2xxSuccessful());
     }
