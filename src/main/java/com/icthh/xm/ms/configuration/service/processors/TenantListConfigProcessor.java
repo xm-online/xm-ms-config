@@ -1,22 +1,20 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static com.icthh.xm.commons.config.client.repository.TenantListRepository.TENANTS_LIST_CONFIG_KEY;
-import static java.util.Collections.emptyList;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantState;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * @murenko have to add javadoc
- */
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.icthh.xm.commons.config.client.repository.TenantListRepository.TENANTS_LIST_CONFIG_KEY;
+import static java.util.Collections.emptyList;
+
 @Slf4j
 @Component
 public class TenantListConfigProcessor implements TenantConfigurationProcessor {

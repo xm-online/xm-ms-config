@@ -1,12 +1,9 @@
 package com.icthh.xm.ms.configuration.config;
 
-import static org.mockito.Mockito.mock;
-
 import com.icthh.xm.commons.config.client.repository.CommonConfigRepository;
 import com.icthh.xm.commons.config.client.repository.TenantListRepository;
 import com.icthh.xm.commons.config.client.service.TenantAliasService;
 import com.icthh.xm.commons.config.client.service.TenantAliasServiceImpl;
-import com.icthh.xm.commons.lep.TenantScriptStorage;
 import com.icthh.xm.commons.lep.groovy.GroovyLepEngineConfiguration;
 import com.icthh.xm.commons.lep.spring.LepUpdateMode;
 import com.icthh.xm.commons.logging.config.LoggingConfigService;
@@ -15,18 +12,12 @@ import com.icthh.xm.ms.configuration.service.LepContextCastIntTest.TestLepServic
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 
-public class TestLepConfiguration extends GroovyLepEngineConfiguration {
+import static org.mockito.Mockito.mock;
 
-    @Value("${application.lep.tenant-script-storage}")
-    private TenantScriptStorage tenantScriptStorageType;
+public class TestLepConfiguration extends GroovyLepEngineConfiguration {
 
     public TestLepConfiguration(@Value("${spring.application.name}") String appName) {
         super(appName);
-    }
-
-    @Override
-    protected TenantScriptStorage getTenantScriptStorageType() {
-        return tenantScriptStorageType;
     }
 
     @Override

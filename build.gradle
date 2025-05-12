@@ -123,7 +123,6 @@ test {
     }
 
     jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
-    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
 
     // uncomment if the tests reports are not generated
     // see https://github.com/jhipster/generator-jhipster/pull/2771 and https://github.com/jhipster/generator-jhipster/pull/4484

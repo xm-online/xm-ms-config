@@ -7,11 +7,10 @@ import com.icthh.xm.commons.lep.api.LepManagementService;
 import com.icthh.xm.commons.lep.spring.LepService;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
+import com.icthh.xm.ms.configuration.service.TransactionPropagationService;
 import com.icthh.xm.ms.configuration.service.processors.lep.ConfigurationLepResolver;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -30,19 +29,17 @@ import static java.util.Collections.emptyList;
 @LepService(group = "processors")
 @ConditionalOnProperty("application.lep.processor-enabled")
 @RequiredArgsConstructor
-public class LepConfigProcessor implements TenantConfigurationProcessor {
+public class LepConfigProcessor extends TransactionPropagationService<LepConfigProcessor> implements TenantConfigurationProcessor {
 
     private final TenantContextHolder tenantContextHolder;
     private final LepManagementService lepManager;
     private final AntPathMatcher matcher = new AntPathMatcher();
-  //  @Setter(onMethod = @__(@Autowired))
-  //  private LepConfigProcessor self;
 
     private static final String TENANT_CONFIG_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**/*";
 
     @Override
     public boolean isSupported(Configuration configuration) {
-        return runWithLepContext(configuration, () -> this.isSupportedWithResolver(configuration), false);
+        return runWithLepContext(configuration, () -> self.isSupportedWithResolver(configuration), false);
     }
 
     @Override
@@ -52,13 +49,13 @@ public class LepConfigProcessor implements TenantConfigurationProcessor {
                                                     Set<Configuration> configToReprocess,
                                                     Map<String, Set<Configuration>> externalConfigs) {
         return runWithLepContext(configuration,
-                () -> this.processConfigurationWithResolver(configuration, originalStorage, targetStorage),
+                () -> self.processConfigurationWithResolver(configuration, originalStorage, targetStorage),
                 emptyList());
     }
 
     @LogicExtensionPoint(value = "IsSupported", resolver = ConfigurationLepResolver.class)
     public boolean isSupportedWithResolver(Configuration configuration) {
-        return this.isSupportedForAll(configuration);
+        return self.isSupportedForAll(configuration);
     }
 
     @LogicExtensionPoint(value = "IsSupported")
@@ -70,7 +67,7 @@ public class LepConfigProcessor implements TenantConfigurationProcessor {
     public List<Configuration> processConfigurationWithResolver(Configuration configuration,
                                                     Map<String, Configuration> originalStorage,
                                                     Map<String, Configuration> targetStorage) {
-        return this.processConfigurationForAll(configuration, originalStorage, targetStorage);
+        return self.processConfigurationForAll(configuration, originalStorage, targetStorage);
     }
 
     @LogicExtensionPoint(value = "Process")

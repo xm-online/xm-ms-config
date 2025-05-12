@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.function.Function.identity;
@@ -76,7 +75,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(mainValue);
 
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(path));
-        assertEquals(content, privateMap.get(path).getContent());
+        assertEquals("processed content of: " + content, privateMap.get(path).getContent());
     }
 
     @Test
@@ -148,12 +147,12 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, filesList("/tenant-config.yml"));
         doAssertions(() -> {
             String mainExternalizations = mockTenantConfigWithExternalization("mainExternalizations");
-            String lifeTenantExternalizations = mockTenantConfigWithExternalization("lifetenantExternalizations");
+            String lifetenantExternalizations = mockTenantConfigWithExternalization("lifetenantExternalizations");
 
-            assertThat(privateMap.get(pathInTenant("MAIN", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(mainExternalizations);
-            assertThat(privateMap.get(pathInTenant("SUBMAIN", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(submainContent);
-            assertThat(privateMap.get(pathInTenant("LIFETENANT", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(lifeTenantExternalizations);
-            assertThat(privateMap.get(pathInTenant("ONEMORELIFETENANT", "/tenant-config.yml")).getContent()).isEqualToNormalizingNewlines(mainContent);
+            assertEquals(mainExternalizations, privateMap.get(pathInTenant("MAIN", "/tenant-config.yml")).getContent());
+            assertEquals(submainContent, privateMap.get(pathInTenant("SUBMAIN", "/tenant-config.yml")).getContent());
+            assertEquals(lifetenantExternalizations, privateMap.get(pathInTenant("LIFETENANT", "/tenant-config.yml")).getContent());
+            assertEquals(mainContent, privateMap.get(pathInTenant("ONEMORELIFETENANT", "/tenant-config.yml")).getContent());
         });
     }
 
@@ -173,10 +172,10 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     @Test
     public void testExcludeFileFromNotifications() {
         List<String> paths = repository.findAll()
-            .getData()
-            .stream()
-            .map(Configuration::getPath)
-            .collect(toList());
+                .getData()
+                .stream()
+                .map(Configuration::getPath)
+                .collect(toList());
 
         configurationService.deleteConfigurations(paths);
         memoryConfigStorage.clear();
@@ -200,7 +199,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration("/config/tenants/file2", "1\n"));
         configurationService.updateConfiguration(new Configuration("/config/tenants/file3", "1\n"));
         ConfigVersion commit = configurationService.updateConfigurationsFromZip(
-            new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
+                new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
         String version = new ObjectMapper().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
@@ -219,8 +218,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(null);
         assertEquals(configurationMap, Map.of(
-            "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
-            "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
+                "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),
+                "/config/tenants/file2", new Configuration("/config/tenants/file2", "2\n")
         ));
     }
 
@@ -356,7 +355,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     private Map<String, Configuration> getPromPublicApi() {
         List<String> strings = filesList("/tenant-config.yml");
         List<Configuration> configList = strings.stream().map(configurationService::findConfiguration)
-            .filter(Optional::isPresent).map(Optional::get).collect(toList());
+            .filter(Optional::isPresent).map(Optional::get).toList();
         return configList.stream().collect(toMap(Configuration::getPath, identity()));
     }
 
