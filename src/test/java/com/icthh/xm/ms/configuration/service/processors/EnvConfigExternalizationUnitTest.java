@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
@@ -16,7 +17,7 @@ import java.util.Set;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class EnvConfigExternalizationUnitTest {
+public class EnvConfigExternalizationUnitTest extends AbstractUnitTest {
 
     public static final Set<String> ENV_BLACKLIST = Set.of("filteredVariable", "filteredVariableWithDefault");
 
@@ -36,7 +37,7 @@ public class EnvConfigExternalizationUnitTest {
 
         Configuration configuration = new Configuration("/config/someConfig", TestUtil.loadFile("someConfig"));
         List<Configuration> processedConfigurations = new EnvConfigExternalizationFromFile(applicationProperties)
-                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
+            .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
         assertEquals(TestUtil.loadFile("someConfigExpected"), processedConfigurations.get(0).getContent());
     }
 

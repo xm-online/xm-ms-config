@@ -1,8 +1,8 @@
 package com.icthh.xm.ms.configuration.config;
 
-import io.github.jhipster.config.JHipsterConstants;
 import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.Environment;
+import tech.jhipster.config.JHipsterConstants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +25,7 @@ public final class DefaultProfileUtil {
      * @param app the Spring application
      */
     public static void addDefaultProfile(SpringApplication app) {
-        Map<String, Object> defProperties =  new HashMap<>();
+        Map<String, Object> defProperties = new HashMap<>();
         /*
         * The default profile to use when no other profiles are defined
         * This cannot be set in the <code>application.yml</code> file.

@@ -32,7 +32,7 @@ task incrementProjectVersion {
 
 }
 
-task decrementProjectVersion(dependsOn: configurations.compile) {
+task decrementProjectVersion(dependsOn: processResources) {
     doLast{
         PropertiesConfiguration props = new PropertiesConfiguration(project.getProjectDir().absolutePath + '/gradle.properties')
         String version = props.getProperty("version")

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -24,7 +25,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.springframework.core.Ordered.LOWEST_PRECEDENCE;
 
 @Slf4j
@@ -51,7 +51,8 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
                                                     Map<String, Set<Configuration>> externalConfigs) {
         String tenant = matcher.extractUriTemplateVariables(DEFAULT_TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
         String content = targetStorage.getOrDefault(configuration.getPath(), configuration).getContent();
-        Map<String, Object> configMap = mapper.readValue(content, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> configMap = mapper.readValue(content, new TypeReference<Map<String, Object>>() {
+        });
 
         if (configMap != null && isEnvPresent(tenant + "_")) {
             processConfigMap(tenant, configMap);
@@ -122,7 +123,7 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
 
         String envVariable = getPathVariants(path).stream().filter(env::containsKey).map(env::get).findFirst().orElse("");
 
-        if (isBlank(envVariable)) {
+        if (StringUtils.isBlank(envVariable)) {
             return envVariable;
         }
 

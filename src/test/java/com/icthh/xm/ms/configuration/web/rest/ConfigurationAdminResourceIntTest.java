@@ -1,10 +1,30 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
+import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.TenantContextUtils;
+import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
+import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
+import lombok.SneakyThrows;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.util.List;
+
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
 import static com.icthh.xm.ms.configuration.config.Constants.INMEMORY;
 import static com.icthh.xm.ms.configuration.config.Constants.REFRESH;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
+import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -13,30 +33,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.apache.commons.codec.digest.DigestUtils.sha256Hex;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
-import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.commons.tenant.TenantContextUtils;
-import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
-import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
-import lombok.SneakyThrows;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.List;
-import java.util.Map;
 
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
@@ -158,9 +154,9 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
                 .andExpect(status().is2xxSuccessful());
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname.yml?toJson")
                 .contentType(MediaType.TEXT_PLAIN))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
-                .andExpect(jsonPath("$.field").value("field value"));
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(jsonPath("$.field").value("field value"));
     }
 
     @Test
@@ -359,7 +355,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT2/hash")
             .contentType(MediaType.TEXT_PLAIN))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(new ObjectMapper().writeValueAsString(response)))
             .andExpect(status().is2xxSuccessful());
     }
@@ -373,7 +369,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.available").value("false"))
             .andExpect(status().is2xxSuccessful());
 
@@ -382,7 +378,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(get(API_PREFIX + CONFIG + REFRESH + "/available")
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.available").value("true"))
             .andExpect(status().is2xxSuccessful());
     }

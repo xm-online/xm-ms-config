@@ -5,37 +5,40 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
-import com.icthh.xm.ms.configuration.config.DefaultProfileUtil;
-import io.github.jhipster.config.JHipsterConstants;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
+import tech.jhipster.config.DefaultProfileUtil;
+import tech.jhipster.config.JHipsterConstants;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.TimeZone;
 
-@ComponentScan(
-    value = "com.icthh.xm"
-)
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.icthh.xm")
 @EnableConfigurationProperties({ApplicationProperties.class})
-@EnableDiscoveryClient
-@Slf4j
-@RequiredArgsConstructor
 public class ConfigurationApp {
+
+    private static final Logger log = LoggerFactory.getLogger(ConfigurationApp.class);
 
     private final Environment env;
     private final TenantContextHolder tenantContextHolder;
+
+    public ConfigurationApp(Environment env, TenantContextHolder tenantContextHolder) {
+        this.env = env;
+        this.tenantContextHolder = tenantContextHolder;
+    }
 
     /**
      * Initializes configuration.
@@ -64,15 +67,20 @@ public class ConfigurationApp {
         TenantContextUtils.setTenant(tenantContextHolder, TenantKey.SUPER);
 
         // init logger MDC context
-        MdcUtils.putRid(MdcUtils.getRid() + "::" + TenantKey.SUPER.getValue());
+        MdcUtils.putRid(MdcUtils.generateRid() + "::" + TenantKey.SUPER.getValue());
     }
 
+    /**
+     * Destroy configuration.
+     */
     @PreDestroy
     public void destroyApplication() {
-        log.info("\n----------------------------------------------------------\n\t"
-                + "Application {} is closing"
-                + "\n----------------------------------------------------------",
-            env.getProperty("spring.application.name"));
+        log.info(
+            "\n----------------------------------------------------------\n\t" +
+                "Application {} is closing" +
+                "\n----------------------------------------------------------",
+            env.getProperty("spring.application.name")
+        );
     }
 
     /**
@@ -80,37 +88,36 @@ public class ConfigurationApp {
      *
      * @param args the command line arguments
      */
+    @SneakyThrows
     public static void main(String[] args) {
-
         MdcUtils.putRid();
-
         SpringApplication app = new SpringApplication(ConfigurationApp.class);
         DefaultProfileUtil.addDefaultProfile(app);
-        Environment env = app.run(args).getEnvironment();
+        ConfigurableApplicationContext context = app.run(args);
+        Environment env = context.getEnvironment();
         logApplicationStartup(env);
     }
 
     private static void logApplicationStartup(Environment env) {
-        String protocol = "http";
-        if (env.getProperty("server.ssl.key-store") != null) {
-            protocol = "https";
-        }
+        String protocol = Optional.ofNullable(env.getProperty("server.ssl.key-store")).map(key -> "https").orElse("http");
+        String applicationName = env.getProperty("spring.application.name");
         String serverPort = env.getProperty("server.port");
-        String contextPath = env.getProperty("server.servlet.context-path");
-        if (StringUtils.isBlank(contextPath)) {
-            contextPath = "/";
-        }
+        String contextPath = Optional
+            .ofNullable(env.getProperty("server.servlet.context-path"))
+            .filter(StringUtils::isNotBlank)
+            .orElse("/");
         String hostAddress = "localhost";
         try {
             hostAddress = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             log.warn("The host name could not be determined, using `localhost` as fallback");
         }
-        log.info("\n----------------------------------------------------------\n\t" +
-                "Application '{}' is running! Access URLs:\n\t" +
-                "Local: \t\t{}://localhost:{}{}\n\t" +
-                "External: \t{}://{}:{}{}\n\t" +
-                "Profile(s): \t{}\n----------------------------------------------------------",
+        log.info("\n----------------------------------------------------------\n\t"
+                + "Application '{}' is running! Access URLs:\n\t"
+                + "Local: \t\t{}://localhost:{}{}\n\t"
+                + "External: \t{}://{}:{}{}\n\t"
+                + "Timezone: \t{}\n\t"
+                + "Profile(s): \t{}\n----------------------------------------------------------",
             env.getProperty("spring.application.name"),
             protocol,
             serverPort,
@@ -119,13 +126,7 @@ public class ConfigurationApp {
             hostAddress,
             serverPort,
             contextPath,
+            TimeZone.getDefault().toZoneId().getId(),
             env.getActiveProfiles());
-
-        String configServerStatus = env.getProperty("configserver.status");
-        if (configServerStatus == null) {
-            configServerStatus = "Not found or not setup for this application";
-        }
-        log.info("\n----------------------------------------------------------\n\t" +
-                "Config Server: \t{}\n----------------------------------------------------------", configServerStatus);
     }
 }

@@ -7,16 +7,7 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
-import java.util.Set;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,6 +18,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
@@ -356,7 +355,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     private Map<String, Configuration> getPromPublicApi() {
         List<String> strings = filesList("/tenant-config.yml");
         List<Configuration> configList = strings.stream().map(configurationService::findConfiguration)
-            .filter(Optional::isPresent).map(Optional::get).collect(toList());
+            .filter(Optional::isPresent).map(Optional::get).toList();
         return configList.stream().collect(toMap(Configuration::getPath, identity()));
     }
 
@@ -414,12 +413,12 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     private List<String> filesList(String name) {
         // hash set for correct order in list
         return new ArrayList<>(new HashSet<>(
-                List.of(
-                        pathInTenant("MAIN", name),
-                        pathInTenant("SUBMAIN", name),
-                        pathInTenant("LIFETENANT", name),
-                        pathInTenant("ONEMORELIFETENANT", name)
-                )
+            List.of(
+                pathInTenant("MAIN", name),
+                pathInTenant("SUBMAIN", name),
+                pathInTenant("LIFETENANT", name),
+                pathInTenant("ONEMORELIFETENANT", name)
+            )
         ));
     }
 

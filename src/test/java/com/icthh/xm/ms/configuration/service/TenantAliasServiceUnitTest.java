@@ -19,16 +19,15 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantKey;
 import java.util.List;
 import java.util.Optional;
+
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
 
-@RunWith(MockitoJUnitRunner.class)
-public class TenantAliasServiceUnitTest {
+public class TenantAliasServiceUnitTest extends AbstractUnitTest {
 
     TenantAliasTreeStorage tenantAliasTreeStorage;
     @Mock

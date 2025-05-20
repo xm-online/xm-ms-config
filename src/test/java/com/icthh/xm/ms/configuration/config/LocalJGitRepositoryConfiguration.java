@@ -1,25 +1,25 @@
 package com.icthh.xm.ms.configuration.config;
 
-import static java.lang.Thread.sleep;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
-import java.io.File;
-import java.util.concurrent.locks.ReentrantLock;
-import javax.annotation.PreDestroy;
-
 import com.icthh.xm.ms.configuration.service.FileService;
+import jakarta.annotation.PreDestroy;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.io.File;
+import java.util.concurrent.locks.ReentrantLock;
+
+import static java.lang.Thread.sleep;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Configuration
 @Slf4j
@@ -86,8 +86,8 @@ public class LocalJGitRepositoryConfiguration {
 
     @SneakyThrows
     public static void createGitRepositoryTest(TemporaryFolder serverGitFolder,
-                                           TemporaryFolder initTestGitFolder,
-                                           GitProperties gitProperties) {
+                                               TemporaryFolder initTestGitFolder,
+                                               GitProperties gitProperties) {
         serverGitFolder.create();
         Git git = Git.init().setBare(true).setDirectory(serverGitFolder.getRoot()).call();
 
@@ -106,9 +106,9 @@ public class LocalJGitRepositoryConfiguration {
         initTestGitFolder.create();
         File root = initTestGitFolder.getRoot();
         Git.cloneRepository()
-                .setURI(gitProperties.getUri())
-                .setDirectory(root)
-                .call().close();
+            .setURI(gitProperties.getUri())
+            .setDirectory(root)
+            .call().close();
         Git git = Git.open(root);
         new File(root + "/emptyFile1").createNewFile();
         git.add().addFilepattern("*").call();

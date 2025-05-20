@@ -1,49 +1,41 @@
 package com.icthh.xm.ms.configuration.service;
 
+import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.commons.permission.config.PermissionProperties;
+import com.icthh.xm.commons.permission.domain.Privilege;
+import com.icthh.xm.commons.request.XmRequestContext;
+import com.icthh.xm.commons.request.XmRequestContextHolder;
+import com.icthh.xm.commons.tenant.TenantContext;
+import com.icthh.xm.commons.tenant.TenantKey;
+import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.config.RequestContextKeys;
+import com.icthh.xm.ms.configuration.domain.RequestSourceType;
+import com.icthh.xm.ms.configuration.domain.TenantState;
+import org.apache.commons.io.IOUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.icthh.xm.ms.configuration.domain.RequestSourceType.SYSTEM_QUEUE;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.commons.permission.config.PermissionProperties;
-import com.icthh.xm.commons.permission.domain.Privilege;
-import com.icthh.xm.commons.permission.service.PermissionMappingService;
-import com.icthh.xm.commons.request.XmRequestContext;
-import com.icthh.xm.commons.request.XmRequestContextHolder;
-import com.icthh.xm.commons.tenant.TenantContext;
-import com.icthh.xm.commons.tenant.TenantKey;
-import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
-import com.icthh.xm.ms.configuration.config.RequestContextKeys;
-import com.icthh.xm.ms.configuration.domain.RequestSourceType;
-import com.icthh.xm.ms.configuration.domain.TenantState;
-import com.icthh.xm.ms.configuration.service.filter.AlwaysTruePermissionMsNameFilter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.core.io.ClassPathResource;
-
-@RunWith(MockitoJUnitRunner.class)
-public class PrivilegeServiceIntTest {
+public class PrivilegeServiceIntTest extends AbstractSpringBootTest {
 
     @InjectMocks
     private PrivilegeService privilegeService;
@@ -58,14 +50,8 @@ public class PrivilegeServiceIntTest {
     private TenantContext tenantContext;
     @Mock
     private XmRequestContext xmRequestContext;
-    @Spy
-    private DefaultTenantContextHolder tenantContextHolder;
     @Mock
     private XmRequestContextHolder requestContextHolder;
-    @Spy
-    private AlwaysTruePermissionMsNameFilter permissionMsNameFilter = new AlwaysTruePermissionMsNameFilter();
-    @Spy
-    private PermissionMappingService permissionMappingService = new PermissionMappingService(permissionMsNameFilter);
 
     @Before
     public void before() {
@@ -108,7 +94,7 @@ public class PrivilegeServiceIntTest {
         String expectedPrivileges = readFile("privileges/privileges_expected_update.yml");
 
         assertEquals("privileges.yml", privilegeUpdate.getPath());
-        assertEquals(expectedPrivileges, privilegeUpdate.getContent());
+        assertThat(privilegeUpdate.getContent()).isEqualToNormalizingNewlines(expectedPrivileges);
     }
 
     private Configuration getConfiguration(String path) throws IOException {
@@ -120,6 +106,6 @@ public class PrivilegeServiceIntTest {
 
     private String readFile(String path) throws IOException {
         InputStream cfgInputStream = new ClassPathResource(path).getInputStream();
-        return IOUtils.toString(cfgInputStream, UTF_8);
+        return IOUtils.toString(cfgInputStream, StandardCharsets.UTF_8);
     }
 }

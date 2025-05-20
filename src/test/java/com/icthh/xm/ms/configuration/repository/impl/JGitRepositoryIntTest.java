@@ -1,9 +1,5 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
-import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepositoryTest;
-import static org.junit.Assert.assertEquals;
-
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.request.internal.PrototypeXmRequestContextHolder;
@@ -14,6 +10,15 @@ import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.domain.ConfigurationList;
+import com.icthh.xm.ms.configuration.service.FileService;
+import lombok.SneakyThrows;
+import org.eclipse.jgit.api.Git;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.springframework.core.io.ClassPathResource;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,14 +29,9 @@ import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
 
-import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.service.FileService;
-import lombok.SneakyThrows;
-import org.eclipse.jgit.api.Git;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.springframework.core.io.ClassPathResource;
+import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
+import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepositoryTest;
+import static org.junit.Assert.assertEquals;
 
 public class JGitRepositoryIntTest {
 

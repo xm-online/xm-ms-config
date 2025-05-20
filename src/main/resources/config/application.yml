@@ -28,10 +28,39 @@ management:
         web:
             base-path: /management
             exposure:
-                include: ["configprops", "env", "health", "info", "threaddump", "logfile", "jhimetrics", "prometheus" ]
+                include:
+                    - configprops
+                    - env
+                    - health
+                    - info
+                    - threaddump
+                    - logfile
+                    - jhimetrics
+                    - prometheus
+    endpoint:
+        health:
+            show-details: when_authorized
+            roles: 'SUPER-ADMIN'
+            probes:
+                enabled: true
+            group:
+                liveness:
+                    include: livenessState
+                readiness:
+                    include: readinessState
+        jhimetrics:
+            enabled: true
+    info:
+        git:
+            mode: full
     health:
         mail:
             enabled: false
+    prometheus:
+        metrics:
+            export:
+                enabled: true
+                step: 60
     metrics:
         enable:
             http: true
@@ -39,33 +68,40 @@ management:
             logback: true
             process: true
             system: true
-        export:
-            prometheus:
-                enabled: true
-                step: 60
+        distribution:
+            percentiles-histogram:
+                all: true
+            percentiles:
+                all: 0, 0.5, 0.75, 0.95, 0.99, 1.0
+        tags:
+            application: ${spring.application.name}
 
 spring:
     application:
         name: config
+    main:
+        allow-bean-definition-overriding: true
+        web-application-type: servlet
     cloud:
         consul:
+            enabled: true
             discovery:
                 healthCheckPath: /management/health
                 instanceId: ${spring.application.name}:${spring.application.instance-id:${random.value}}
+                service-name: ${spring.application.name}
+            config:
+                watch:
+                    enabled: false
+
     jackson:
         serialization.write_dates_as_timestamps: false
-    main:
-        allow-bean-definition-overriding: true
     messages:
         basename: i18n/messages
-    mvc:
-        favicon:
-            enabled: false
     thymeleaf:
-        mode: XHTML
+        mode: HTML
     kafka:
         consumer:
-            group-id: config
+            group-id: ${spring.application.name}
             key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
             value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
         listener:
@@ -73,8 +109,6 @@ spring:
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
-            properties:
-                max.block.ms: 5000
     servlet:
         multipart:
             max-file-size: 50MB
@@ -97,31 +131,16 @@ info:
 # ===================================================================
 
 jhipster:
-    async:
-        core-pool-size: 2
-        max-pool-size: 50
-        queue-capacity: 10000
-    # By default CORS is disabled. Uncomment to enable.
-    #cors:
-        #allowed-origins: "*"
-        #allowed-methods: GET, PUT, POST, DELETE, OPTIONS
-        #allowed-headers: "*"
-        #exposed-headers:
-        #allow-credentials: true
-        #max-age: 1800
-    mail:
-        from: configuration@localhost
-    swagger:
-        default-include-pattern: /api/.*
-        title: configuration API
-        description: configuration API documentation
-        version: 0.0.1
-        terms-of-service-url:
-        contact-name:
-        contact-url:
-        contact-email:
-        license:
-        license-url:
+    clientApp:
+        name: 'configurationApp'
+    api-docs:
+        default-include-pattern: ${server.servlet.context-path:}/api/**
+        management-include-pattern: ${server.servlet.context-path:}/management/**
+        title: Configuration API
+        description: Configuration API documentation
+    security:
+        content-security-policy: "default-src 'self'; frame-src 'self' data:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://storage.googleapis.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; img-src 'self' data:; font-src 'self' https://fonts.gstatic.com data:"
+
 
 # ===================================================================
 # Application specific properties
@@ -133,6 +152,7 @@ jhipster:
 # ===================================================================
 xm-config.enabled: true
 xm-config:
+    configMode: OWNER
     xm-config-url: http://config
     kafka-config-topic: config_topic
     kafka-config-queue: config_queue

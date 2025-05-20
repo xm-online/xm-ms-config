@@ -13,6 +13,12 @@
 # http://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html
 # ===================================================================
 
+logging:
+    level:
+        ROOT: INFO
+        com.icthh.xm.ms.configuration: INFO
+        io.github.jhipster: INFO
+
 spring:
     devtools:
         restart:
@@ -22,7 +28,7 @@ spring:
     cloud:
         consul:
             discovery:
-               prefer-ip-address: true
+                prefer-ip-address: true
             host: localhost
             port: 8500
     mail:
@@ -32,12 +38,17 @@ spring:
         password:
     thymeleaf:
         cache: true
+    sleuth:
+        sampler:
+            probability: 1 # report 100% of traces
     zipkin: # Use the "zipkin" Maven profile to have the Spring Cloud Zipkin dependencies
         base-url: http://localhost:9411
         enabled: false
         locator:
             discovery:
                 enabled: true
+    kafka:
+        bootstrap-servers: localhost:9092
 
 # ===================================================================
 # To enable TLS in production, generate a certificate using:
@@ -83,19 +94,12 @@ jhipster:
             token-service-id: uaa
             client-id: internal
             client-secret: internal
-    mail: # specific JHipster mail property, for standard properties see MailProperties
-        from: configuration@localhost
-        base-url: http://my-server-url-to-change # Modify according to your server's URL
-    metrics: # DropWizard Metrics configuration, used by MetricsConfiguration
-        logs: # Reports Dropwizard metrics in the logs
-            enabled: false
-            report-frequency: 60 # in seconds
     logging:
+        use-json-format: false # By default, logs are not in Json format
         logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
             enabled: false
             host: localhost
             port: 5000
-            queue-size: 512
 
 # ===================================================================
 # Application specific properties

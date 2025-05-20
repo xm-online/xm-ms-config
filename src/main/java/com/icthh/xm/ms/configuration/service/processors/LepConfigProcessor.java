@@ -5,14 +5,12 @@ import com.icthh.xm.commons.lep.LogicExtensionPoint;
 import com.icthh.xm.commons.lep.api.LepEngineSession;
 import com.icthh.xm.commons.lep.api.LepManagementService;
 import com.icthh.xm.commons.lep.spring.LepService;
-import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
+import com.icthh.xm.ms.configuration.service.TransactionPropagationService;
 import com.icthh.xm.ms.configuration.service.processors.lep.ConfigurationLepResolver;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -31,14 +29,11 @@ import static java.util.Collections.emptyList;
 @LepService(group = "processors")
 @ConditionalOnProperty("application.lep.processor-enabled")
 @RequiredArgsConstructor
-public class LepConfigProcessor implements TenantConfigurationProcessor {
+public class LepConfigProcessor extends TransactionPropagationService<LepConfigProcessor> implements TenantConfigurationProcessor {
 
     private final TenantContextHolder tenantContextHolder;
-    private final XmAuthenticationContextHolder authContextHolder;
     private final LepManagementService lepManager;
     private final AntPathMatcher matcher = new AntPathMatcher();
-    @Setter(onMethod = @__(@Autowired))
-    private LepConfigProcessor self;
 
     private static final String TENANT_CONFIG_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**/*";
 
@@ -96,6 +91,5 @@ public class LepConfigProcessor implements TenantConfigurationProcessor {
             }
         });
     }
-
 
 }

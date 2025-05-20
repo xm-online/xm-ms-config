@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
@@ -17,7 +18,7 @@ import static com.icthh.xm.ms.configuration.service.processors.EnvConfigExternal
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class EnvConfigExternalizationFromFileUnitTest {
+public class EnvConfigExternalizationFromFileUnitTest extends AbstractUnitTest {
 
     @Rule
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
