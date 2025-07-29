@@ -83,7 +83,7 @@ if (OperatingSystem.current().isWindows()) {
 defaultTasks "bootRun"
 
 springBoot {
-    mainClass = "com.icthh.xm.ms.scheduler.SchedulerApp"
+    mainClass = "com.icthh.xm.ms.configuration.ConfigurationApp"
 }
 
 bootWar {
