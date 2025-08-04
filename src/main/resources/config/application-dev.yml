@@ -27,7 +27,7 @@ spring:
     cloud:
         consul:
             discovery:
-               prefer-ip-address: true
+                prefer-ip-address: true
             host: localhost
             port: 8500
     kafka:
