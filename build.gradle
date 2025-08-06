@@ -206,6 +206,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io"
@@ -252,6 +253,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-topic:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
+
 
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
     implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:${jgit_version}")
