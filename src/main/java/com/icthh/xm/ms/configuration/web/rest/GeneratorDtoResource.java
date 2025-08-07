@@ -3,7 +3,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.GENERATE;
 
-import com.icthh.xm.ms.configuration.domain.dto.GenerateSpecDto;
+import com.icthh.xm.ms.configuration.service.generator.dto.GenerateSpecDto;
 import com.icthh.xm.ms.configuration.service.GeneratorDtoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

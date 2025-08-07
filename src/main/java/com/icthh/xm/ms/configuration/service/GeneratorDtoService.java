@@ -1,15 +1,13 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.utils.RefFinder.REF;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.dto.GenerateSpecDto;
+import com.icthh.xm.ms.configuration.service.generator.JsonSchemaToJavaGenerator;
+import com.icthh.xm.ms.configuration.service.generator.dto.GenerateSpecDto;
 import com.icthh.xm.ms.configuration.service.factory.DefinitionResolverFactory;
+import com.icthh.xm.ms.configuration.service.generator.dto.SpecDataResolveDto;
 import com.icthh.xm.ms.configuration.utils.DeepYamlMerger;
 import com.icthh.xm.ms.configuration.utils.RefFinder;
 import com.jayway.jsonpath.JsonPath;
@@ -20,7 +18,10 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import net.minidev.json.JSONArray;
+import org.jsonschema2pojo.DefaultGenerationConfig;
+import org.jsonschema2pojo.GenerationConfig;
+import org.jsonschema2pojo.SourceType;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -32,18 +33,18 @@ public class GeneratorDtoService {
     private static final String GENERATED_DIR_PATH = "generated";
     public static final String TYPES = "types";
     public static final String DEFINITIONS = "definitions";
-    private static final String XM_DEFINITIONS = "xmDefinition";
-    private static final String XM_ENTITY_DEFINITION = "xmEntityDefinition";
-    private static final String XM_ENTITY_INHERITANCE_DEFINITION = "xmEntityInheritanceDefinition";
-    private static final String XM_ENTITY_DATA_SPEC = "xmEntityDataSpec";
+    public static final String XM_DEFINITIONS = "xmDefinition";
+    public static final String XM_ENTITY_DEFINITION = "xmEntityDefinition";
+    public static final String XM_ENTITY_INHERITANCE_DEFINITION = "xmEntityInheritanceDefinition";
+    public static final String XM_ENTITY_DATA_SPEC = "xmEntityDataSpec";
     public static final Set<String> DEFINITION_PREFIXES = Set.of(DEFINITIONS, XM_ENTITY_DEFINITION,
         XM_ENTITY_INHERITANCE_DEFINITION, XM_ENTITY_DATA_SPEC);
-
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ConfigurationService configurationService;
     private final DefinitionResolverFactory definitionResolverFactory;
+    private final JsonSchemaToJavaGenerator jsonSchemaToJavaGenerator;
 
     public void generateDto(GenerateSpecDto generateSpecDto) {
         final List<String> specContent = configurationService.findTenantConfigurations(generateSpecDto.getSpecPathsAntPattern(), false).values().stream()
@@ -53,34 +54,52 @@ public class GeneratorDtoService {
         try {
             final Map<String, Object> deepMergedSpecs = DeepYamlMerger.mergeYamlContents(specContent);
             Map<String, JsonNode> refResolves = new HashMap<>();
-//            final Map<String, String> specByJsonPath = new HashMap<>();
+            Map<String, Object> specJsonSchemaByJsonPath = new HashMap<>();
 
             generateSpecDto.getJsonPaths().stream().map(GenerateSpecDto.SpecJsonPathDto::getJsonPath).forEach(jsonPath -> {
-                String specJsonSchema = JsonPath.read(deepMergedSpecs, jsonPath);
-                if (StringUtils.isNotBlank(specJsonSchema)) {
-//                    specByJsonPath.put(jsonPath, specJsonSchema);
-                    JsonNode jsonNode = readTree(specJsonSchema);
-                    Map<String, String> specRefs = RefFinder.findAllRefs(jsonNode);
-
-                    specRefs.forEach((key, value) -> {
-                        String section = value.replaceAll("^#/([^/]+)/.*", "$1");
-                        refResolves.putAll(definitionResolverFactory.getDefinitionResolver(section).resolve(deepMergedSpecs, specRefs));
-                    });
-
+                JSONArray matches = JsonPath.read(deepMergedSpecs, jsonPath);
+                String specJsonSchema = (String) matches.get(0);
+                if (specJsonSchema != null) {
+                    JsonNode jsonNode = getJsonNode(specJsonSchema);
+                    resolvingRef(jsonNode, deepMergedSpecs, refResolves, specJsonSchemaByJsonPath);
                 }
+
             });
 
-            replaceRefsWithObject(deepMergedSpecs, refResolves);
-
+            Map<String, Object> resolvedJsonSchema = replaceRefsWithObject(specJsonSchemaByJsonPath, refResolves);
+            resolvedJsonSchema.values().stream().map(c -> (String) c).forEach(jsonSchema -> {
+                String javaClassContent = jsonSchemaToJavaGenerator.convertSchemaToJava(getGeneratorConfig(), jsonSchema, "ClassName", "generated");
+                log.info("Java class content: {}", javaClassContent);
+            });
 
         } catch (Exception e) {
-            // todo throw exception???
             throw new RuntimeException(e);
         }
 
     }
 
-    private JsonNode readTree(String jsonSchema) {
+    private void resolvingRef(JsonNode jsonSchemaNode, Map<String, Object> deepMergedSpecs, Map<String, JsonNode> resolvedRefs, Map<String, Object> specJsonSchemaByJsonPath) {
+        Set<String> specRefs = RefFinder.findAllRefs(jsonSchemaNode);
+
+        specRefs.forEach(refValue -> {
+            specJsonSchemaByJsonPath.put(refValue, jsonSchemaNode.toString());
+            if (resolvedRefs.containsKey(refValue)) {
+                return;
+            }
+            String section = refValue.replaceAll("^#/([^/]+)/.*", "$1");
+            Map<String, JsonNode> resolvedDefinition = definitionResolverFactory.getDefinitionResolver(section)
+                    .resolve(SpecDataResolveDto.builder()
+                            .deepMergeSpec(deepMergedSpecs)
+                            .specRef(Set.of(refValue)) //probably group by to section and resolve it by resolver..
+                            .specJsonSchema(jsonSchemaNode.toString())
+                            .build()
+                    );
+            resolvedRefs.putAll(resolvedDefinition);
+            resolvedDefinition.values().forEach(node -> resolvingRef(node, deepMergedSpecs, resolvedRefs, specJsonSchemaByJsonPath));
+        });
+    }
+
+    private JsonNode getJsonNode(String jsonSchema) {
         try {
             return objectMapper.readTree(jsonSchema);
         } catch (JsonProcessingException e) {
@@ -90,18 +109,20 @@ public class GeneratorDtoService {
 
 
     @SuppressWarnings("unchecked")
-    private void replaceRefsWithObject(Map<String, Object> node, Map<String, JsonNode> refResolved) {
-        if (node.containsKey(REF)) {
-            Object refObj = node.get(REF);
-            if (refObj instanceof String refString) {
-                Map<String, Object> replacement = buildReplacementMap(refString, refResolved);
-                if (replacement != null) {
-                    node.put(REF, replacement);
-                }
-            }
-        }
+    private Map<String, Object> replaceRefsWithObject(Map<String, Object> jsonSchemaSpecs, Map<String, JsonNode> refResolved) {
+        final Map<String, Object> copyJsonSchemaSpecs = new HashMap<>(jsonSchemaSpecs);
 
-        node.forEach((key, value) -> {
+        jsonSchemaSpecs.values().forEach(jsonSchema -> {
+            Set<String> allRefsSchema = RefFinder.findAllRefs(getJsonNode((String) jsonSchema));
+            allRefsSchema.forEach(ref -> {
+                String section = ref.replaceAll("^#/([^/]+)/.*", "$1");
+                if (DEFINITION_PREFIXES.contains(section)) {
+                    addReplacementForRef(ref, copyJsonSchemaSpecs, refResolved);
+                }
+            });
+        });
+
+        jsonSchemaSpecs.forEach((key, value) -> {
             if (value instanceof Map<?, ?> childMap) {
                 Map<String, Object> castedMap = (Map<String, Object>) childMap;
                 replaceRefsWithObject(castedMap, refResolved);
@@ -114,6 +135,15 @@ public class GeneratorDtoService {
                 });
             }
         });
+
+        return copyJsonSchemaSpecs;
+    }
+
+    private void addReplacementForRef(String refKey, Map<String, Object> jsonSchemaSpecs, Map<String, JsonNode> refResolved) {
+        Map<String, Object> replacement = buildReplacementMap(refKey, refResolved);
+        if (replacement != null) {
+            jsonSchemaSpecs.put(refKey, replacement);
+        }
     }
 
     private Map<String, Object> buildReplacementMap(String refString, Map<String, JsonNode> refResolved) {
@@ -136,5 +166,15 @@ public class GeneratorDtoService {
         replacement.put(firstKey, innerMap);
 
         return replacement;
+    }
+
+    private GenerationConfig getGeneratorConfig() {
+        return new DefaultGenerationConfig() {
+            @Override public SourceType getSourceType() { return SourceType.JSONSCHEMA; }
+
+            @Override public char[] getPropertyWordDelimiters() {
+                return new char[] { ' ', '-', '_' };
+            }
+        };
     }
 }

@@ -207,6 +207,8 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    implementation 'org.jsonschema2pojo:jsonschema2pojo-core:1.2.2'
+    implementation 'com.sun.codemodel:codemodel:2.6'
 
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io"
@@ -261,7 +263,8 @@ dependencies {
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
-    testImplementation "com.jayway.jsonpath:json-path"
+    implementation "com.jayway.jsonpath:json-path"
+    implementation "net.minidev:json-smart"
     testImplementation ("org.springframework.boot:spring-boot-starter-test") {
         exclude module: "junit"
         exclude group: "com.vaadin.external.google", module: "android-json"

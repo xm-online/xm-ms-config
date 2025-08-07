@@ -25,7 +25,7 @@ public class DeepYamlMerger {
                 List<Object> mergedList = new ArrayList<>((List<?>) value1);
                 mergedList.addAll((List<?>) value2);
                 merged.put(key, mergedList);
-            } else {
+            } else if (value2 != null) {
                 merged.put(key, value2);
             }
         }

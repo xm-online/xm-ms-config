@@ -1,6 +1,7 @@
-package com.icthh.xm.ms.configuration.domain.dto;
+package com.icthh.xm.ms.configuration.service.generator.dto;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -15,6 +16,7 @@ public class GenerateSpecDto {
 
     @Data
     @NoArgsConstructor
+    @AllArgsConstructor
     public static class SpecJsonPathDto {
         private String className;
         private String jsonPath;
