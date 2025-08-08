@@ -12,39 +12,20 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 
 import java.util.List;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-@Import({XmMsWebConfiguration.class, MsCfgXmRequestContextConfiguration.class})
-public class WebMvcConfiguration extends XmWebMvcConfigurerAdapter {
+@Import({MsCfgXmRequestContextConfiguration.class})
+public class WebMvcConfiguration implements WebMvcConfigurer {
 
-    private final ApplicationProperties properties;
     private final XmRequestContextInterceptor xmRequestContextInterceptor;
-    private final AdminApiAccessInterceptor adminApiAccessInterceptor;
 
-    public WebMvcConfiguration(TenantInterceptor tenantInterceptor,
-                        XmLoggingInterceptor xmLoggingInterceptor,
-                        ApplicationProperties properties,
-                        XmRequestContextInterceptor xmRequestContextInterceptor,
-                        AdminApiAccessInterceptor adminApiAccessInterceptor) {
-        super(tenantInterceptor, xmLoggingInterceptor);
-        this.properties = properties;
+    public WebMvcConfiguration(XmRequestContextInterceptor xmRequestContextInterceptor) {
         this.xmRequestContextInterceptor = xmRequestContextInterceptor;
-        this.adminApiAccessInterceptor = adminApiAccessInterceptor;
     }
 
     @Override
-    protected void xmAddInterceptors(InterceptorRegistry registry) {
+    public final void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(xmRequestContextInterceptor).addPathPatterns("/**");
-        registry.addInterceptor(adminApiAccessInterceptor).addPathPatterns("/api/**");
-    }
-
-    @Override
-    protected void xmConfigurePathMatch(PathMatchConfigurer configurer) {
-        // no custom configuration
-    }
-
-    @Override
-    protected List<String> getTenantIgnorePathPatterns() {
-        return properties.getTenantIgnoredPathList();
     }
 }
