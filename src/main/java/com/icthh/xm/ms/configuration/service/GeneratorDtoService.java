@@ -1,7 +1,5 @@
 package com.icthh.xm.ms.configuration.service;
 
-import static com.icthh.xm.ms.configuration.utils.RefFinder.DEFINITION_REF;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,10 +14,7 @@ import com.icthh.xm.ms.configuration.service.generator.dto.SpecDataResolveDto;
 import com.icthh.xm.ms.configuration.utils.DeepYamlMerger;
 import com.icthh.xm.ms.configuration.utils.RefFinder;
 import com.jayway.jsonpath.JsonPath;
-import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
 import org.jsonschema2pojo.DefaultGenerationConfig;
 import org.jsonschema2pojo.GenerationConfig;
-import org.jsonschema2pojo.SourceType;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -72,11 +66,7 @@ public class GeneratorDtoService {
                     resolvingRef(specJsonObject, deepMergedSpecs, refResolves);
                     ObjectNode resolvedJsonNodes = refReplacementComponent.addResolvedRefsOnJsonSchema(specJsonObject, refResolves);
 
-//                    ObjectNode jsonNodeObject = (ObjectNode) jsonNode;
-//                    replaceRefsOnJsonSchema(jsonNodeObject, refResolves);
-
-//                    String json = getJson(jsonNodeObject);
-                    getGeneratedJavaClass(resolvedJsonNodes.toPrettyString(), specJsonPathDto.getClassName());
+                    getGeneratedJavaClasses(resolvedJsonNodes.toPrettyString(), specJsonPathDto.getClassName());
                 }
             });
 
@@ -86,7 +76,7 @@ public class GeneratorDtoService {
 
     }
 
-    private String getGeneratedJavaClass(String specJsonSchema, String className) {
+    private String getGeneratedJavaClasses(String specJsonSchema, String className) {
         String javaClassContent = jsonSchemaToJavaGenerator.convertSchemaToJava(getGeneratorConfig(), specJsonSchema, className, "com.icthh.xm.ms.configuration.generated");
         log.info("Java class content: {}", javaClassContent);
         return javaClassContent;
@@ -112,94 +102,12 @@ public class GeneratorDtoService {
         });
     }
 
-    private JsonNode ensureJsonNode(JsonNode node) {
-        if (node.isTextual()) {
-            try {
-                return objectMapper.readTree(node.asText());
-            } catch (IOException e) {
-                throw new IllegalArgumentException("Failed to parse JSON from text node: " + node.asText(), e);
-            }
-        }
-        return node;
-    }
-
     private JsonNode getJsonNode(String jsonSchema) {
         try {
             return objectMapper.readTree(jsonSchema);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Error parsing json", e);
         }
-    }
-
-    private String getJson(ObjectNode jsonSchema) {
-        try {
-            JsonNode jsonNode = objectMapper.readTree(jsonSchema.asText());
-            return objectMapper.writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(jsonNode);
-
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Error parsing json", e);
-        }
-    }
-
-
-//    @SuppressWarnings("unchecked")
-//    private Map<String, Object> replaceRefsWithObject(ObjectNode objectNode, Map<String, JsonNode> refResolved) {
-//
-//        jsonSchemaSpecs.values().forEach(jsonSchema -> {
-//            Set<String> allRefsSchema = RefFinder.findAllRefs(getJsonNode((String) jsonSchema));
-//            allRefsSchema.forEach(ref -> {
-//                String section = ref.replaceAll("^#/([^/]+)/.*", "$1");
-//                if (DEFINITION_PREFIXES.contains(section)) {
-//                    addReplacementForRef(ref, copyJsonSchemaSpecs, refResolved);
-//                }
-//            });
-//        });
-//
-//        jsonSchemaSpecs.forEach((key, value) -> {
-//            if (value instanceof Map<?, ?> childMap) {
-//                Map<String, Object> castedMap = (Map<String, Object>) childMap;
-//                replaceRefsWithObject(castedMap, refResolved);
-//            } else if (value instanceof List<?> listValue) {
-//                listValue.forEach(item -> {
-//                    if (item instanceof Map<?, ?> itemMap) {
-//                        Map<String, Object> castedItemMap = (Map<String, Object>) itemMap;
-//                        replaceRefsWithObject(castedItemMap, refResolved);
-//                    }
-//                });
-//            }
-//        });
-//
-//        return copyJsonSchemaSpecs;
-//    }
-
-    private void addReplacementForRef(String refKey, Map<String, Object> jsonSchemaSpecs, Map<String, JsonNode> refResolved) {
-        Map<String, Object> replacement = buildReplacementMap(refKey, refResolved);
-        if (replacement != null) {
-            jsonSchemaSpecs.put(refKey, replacement);
-        }
-    }
-
-    private Map<String, Object> buildReplacementMap(String refString, Map<String, JsonNode> refResolved) {
-        String path = refString.substring(2);
-        String[] sections = path.split("/");
-        if (sections.length < 2) return null;
-
-        String firstKey = sections[0];
-        String secondKey = sections[1];
-
-        JsonNode resolvedNode = refResolved.get(refString);
-        if (resolvedNode == null) return null;
-
-        Object resolvedObject = objectMapper.convertValue(resolvedNode, Map.class);
-
-        Map<String, Object> innerMap = new LinkedHashMap<>();
-        innerMap.put(secondKey, resolvedObject);
-
-        Map<String, Object> replacement = new LinkedHashMap<>();
-        replacement.put(firstKey, innerMap);
-
-        return replacement;
     }
 
     private GenerationConfig getGeneratorConfig() {
