@@ -4,6 +4,7 @@ import static com.icthh.xm.ms.configuration.service.GeneratorDtoService.DEFINITI
 import static com.icthh.xm.ms.configuration.service.GeneratorDtoService.XM_ENTITY_DATA_SPEC;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.icthh.xm.ms.configuration.service.generator.dto.SpecDataResolveDto;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +21,8 @@ public class XmEntityDataSpecResolver implements SpecResolveStrategy {
     }
 
     @Override
-    public Map<String, JsonNode> resolve(SpecDataResolveDto specDataResolveDto) {
-        String specJsonSchema = specDataResolveDto.getSpecJsonSchema();
+    public Map<String, ObjectNode> resolve(SpecDataResolveDto specDataResolveDto) {
+//        String specJsonSchema = specDataResolveDto.getSpecJsonSchema();
         Map<String, Object> deepMergeSpec = specDataResolveDto.getDeepMergeSpec();
 
         final List<Map<String, Object>> types = (List<Map<String, Object>>) deepMergeSpec.get(DEFINITIONS);

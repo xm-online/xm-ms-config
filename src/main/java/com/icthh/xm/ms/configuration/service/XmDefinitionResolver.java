@@ -2,13 +2,16 @@ package com.icthh.xm.ms.configuration.service;
 
 import static com.icthh.xm.ms.configuration.service.GeneratorDtoService.DEFINITIONS;
 import static com.icthh.xm.ms.configuration.service.GeneratorDtoService.XM_DEFINITIONS;
+import static com.icthh.xm.ms.configuration.utils.RefFinder.DEFINITION_REF;
 import static com.icthh.xm.ms.configuration.utils.RefFinder.FILE_REF;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.ms.configuration.service.generator.RefReplacementComponent;
 import com.icthh.xm.ms.configuration.service.generator.dto.SpecDataResolveDto;
 import java.util.HashMap;
 import java.util.List;
@@ -41,41 +44,46 @@ public class XmDefinitionResolver implements SpecResolveStrategy {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, JsonNode> resolve(SpecDataResolveDto specDataResolveDto) {
-        final Map<String, JsonNode> refResolveResult = new HashMap<>();
+    public Map<String, ObjectNode> resolve(SpecDataResolveDto specDataResolveDto) {
+        final Map<String, ObjectNode> refResolveResult = new HashMap<>();
         Map<String, Object> deepMergeSpec = specDataResolveDto.getDeepMergeSpec();
         final List<Map<String, Object>> definitions = (List<Map<String, Object>>) deepMergeSpec.get(DEFINITIONS);
         String tenantKey = tenantContextHolder.getTenantKey();
 
 
-        specDataResolveDto.getSpecRef().forEach(value -> { //add exception when ref not found in definitions
+        specDataResolveDto.getSpecRef().forEach(value -> {
             String key = value.substring(value.lastIndexOf("/") + 1);
-            definitions.stream()
-                .filter(def -> key.equals(def.get(KEY)))
-                .map(def -> {
-                    String refJsonSchema = (String) def.get(VALUE);
-                    if (StringUtils.isBlank(refJsonSchema)) {
-                        final String refPathFile = (String) def.get(FILE_REF);
-                        final String fullRefPathConfigFile = CONFIG_PATH_PREFIX
-                                .replace(TENANT_KEY_PREFIX, tenantKey)
-                                .replace(REF_PATH_PREFIX, refPathFile);
 
-                        return configurationService.findConfiguration(fullRefPathConfigFile)
-                                .map(Configuration::getContent)
-                                .orElseThrow(() -> new IllegalArgumentException("Can't find configuration: " + fullRefPathConfigFile));
-                    }
-                    return refJsonSchema;
-                })
-                .filter(Objects::nonNull)
-                .forEach(jsonSchema -> refResolveResult.put(value, getJsonNode(jsonSchema)));
+            Map<String, Object> matchingDef = definitions.stream()
+                    .filter(def -> key.equals(def.get(KEY)))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Can't resolve $ref: " + value + " — no definition found for key: " + key));
+
+            String refJsonSchema = (String) matchingDef.get(VALUE);
+
+            if (StringUtils.isBlank(refJsonSchema)) {
+                String refPathFile = (String) matchingDef.get(FILE_REF);
+                String fullRefPathConfigFile = CONFIG_PATH_PREFIX
+                        .replace(TENANT_KEY_PREFIX, tenantKey)
+                        .replace(REF_PATH_PREFIX, refPathFile);
+
+                refJsonSchema = configurationService.findConfiguration(fullRefPathConfigFile)
+                        .map(Configuration::getContent)
+                        .orElseThrow(() -> new IllegalArgumentException("Can't find configuration: " + fullRefPathConfigFile));
+            }
+
+//            specDataResolveDto.getSpecJsonSchema().set(DEFINITION_REF, getJsonNode(refJsonSchema));
+            ObjectNode resolvedRefSchema = getJsonNode(refJsonSchema);
+            refResolveResult.put(value, resolvedRefSchema);
+//            refReplacementComponent.replaceRefsOnJsonSchema(specDataResolveDto.getSpecJsonSchema(), refResolveResult);
         });
 
         return refResolveResult;
     }
 
-    private JsonNode getJsonNode(String jsonSchema) {
+    private ObjectNode getJsonNode(String jsonSchema) {
         try {
-            return objectMapper.readTree(jsonSchema);
+            return (ObjectNode) objectMapper.readTree(jsonSchema);
         } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Error parsing json", e);
         }

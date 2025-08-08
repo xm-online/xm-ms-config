@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.service;
 import static com.icthh.xm.ms.configuration.service.GeneratorDtoService.XM_ENTITY_DEFINITION;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.icthh.xm.ms.configuration.service.generator.dto.SpecDataResolveDto;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class XmEntityDefinitionResolver implements SpecResolveStrategy {
     }
 
     @Override
-    public Map<String, JsonNode> resolve(SpecDataResolveDto specDataResolveDto) {
+    public Map<String, ObjectNode> resolve(SpecDataResolveDto specDataResolveDto) {
         return xmDefinitionResolver.resolve(specDataResolveDto);
     }
 }
