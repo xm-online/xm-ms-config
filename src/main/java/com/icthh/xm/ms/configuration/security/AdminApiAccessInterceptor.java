@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.security;
 
 import com.icthh.xm.commons.tenant.TenantContextHolder;
+import com.icthh.xm.commons.tenant.XmRelatedComponent;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +15,7 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 
 @Component
+@XmRelatedComponent
 @RequiredArgsConstructor
 public class AdminApiAccessInterceptor implements HandlerInterceptor {
 
