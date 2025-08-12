@@ -13,7 +13,9 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -43,9 +45,20 @@ public class SshTransportConfigCallback implements TransportConfigCallback {
     @PreDestroy
     public void destroy() {
         try {
-            Files.deleteIfExists(temporaryDirectory);
+            if (Files.exists(temporaryDirectory)) {
+                try (Stream<Path> walk = Files.walk(temporaryDirectory)) {
+                    walk.sorted(Comparator.reverseOrder())
+                            .forEach(path -> {
+                                try {
+                                    Files.deleteIfExists(path);
+                                } catch (IOException e) {
+                                    log.warn("Failed to delete path: {}", path, e);
+                                }
+                            });
+                }
+            }
         } catch (IOException e) {
-            log.error("Failed to delete temporary directory: {}", temporaryDirectory, e);
+            log.error("Failed to clean up temporary directory: {}", temporaryDirectory, e);
         }
     }
 
@@ -64,7 +77,7 @@ public class SshTransportConfigCallback implements TransportConfigCallback {
                 @Override
                 public boolean accept(String connectAddress, InetSocketAddress remoteAddress,
                                       PublicKey serverKey, Configuration config, CredentialsProvider provider) {
-                    return true;
+                    return sshProperties.isAcceptKey();
                 }
             })
             .build(new JGitKeyCache());

@@ -184,6 +184,9 @@ application:
         - APPLICATION_GIT_SSH_PASS_PHRASE
         - APPLICATION_GIT_PASSWORD
         - APPLICATION_GIT_PRIVATE_KEY
+    git:
+      ssh:
+          accept-key: true
 
 gracefulShutdown:
     enabled: false
