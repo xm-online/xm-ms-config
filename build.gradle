@@ -254,8 +254,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
 
     implementation "org.eclipse.jgit:org.eclipse.jgit:${jgit_version}"
-    implementation("org.eclipse.jgit:org.eclipse.jgit.ssh.jsch:${jgit_version}")
-
+    implementation "org.eclipse.jgit:org.eclipse.jgit.ssh.apache:${jgit_version}"
     testCompileOnly "org.projectlombok:lombok:${lombok_version}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
