@@ -186,7 +186,7 @@ application:
         - APPLICATION_GIT_PRIVATE_KEY
     git:
       ssh:
-          accept-key: true
+          accept-unknown-host: true
 
 gracefulShutdown:
     enabled: false

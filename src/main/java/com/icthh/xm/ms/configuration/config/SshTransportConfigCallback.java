@@ -5,6 +5,7 @@ import static org.apache.sshd.common.auth.UserAuthMethodFactory.PUBLIC_KEY;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties.SshProperties;
 import jakarta.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
@@ -19,6 +20,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -45,18 +47,7 @@ public class SshTransportConfigCallback implements TransportConfigCallback {
     @PreDestroy
     public void destroy() {
         try {
-            if (Files.exists(temporaryDirectory)) {
-                try (Stream<Path> walk = Files.walk(temporaryDirectory)) {
-                    walk.sorted(Comparator.reverseOrder())
-                            .forEach(path -> {
-                                try {
-                                    Files.deleteIfExists(path);
-                                } catch (IOException e) {
-                                    log.warn("Failed to delete path: {}", path, e);
-                                }
-                            });
-                }
-            }
+            FileUtils.deleteDirectory(new File(temporaryDirectory.toString()));
         } catch (IOException e) {
             log.error("Failed to clean up temporary directory: {}", temporaryDirectory, e);
         }
@@ -77,7 +68,7 @@ public class SshTransportConfigCallback implements TransportConfigCallback {
                 @Override
                 public boolean accept(String connectAddress, InetSocketAddress remoteAddress,
                                       PublicKey serverKey, Configuration config, CredentialsProvider provider) {
-                    return sshProperties.isAcceptKey();
+                    return sshProperties.isAcceptUnknownHost();
                 }
             })
             .build(new JGitKeyCache());
