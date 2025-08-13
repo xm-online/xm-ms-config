@@ -61,6 +61,7 @@ public class ApplicationProperties {
             private boolean enabled;
             private String privateKey;
             private String passPhrase;
+            private boolean acceptUnknownHost;
         }
     }
 
