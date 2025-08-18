@@ -17,8 +17,6 @@ plugins {
     id "org.springframework.boot"
     id "com.google.cloud.tools.jib"
     id "com.gorylenko.gradle-git-properties"
-    id "org.openapi.generator"
-    id "org.sonarqube"
     id "io.spring.nohttp"
     id 'pmd'
     id "war"
