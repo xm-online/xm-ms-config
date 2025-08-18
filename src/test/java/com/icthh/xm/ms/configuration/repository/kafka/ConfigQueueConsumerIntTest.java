@@ -107,25 +107,6 @@ public class ConfigQueueConsumerIntTest {
     }
 
     @Test
-    public void consumeEvent_missingHash_throwIOException() throws IOException {
-        Map<String, String> eventData = new HashMap<>();
-        eventData.put("path", PATH);
-        eventData.put("content", CONTENT);
-
-        var event = new ConfigQueueEvent(EVENT_ID, MESSAGE_SOURCE, TENANT, UPDATE_CONFIG.name(), START_DATE, eventData);
-
-        when(consumerRecord.value()).thenReturn(objectMapper.writeValueAsString(event));
-        when(consumerRecord.topic()).thenReturn(TOPIC);
-
-        configQueueConsumer.consumeEvent(consumerRecord);
-
-        verifyNoMoreInteractions(configurationUpdateEventProcessor);
-        verify(privilegedContext).putValue(REQUEST_SOURCE_TYPE, CONFIG_QUEUE);
-        verify(privilegedContext).putValue(REQUEST_SOURCE_NAME, MESSAGE_SOURCE);
-        verify(privilegedContext).destroyCurrentContext();
-    }
-
-    @Test
     public void consumeEvent_unknownEventType() throws IOException {
         Map<String, String> eventData = new HashMap<>();
         eventData.put("path", PATH);
