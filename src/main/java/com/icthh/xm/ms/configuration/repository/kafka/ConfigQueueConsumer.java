@@ -89,7 +89,7 @@ public class ConfigQueueConsumer {
         String content = data.get("content");
         String oldConfigHash = data.get("oldConfigHash");
 
-        if (path == null || content == null || oldConfigHash == null) {
+        if (path == null || content == null) {
             throw new IOException("Event data has missing or null values");
         }
         return new ConfigurationUpdateMessage(path, content, oldConfigHash);
