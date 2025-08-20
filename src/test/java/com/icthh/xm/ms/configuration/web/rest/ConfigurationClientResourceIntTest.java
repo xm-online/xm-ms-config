@@ -228,6 +228,30 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
+    public void testWebappPublicConfigExternalizationFromTenantProfileWithCrossReference() {
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/tenant-profile.yml")
+                .content(
+                    // language=YAML
+                """
+                ---
+                environment:
+                  VARIABLE_FOR_REPLACE: defaultValue
+                  VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE: ${environment.VARIABLE_FOR_REPLACE}
+                """)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
+                .content("varForReplaceFromTenantProfile: ${environment.VARIABLE_FOR_REPLACE_FROM_TENANT_PROFILE}")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/settings-public.yml?toJson&processed=true")
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(content().string("{\"varForReplaceFromTenantProfile\":\"expectedValue\"}"))
+            .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
     public void testWebappPrivateConfigExternalization() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
