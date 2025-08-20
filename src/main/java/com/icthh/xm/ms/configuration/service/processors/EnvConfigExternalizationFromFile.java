@@ -8,10 +8,13 @@ import com.fasterxml.jackson.databind.node.ValueNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
+import java.util.HashSet;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -30,7 +33,6 @@ import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.text.StringSubstitutor.replace;
 
 @Slf4j
@@ -62,23 +64,24 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
                                                     Set<Configuration> configToReprocess,
                                                     Map<String, Set<Configuration>> externalConfigs) {
 
-        Map<String, String> tenantEnvs = new HashMap<>();
         Map<String, String> tenantProfile = buildTenantProfile(configuration, originalStorage);
-        tenantEnvs.putAll(tenantProfile);
-        tenantEnvs.putAll(environment);
-        log.trace("Variables for replace {}", tenantEnvs);
+        log.trace("Variables for replace {}", tenantProfile);
 
         addToReprocessIfTenantProfile(configuration, originalStorage, configToReprocess);
 
         String originalContent = configuration.getContent();
         log.trace("Config before replace {}", originalContent);
-        String content = originalContent.contains("${") ? replace(originalContent, tenantEnvs) : originalContent ;
+        String content = replaceVariables(originalContent, tenantProfile);
         log.trace("Config after replace {}", content);
         if (!content.equals(originalContent)) {
             return singletonList(new Configuration(configuration.getPath(), content));
         } else {
             return emptyList();
         }
+    }
+
+    private static String replaceVariables(String originalContent, Map<String, String> tenantProfile) {
+        return originalContent.contains("${") ? replace(originalContent, tenantProfile) : originalContent;
     }
 
     private void addToReprocessIfTenantProfile(Configuration configuration,
@@ -104,14 +107,14 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
     private Map<String, String> buildTenantProfile(Configuration configuration, Map<String, Configuration> originalStorage) {
         if (!configuration.getPath().contains(TENANT_PREFIX)) {
             log.trace("Config {} is not under tenant folder. It will not be processed by externalization.", configuration.getPath());
-            return emptyMap();
+            return environment;
         }
 
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_ENV_PATTERN, configuration.getPath()).get(TENANT_NAME);
         String tenantProfilePath = getTenantProfilePath(tenantKey);
         Configuration tenantProfileConfig = originalStorage.get(tenantProfilePath);
         if (tenantProfileConfig == null) {
-            return emptyMap();
+            return environment;
         }
 
         String tenantProfileContent = tenantProfileConfig.getContent();
@@ -143,7 +146,25 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
     private Map<String, String> getConfigMap(String tenantProfileBody) {
         Map<String, String> tenantProfile = new ConcurrentHashMap<>();
         addKeys("", objectMapper.readTree(tenantProfileBody), tenantProfile);
+        tenantProfile.putAll(environment);
+        replaceInternalVariables(tenantProfile);
         return tenantProfile;
+    }
+
+    private static void replaceInternalVariables(Map<String, String> tenantProfile) {
+        MutableBoolean wasReplaces = new MutableBoolean(false);
+        while(wasReplaces.isTrue()) {
+            tenantProfile.keySet().forEach(key -> {
+                String value = tenantProfile.get(key);
+                if (value != null && value.contains("${")) {
+                    String replaced = replace(value, tenantProfile);
+                    if (!value.equals(replaced)) {
+                        tenantProfile.put(key, replaced);
+                        wasReplaces.setTrue();
+                    }
+                }
+            });
+        }
     }
 
     private void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
