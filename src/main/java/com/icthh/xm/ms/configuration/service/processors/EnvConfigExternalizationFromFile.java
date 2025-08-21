@@ -147,7 +147,7 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
     }
 
     private static void replaceInternalVariables(Map<String, String> tenantProfile) {
-        MutableBoolean wasReplaces = new MutableBoolean(false);
+        MutableBoolean wasReplaces = new MutableBoolean(true);
         int infiniteLoopBreaker = 100;
         while(wasReplaces.isTrue() && infiniteLoopBreaker > 0) {
             infiniteLoopBreaker--;
