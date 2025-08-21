@@ -148,7 +148,10 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
 
     private static void replaceInternalVariables(Map<String, String> tenantProfile) {
         MutableBoolean wasReplaces = new MutableBoolean(false);
-        while(wasReplaces.isTrue()) {
+        int infiniteLoopBreaker = 100;
+        while(wasReplaces.isTrue() && infiniteLoopBreaker > 0) {
+            infiniteLoopBreaker--;
+            wasReplaces.setFalse();
             tenantProfile.keySet().forEach(key -> {
                 String value = tenantProfile.get(key);
                 if (value != null && value.contains("${")) {
