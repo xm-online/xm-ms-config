@@ -1,15 +1,14 @@
 package com.icthh.xm.ms.configuration.config;
 
-import com.icthh.xm.commons.lep.TenantScriptStorage;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import static java.util.Collections.emptySet;
 
+import com.icthh.xm.commons.lep.TenantScriptStorage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import static java.util.Collections.emptySet;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Properties specific to JHipster.
@@ -81,6 +80,29 @@ public class ApplicationProperties {
     public static class LepProperties {
         private TenantScriptStorage tenantScriptStorage;
         private Boolean processorEnabled;
+    }
+
+    private ConfigRepository configRepository = new ConfigRepository();
+
+    @Getter
+    @Setter
+    public static class ConfigRepository {
+
+        private S3 s3 = new S3();
+    }
+
+    @Getter
+    @Setter
+    public static class S3 {
+
+        private Boolean enabled;
+        private String endpoint;
+        private String accessKey;
+        private String secretKey;
+        private String region;
+        private String bucket;
+        private String configPath;
+        private Boolean pathStyleAccess;
     }
 
     private List<String> excludeConfigPatterns;
