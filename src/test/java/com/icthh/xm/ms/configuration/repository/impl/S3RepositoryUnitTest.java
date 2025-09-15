@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class S3RepositoryIntTest {
+public class S3RepositoryUnitTest {
 
     @Parameterized.Parameters(name = "configPath={0}")
     public static Object[] data() {

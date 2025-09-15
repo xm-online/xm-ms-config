@@ -6,17 +6,15 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.client.service.TenantAliasService;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.commons.request.spring.config.XmRequestContextConfiguration;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
-import com.icthh.xm.ms.configuration.config.ApplicationProperties.ConfigRepository;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.impl.DynamicConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
@@ -35,6 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.lang.Nullable;
 
 @Slf4j
 @Configuration
@@ -45,6 +44,29 @@ public class BeanConfiguration {
     public static final String UPDATE_BY_COMMIT_LOCK = "update-by-commit-lock";
     public static final String UPDATE_IN_MEMORY = "in-memory-update-lock";
 
+    private enum RepositoryMode {
+        DYNAMIC, S3, GIT
+    }
+
+    /**
+     * Creates and configures the {@link PersistenceConfigRepository} bean based on the application properties.
+     * <p>
+     * The repository implementation is selected according to the S3 configuration:
+     * <ul>
+     *   <li>If S3 is enabled and dynamic repository mode is enabled, a {@link DynamicConfigRepository} is created.</li>
+     *   <li>If only S3 is enabled, a {@link S3Repository} is created.</li>
+     *   <li>Otherwise, a {@link JGitRepository} is created.</li>
+     * </ul>
+     *
+     * @param applicationProperties the application properties
+     * @param lock the lock for tenant configuration
+     * @param tenantContextHolder the tenant context holder
+     * @param authenticationContextHolder the authentication context holder
+     * @param requestContextHolder the request context holder
+     * @param fileService the file service
+     * @param s3Client the Amazon S3 client (nullable)
+     * @return the configured {@link PersistenceConfigRepository}
+     */
     @Bean
     public PersistenceConfigRepository configRepository(
             ApplicationProperties applicationProperties,
@@ -53,26 +75,18 @@ public class BeanConfiguration {
             XmAuthenticationContextHolder authenticationContextHolder,
             XmRequestContextHolder requestContextHolder,
             FileService fileService,
-            AmazonS3 s3Client) {
+            @Nullable AmazonS3 s3Client) {
 
-        var s3Configuration = getS3Configuration(applicationProperties);
-        boolean s3Enabled = s3Configuration
-                .map(S3::getEnabled)
-                .orElse(false);
+        var mode = resolveRepositoryMode(applicationProperties);
+        var s3Config = getS3Configuration(applicationProperties);
 
-        if (s3Enabled) {
-            var s3 = s3Configuration.get();
-            return new S3Repository(s3Client, s3.getBucket(), s3.getConfigPath());
-        } else {
-            return new JGitRepository(applicationProperties.getGit(), lock, tenantContextHolder,
+        return switch (mode) {
+            case DYNAMIC -> createDynamicConfigRepository(s3Config, applicationProperties, lock,
+                    tenantContextHolder, authenticationContextHolder, requestContextHolder, fileService, s3Client);
+            case S3 -> createS3Repository(s3Config, s3Client);
+            default -> createJGitRepository(applicationProperties, lock, tenantContextHolder,
                     authenticationContextHolder, requestContextHolder, fileService);
-        }
-    }
-
-    private static Optional<S3> getS3Configuration(ApplicationProperties applicationProperties) {
-        return Optional.of(applicationProperties)
-                .map(ApplicationProperties::getConfigRepository)
-                .map(ConfigRepository::getS3);
+        };
     }
 
     @Bean
@@ -137,5 +151,56 @@ public class BeanConfiguration {
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .withPathStyleAccessEnabled(s3Config.getPathStyleAccess())
                 .build();
+    }
+
+    private static S3Repository createS3Repository(S3 s3, AmazonS3 s3Client) {
+        log.info("Creating s3 repository");
+        return new S3Repository(s3Client, s3.getBucket(), s3.getConfigPath());
+    }
+
+    private static JGitRepository createJGitRepository(ApplicationProperties applicationProperties, Lock lock,
+            TenantContextHolder tenantContextHolder, XmAuthenticationContextHolder authenticationContextHolder,
+            XmRequestContextHolder requestContextHolder, FileService fileService) {
+        log.info("Creating jGit repository");
+        return new JGitRepository(applicationProperties.getGit(), lock, tenantContextHolder,
+                authenticationContextHolder, requestContextHolder, fileService);
+    }
+
+    private static DynamicConfigRepository createDynamicConfigRepository(S3 s3,
+            ApplicationProperties applicationProperties, Lock lock, TenantContextHolder tenantContextHolder,
+            XmAuthenticationContextHolder authenticationContextHolder, XmRequestContextHolder requestContextHolder,
+            FileService fileService, AmazonS3 s3Client) {
+        log.info("Creating dynamic config repository");
+        return getDynamicConfigRepository(s3, applicationProperties, lock, tenantContextHolder,
+                authenticationContextHolder,
+                requestContextHolder, fileService, s3Client);
+    }
+
+    private static DynamicConfigRepository getDynamicConfigRepository(S3 s3,
+            ApplicationProperties applicationProperties, Lock lock, TenantContextHolder tenantContextHolder,
+            XmAuthenticationContextHolder authenticationContextHolder, XmRequestContextHolder requestContextHolder,
+            FileService fileService, AmazonS3 s3Client) {
+        var s3Repository = createS3Repository(s3, s3Client);
+        var jGitRepository = createJGitRepository(applicationProperties, lock, tenantContextHolder,
+                authenticationContextHolder, requestContextHolder, fileService);
+        return new DynamicConfigRepository(jGitRepository, s3Repository, s3.getRules());
+    }
+
+    private static RepositoryMode resolveRepositoryMode(ApplicationProperties applicationProperties) {
+        var s3Config = getS3Configuration(applicationProperties);
+        boolean s3Enabled = Optional.ofNullable(s3Config.getEnabled()).orElse(false);
+        boolean dynamicMode = Optional.ofNullable(s3Config.getDynamicRepositoryMode()).orElse(false);
+
+        if (s3Enabled && dynamicMode) {
+            return RepositoryMode.DYNAMIC;
+        }
+        if (s3Enabled) {
+            return RepositoryMode.S3;
+        }
+        return RepositoryMode.GIT;
+    }
+
+    private static S3 getS3Configuration(ApplicationProperties applicationProperties) {
+        return applicationProperties.getConfigRepository().getS3();
     }
 }

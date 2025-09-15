@@ -96,6 +96,7 @@ public class ApplicationProperties {
     public static class S3 {
 
         private Boolean enabled;
+        private Boolean dynamicRepositoryMode;
         private String endpoint;
         private String accessKey;
         private String secretKey;
@@ -103,6 +104,15 @@ public class ApplicationProperties {
         private String bucket;
         private String configPath;
         private Boolean pathStyleAccess;
+        private S3Rules rules = new S3Rules();
+
+    }
+
+    @Getter
+    @Setter
+    public static class S3Rules {
+        private List<String> includePaths = Collections.emptyList();
+        private List<String> excludePaths = Collections.emptyList();
     }
 
     private List<String> excludeConfigPatterns;
