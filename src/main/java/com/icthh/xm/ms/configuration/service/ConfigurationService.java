@@ -170,10 +170,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             return Map.of();
         }
 
-        paths = paths.stream()
-            .map(it -> Path.of(it).normalize().toString())
-            .filter(this::isConfigUnderTenant)
-            .collect(toList());
+        paths = filterProfilePaths(paths);
 
         String tenant = getRequiredTenantKeyValue(tenantContextHolder);
         if (fetchAll) {
@@ -184,6 +181,13 @@ public class ConfigurationService extends AbstractConfigService implements Initi
                 .filter(Objects::nonNull)
                 .collect(toMap(Configuration::getPath, identity()));
         }
+    }
+
+    private List<String> filterProfilePaths(List<String> paths) {
+        return paths.stream()
+            .map(it -> Path.of(it).normalize().toString())
+            .filter(this::isConfigUnderTenant)
+            .collect(toList());
     }
 
     private void notifyChanged(ConfigVersion commit, Collection<String> updated) {
@@ -370,5 +374,17 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             .filter(it -> TENANT_ALIAS_CONFIG.equals(it.getPath()))
             .map(it -> new UpdateAliasTreeEvent(this, it))
             .forEach(publisher::publishEvent);
+    }
+
+    public Map<String, Configuration> findTenantPersistedConfigurations(List<String> paths, Boolean fetchAll) {
+        if (!fetchAll && paths.isEmpty()) {
+            return Map.of();
+        }
+
+        var pathsUnderTenant = filterProfilePaths(paths);
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
+        return persistenceRepository.findAllInTenant(tenant).getData().stream()
+            .filter(it -> fetchAll || pathsUnderTenant.contains(it.getPath()))
+            .collect(toMap(Configuration::getPath, identity()));
     }
 }

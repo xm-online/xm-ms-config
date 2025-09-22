@@ -156,6 +156,18 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok(configurations);
     }
 
+    @PostMapping(value = PROFILE + "/configs_git_map")
+    @Timed
+    @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_MAP')")
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<Map<String, Configuration>> getPersistedConfigurationsByPaths(
+        @RequestBody List<String> paths,
+        @RequestParam(name = "fetchAll", required = false, defaultValue = "false") Boolean fetchAll) {
+        List<String> nonNullPaths = Optional.ofNullable(paths).orElseGet(Collections::emptyList);
+        Map<String, Configuration> configurations = configurationService.findTenantPersistedConfigurations(nonNullPaths, fetchAll);
+        return ResponseEntity.ok(configurations);
+    }
+
     @GetMapping(value = PROFILE + "/configs_hash")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
