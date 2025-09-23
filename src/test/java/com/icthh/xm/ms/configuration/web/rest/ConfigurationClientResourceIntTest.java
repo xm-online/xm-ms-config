@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
+import static com.icthh.xm.ms.configuration.config.Constants.INMEMORY;
 import static com.icthh.xm.ms.configuration.config.Constants.PROFILE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANTS;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
@@ -311,6 +312,57 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful())
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
+            .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,secondContent)));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testGetConfigurationsFromGitByPaths() {
+        String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname1";
+        String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname2";
+        String thirdPath = CONFIG + TENANTS + "/OTHER_" + TENANT_NAME + "/documentname3";
+        String relativePath = CONFIG + TENANTS + "/" + TENANT_NAME + "/../OTHER_" + TENANT_NAME + "/documentname3";
+        String firstContent = "first content";
+        String secondContent = "second content";
+        String thirdContent = "third content";
+        String updatedInMemory = "updated in memory";
+
+        mockMvc.perform(post(API_PREFIX + firstPath)
+                .content(firstContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(post(API_PREFIX + secondPath)
+                .content(secondContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(put(API_PREFIX + INMEMORY + secondPath)
+                .content(updatedInMemory)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(post(API_PREFIX + thirdPath)
+                .content(thirdContent)
+                .contentType(MediaType.TEXT_PLAIN))
+            .andExpect(status().is2xxSuccessful());
+
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
+                .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,updatedInMemory)));
+
+        mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_git_map")
+                .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andDo(print())
+            .andExpect(status().is2xxSuccessful())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$..path").value(Matchers.containsInAnyOrder(firstPath,secondPath)))
+            // check that content eq to secondContent, that`s mean it was taken from git (not from in-memory)
             .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,secondContent)));
     }
 
