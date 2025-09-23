@@ -288,12 +288,21 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         refreshConfiguration();
     }
 
-    public ConfigurationsHashSumDto findConfigurationsHashSum(String tenant) {
-        List<Configuration> actualConfigs = memoryStorage.getConfigsFromTenant(tenant);
+    public ConfigurationsHashSumDto findPersistedConfigurationsHashSum() {
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
+        List<Configuration> actualConfigs = persistenceRepository.findAllInTenant(tenant).getData();
+        return calculateHash(actualConfigs);
+    }
 
+    private static ConfigurationsHashSumDto calculateHash(List<Configuration> actualConfigs) {
         return new ConfigurationsHashSumDto(actualConfigs.stream()
             .map(config -> new ConfigurationHashSum(config.getPath(), sha256Hex(config.getContent())))
             .collect(toList()));
+    }
+
+    public ConfigurationsHashSumDto findConfigurationsHashSum(String tenant) {
+        List<Configuration> actualConfigs = memoryStorage.getConfigsFromTenant(tenant);
+        return calculateHash(actualConfigs);
     }
 
     public ConfigurationsHashSumDto findConfigurationsHashSum() {

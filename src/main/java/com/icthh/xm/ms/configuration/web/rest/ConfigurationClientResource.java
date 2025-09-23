@@ -168,6 +168,13 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok(configurations);
     }
 
+    @GetMapping(value = PROFILE + "/configs_git_hash")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<ConfigurationsHashSumDto> getPersistedConfigurationsHashSum() {
+        return ResponseEntity.ok(configurationService.findPersistedConfigurationsHashSum());
+    }
+
     @GetMapping(value = PROFILE + "/configs_hash")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
