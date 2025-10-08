@@ -12,6 +12,7 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
+import com.icthh.xm.ms.configuration.web.rest.dto.ConfigPatternPathDTO;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,8 +56,8 @@ public class ConfigMapResource {
     @PostMapping("/config_map/pattern")
     @Timed
     @LoggingAspectConfig(resultDetails = false)
-    public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody GetConfigRequest getConfigRequest) {
-        return ResponseEntity.ok(configurationService.getConfigMapAntPattern(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
+    public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody ConfigPatternPathDTO configPatternPathDTO) {
+        return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPaths()));
     }
 
     @Deprecated(forRemoval = true)

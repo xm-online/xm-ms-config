@@ -11,7 +11,7 @@ public interface MemoryConfigStorage {
 
     Map<String, Configuration> getProcessedConfigs();
     Map<String, Configuration> getProcessedConfigs(Collection<String> paths);
-    Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> paths);
+    Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> patterns);
     Optional<Configuration> getProcessedConfig(String path);
 
     Optional<Configuration> getConfig(String path);

@@ -88,8 +88,8 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Override
-    public Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> paths) {
-        return getByAntPatternPaths(paths)
+    public Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> patterns) {
+        return getByAntPatternPaths(patterns)
                 .stream()
                 .collect(toMap(Configuration::getPath, identity(), mergeOverride()));
     }
