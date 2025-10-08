@@ -112,6 +112,13 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         return memoryStorage.getProcessedConfigs(paths);
     }
 
+
+    @LoggingAspectConfig(resultDetails = false, inputCollectionAware = true)
+    public Map<String, Configuration> getConfigMapAntPattern(String version, Collection<String> antPatternPaths) {
+        alignVersion(version);
+        return memoryStorage.getProcessedAntPatternConfigs(antPatternPaths);
+    }
+
     private boolean isOnCommit(ConfigVersion version) {
         return  version == null || UNDEFINED_VERSION.equals(version)
             || this.version.containsVersion(version)

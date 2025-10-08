@@ -52,6 +52,13 @@ public class ConfigMapResource {
         return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
+    @PostMapping("/config_map/pattern")
+    @Timed
+    @LoggingAspectConfig(resultDetails = false)
+    public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody GetConfigRequest getConfigRequest) {
+        return ResponseEntity.ok(configurationService.getConfigMapAntPattern(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
+    }
+
     @Deprecated(forRemoval = true)
     @PutMapping(value = "/config")
     @Timed
