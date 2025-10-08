@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -89,9 +90,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     @Override
     public Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> patterns) {
-        return getByAntPatternPaths(patterns)
-                .stream()
-                .collect(toMap(Configuration::getPath, identity(), mergeOverride()));
+        return getByAntPatternPaths(patterns).collect(toMap(Configuration::getPath, identity(), mergeOverride()));
     }
 
     @Override
@@ -405,12 +404,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return result;
     }
 
-    private List<Configuration> getByAntPatternPaths(Collection<String> antPatternPaths) {
+    private Stream<Configuration> getByAntPatternPaths(Collection<String> antPatternPaths) {
         return getProcessedConfigs().values().stream().filter(configuration -> {
                     final String configPath = configuration.getPath();
                     return antPatternPaths.stream().anyMatch(patternPath -> antPathMatcher.match(patternPath, configPath));
-                })
-                .toList();
+                });
     }
 
 }
