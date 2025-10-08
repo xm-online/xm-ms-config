@@ -8,15 +8,15 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class ConfigPatternPathDTO {
-    private List<String> paths;
+    private List<String> patternPaths;
     private String version;
 
     @Override
     public String toString() {
         return "ConfigPatternPathDTO{" +
                 "version = " + version +
-                ", paths.length = " + (paths != null ? paths.size() : null) +
-                ", top paths = " + ConfigPathUtils.printPathsWithLimit(paths) +
+                ", paths.length = " + (patternPaths != null ? patternPaths.size() : null) +
+                ", top paths = " + ConfigPathUtils.printPathsWithLimit(patternPaths) +
                 "}";
     }
 }

@@ -57,7 +57,7 @@ public class ConfigMapResource {
     @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody ConfigPatternPathDTO configPatternPathDTO) {
-        return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPaths()));
+        return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPatternPaths()));
     }
 
     @Deprecated(forRemoval = true)
