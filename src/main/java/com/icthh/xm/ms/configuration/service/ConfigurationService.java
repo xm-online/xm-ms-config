@@ -116,7 +116,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     @LoggingAspectConfig(resultDetails = false, inputCollectionAware = true)
     public Map<String, Configuration> getConfigMapAntPattern(String version, Collection<String> antPatternPaths) {
         alignVersion(version);
-        return memoryStorage.getProcessedAntPatternConfigs(antPatternPaths);
+        return memoryStorage.getProcessedConfigsByAntPatterns(antPatternPaths);
     }
 
     private boolean isOnCommit(ConfigVersion version) {

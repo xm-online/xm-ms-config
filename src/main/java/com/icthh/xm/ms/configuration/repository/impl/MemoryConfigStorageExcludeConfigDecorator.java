@@ -81,8 +81,8 @@ public class MemoryConfigStorageExcludeConfigDecorator implements MemoryConfigSt
     }
 
     @Override
-    public Map<String, Configuration> getProcessedAntPatternConfigs(Collection<String> paths) {
-        return memoryConfigStorage.getProcessedAntPatternConfigs(paths);
+    public Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> patterns) {
+        return memoryConfigStorage.getProcessedConfigsByAntPatterns(patterns);
     }
 
     @Override
