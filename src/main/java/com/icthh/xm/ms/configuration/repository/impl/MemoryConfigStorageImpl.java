@@ -6,6 +6,7 @@ import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.addAllByKey;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.filterByTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathInTenant;
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getPathsByTenants;
+import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantsByPaths;
 import static java.util.Collections.emptyMap;
 import static java.util.Comparator.comparingInt;
 import static java.util.function.Function.identity;
@@ -37,16 +38,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
+import org.springframework.util.AntPathMatcher;
 
 @Slf4j
 public class MemoryConfigStorageImpl implements MemoryConfigStorage {
 
     // same for /commons folder and for root config, don't change value
     public static final String COMMONS_CONFIG = "commons";
+
+    private final AntPathMatcher antPathMatcher = new AntPathMatcher();
 
     private final Map<String, ConfigState> tenantConfigStates = new ConcurrentHashMap<>();
     private volatile Map<String, Set<Configuration>> externalConfigs = Map.of();
@@ -81,6 +86,11 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         return getByPaths(paths, ConfigState::getProcessedConfiguration)
             .stream()
             .collect(toMap(Configuration::getPath, identity(), mergeOverride()));
+    }
+
+    @Override
+    public Map<String, Configuration> getProcessedConfigsByAntPatterns(Collection<String> patterns) {
+        return getByAntPatternPaths(patterns).collect(toMap(Configuration::getPath, identity(), mergeOverride()));
     }
 
     @Override
@@ -392,6 +402,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
                 .forEach(result::add);
         });
         return result;
+    }
+
+    private Stream<Configuration> getByAntPatternPaths(Collection<String> antPatternPaths) {
+        return getProcessedConfigs().values().stream().filter(configuration -> {
+                    final String configPath = configuration.getPath();
+                    return antPatternPaths.stream().anyMatch(patternPath -> antPathMatcher.match(patternPath, configPath));
+                });
     }
 
 }

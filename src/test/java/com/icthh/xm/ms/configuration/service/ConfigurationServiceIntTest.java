@@ -8,6 +8,7 @@ import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
+import java.util.Collection;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.util.AntPathMatcher;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
@@ -462,4 +464,47 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         return "/config/tenants/" + tenant + name;
     }
 
+    @Test
+    public void testGetConfigMapAntPattern() {
+        memoryConfigStorage.clear();
+
+        Configuration config1 = mockConfig("XM", "mainSpecVal", "/xm.txt");
+        Configuration config2 = mockConfig("SOMEXM", "submainSpecVal", "/some-xm.txt");
+
+        configurationService.updateConfiguration(config1);
+        configurationService.updateConfiguration(config2);
+
+        Map<String, Configuration> allConfigs = Map.of(config1.getPath(), config1, config2.getPath(), config2);
+
+        Map<String, Configuration> result1 = configurationService.getConfigMapAntPattern(
+                null, List.of("/config/tenants/XM/*")
+        );
+
+        assertEquals(1, result1.size());
+        assertEquals(config1, result1.get(config1.getPath()));
+
+
+
+        Map<String, Configuration> result2 = configurationService.getConfigMapAntPattern(
+                null, List.of("/config/tenants/SOMEXM/*")
+        );
+
+        assertEquals(1, result2.size());
+        assertEquals(config2, result2.get(config2.getPath()));
+
+
+
+        Map<String, Configuration> result3 = configurationService.getConfigMapAntPattern(
+                null, List.of("/config/tenants/*/*.txt")
+        );
+
+        assertEquals(2, result3.size());
+        assertEquals(allConfigs, result3);
+
+        Map<String, Configuration> result4 = configurationService.getConfigMapAntPattern(
+                null, List.of("/config/tenants/NONXISTS/*")
+        );
+
+        assertEquals(0, result4.size());
+    }
 }

@@ -27,6 +27,7 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
         http.authorizeHttpRequests(auth ->
             auth
                 .requestMatchers("/api/private/config_map").permitAll()
+                .requestMatchers("/api/private/config_map/pattern").permitAll()
                 .requestMatchers("/api/private/config").permitAll()
                 .requestMatchers("/api/profile/webapp/settings-public.yml").permitAll()
                 .requestMatchers("/api/profile/webapp/public/**").permitAll()
