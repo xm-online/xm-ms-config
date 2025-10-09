@@ -74,10 +74,10 @@ jhipster:
 application:
     adminApiRestrictionEnabled: true
     git:
-        uri: /home/ssenko/work/XM2/ticino-config/ispgest-xm-configuration-dev
+        uri:
         login:
         password:
-        branch-name: master
+        branch-name:
         max-wait-time-second: 30
         depth: 50
 
