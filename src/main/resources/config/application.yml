@@ -162,7 +162,7 @@ tenant.reject-suspended: false
 application:
     adminApiRestrictionEnabled: false
     super-tenants-list: XM, MANAGER
-    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config, /api/private/config_map/pattern
     kafka-enabled: true
     kafka-system-queue: system_queue
     kafka-metadata-max-age: 60000 #in milliseconds
