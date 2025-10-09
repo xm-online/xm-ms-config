@@ -331,6 +331,39 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     }
 
     @Test
+    public void testExternalizationWithMultiReference() {
+        memoryConfigStorage.clear();
+
+        String tenantEnvValuePath = "/config/tenants/XM/tenant-profile.yml";
+        String someConfigPath = "/config/tenants/XM/some-config.yml";
+        Configuration tenantProfile = new Configuration(tenantEnvValuePath,
+            // language=YAML
+            """
+            environment:
+              env: int
+              varName: parameter
+              XM_int_parameter: success
+            targetVar: ${environment.${TENANT_NAME}_${environment.env}_${environment.varName}}
+            """);
+        Configuration mainValue = new Configuration(someConfigPath,
+            // language=YAML
+            """
+            result: ${targetVar}
+            """);
+
+        configurationService.updateConfigurationInMemory(List.of(mainValue));
+        // update tenant profile after main value
+        configurationService.updateConfigurationInMemory(List.of(tenantProfile));
+
+        Map<String, Configuration> privateMap = configurationService.getConfigurationMap(null, List.of(someConfigPath));
+        assertEquals(
+            // language=YAML
+            """
+            result: success
+            """, privateMap.get(someConfigPath).getContent());
+    }
+
+    @Test
     public void testExternalizationWithCrossReference() {
         memoryConfigStorage.clear();
 
