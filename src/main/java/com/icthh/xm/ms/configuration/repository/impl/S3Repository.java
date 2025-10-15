@@ -65,9 +65,10 @@ public class S3Repository implements PersistenceConfigRepository {
     }
 
     private Configuration toConfiguration(S3ObjectSummary summary) {
-        String key = summary.getKey();
-        String content = readFileContent(key);
-        return new Configuration("/" + key, content);
+        var key = summary.getKey();
+        var path = (configPath!= null && key.startsWith(configPath)) ? key.substring(configPath.length()) : key;
+        var content = readFileContent(key);
+        return new Configuration(path, content);
     }
 
     @Override
