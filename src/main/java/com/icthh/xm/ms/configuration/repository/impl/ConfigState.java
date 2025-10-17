@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -113,7 +114,8 @@ public class ConfigState {
         public void cleanProcessedConfiguration(Collection<String> paths) {
             paths.forEach(path -> {
                 Set<String> produced = producedByFile.getOrDefault(path, Set.of());
-                changedFiles.putAll(produced.stream().filter(Objects::nonNull).collect(toMap(it -> it, processedConfiguration::get, (a, b) -> b)));
+                changedFiles.putAll(produced.stream().filter(Objects::nonNull)
+                    .collect(toMap(identity(), processedConfiguration::get, (a, b) -> b)));
                 produced.forEach(processedConfiguration::remove);
                 producedByFile.remove(path);
             });
