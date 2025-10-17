@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Getter;
@@ -112,7 +113,7 @@ public class ConfigState {
         public void cleanProcessedConfiguration(Collection<String> paths) {
             paths.forEach(path -> {
                 Set<String> produced = producedByFile.getOrDefault(path, Set.of());
-                changedFiles.putAll(produced.stream().collect(toMap(it -> it, processedConfiguration::get)));
+                changedFiles.putAll(produced.stream().filter(Objects::nonNull).collect(toMap(it -> it, processedConfiguration::get, (a, b) -> b)));
                 produced.forEach(processedConfiguration::remove);
                 producedByFile.remove(path);
             });
