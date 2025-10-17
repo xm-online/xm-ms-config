@@ -1,7 +1,9 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_ENV_PATTERN;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_KEY_VARIABLE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME;
+import static com.icthh.xm.ms.configuration.config.Constants.TENANT_NAME_VARIABLE;
 import static com.icthh.xm.ms.configuration.config.Constants.TENANT_PREFIX;
 import static java.lang.System.getenv;
 import static java.util.Collections.emptyList;
@@ -27,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.text.StringSubstitutor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -114,8 +117,8 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
 
         String tenantProfileContent = tenantProfileConfig.getContent();
         TenantProfileEntry tenantProfileEntry = tenantProfileCash.computeIfAbsent(tenantProfilePath,
-            key -> new TenantProfileEntry(tenantProfileContent, getConfigMap(tenantProfileContent)));
-        return getMap(tenantProfilePath, tenantProfileEntry, tenantProfileContent);
+            key -> new TenantProfileEntry(tenantProfileContent, getConfigMap(tenantProfileContent, tenantKey)));
+        return getMap(tenantKey, tenantProfilePath, tenantProfileEntry, tenantProfileContent);
     }
 
     private static String getTenantProfilePath(String tenantKey) {
@@ -126,22 +129,24 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
         return TENANT_PREFIX + tenantKey;
     }
 
-    private Map<String, String> getMap(String tenantEnvValuePath, TenantProfileEntry tenantProfileEntry, String tenantProfileContent) {
+    private Map<String, String> getMap(String tenantKey, String tenantEnvValuePath, TenantProfileEntry tenantProfileEntry, String tenantProfileContent) {
         Map<String, String> configMap;
         if (tenantProfileEntry.tenantProfileContent.equals(tenantProfileContent)) {
             configMap = tenantProfileEntry.tenantProfile;
         } else {
-            configMap = getConfigMap(tenantProfileContent);
+            configMap = getConfigMap(tenantProfileContent, tenantKey);
             tenantProfileCash.put(tenantEnvValuePath, new TenantProfileEntry(tenantProfileContent, configMap));
         }
         return configMap;
     }
 
     @SneakyThrows
-    private Map<String, String> getConfigMap(String tenantProfileBody) {
+    private Map<String, String> getConfigMap(String tenantProfileBody, String tenantKey) {
         Map<String, String> tenantProfile = new ConcurrentHashMap<>();
         addKeys("", objectMapper.readTree(tenantProfileBody), tenantProfile);
         tenantProfile.putAll(environment);
+        tenantProfile.putIfAbsent(TENANT_NAME_VARIABLE, tenantKey);
+        tenantProfile.putIfAbsent(TENANT_KEY_VARIABLE, tenantKey);
         replaceInternalVariables(tenantProfile);
         return tenantProfile;
     }
@@ -150,12 +155,15 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
         MutableBoolean wasReplaces = new MutableBoolean(true);
         int infiniteLoopBreaker = 100;
         while(wasReplaces.isTrue() && infiniteLoopBreaker > 0) {
+            StringSubstitutor substitutor = new StringSubstitutor(tenantProfile);
+            substitutor.setEnableSubstitutionInVariables(true);
+
             infiniteLoopBreaker--;
             wasReplaces.setFalse();
             tenantProfile.keySet().forEach(key -> {
                 String value = tenantProfile.get(key);
                 if (value != null && value.contains("${")) {
-                    String replaced = replace(value, tenantProfile);
+                    String replaced = substitutor.replace(value);
                     if (!value.equals(replaced)) {
                         tenantProfile.put(key, replaced);
                         wasReplaces.setTrue();
