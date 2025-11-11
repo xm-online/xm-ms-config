@@ -1,9 +1,6 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.google.common.collect.Lists;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
@@ -12,10 +9,21 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.util.Strings;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Slf4j
 public class S3Repository implements PersistenceConfigRepository {
@@ -24,10 +32,10 @@ public class S3Repository implements PersistenceConfigRepository {
 
     private final String bucketName;
     private final String configPath;
-    private final AmazonS3 s3Client;
+    private final S3Client s3Client;
     private final String configPrefix;
 
-    public S3Repository(AmazonS3 s3Client, String bucketName, String configPath) {
+    public S3Repository(S3Client s3Client, String bucketName, String configPath) {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
         this.configPath = configPath;
@@ -56,17 +64,21 @@ public class S3Repository implements PersistenceConfigRepository {
     }
 
     private ConfigurationList readFromDirectory(String prefix) {
-        var listing = s3Client.listObjects(bucketName, prefix);
-        var configs = listing.getObjectSummaries().stream()
-                .filter(summary -> !summary.getKey().endsWith("/"))
+        var request = ListObjectsV2Request.builder()
+                .bucket(bucketName)
+                .prefix(prefix)
+                .build();
+        var response = s3Client.listObjectsV2Paginator(request);
+        var configs = response.contents().stream()
+                .filter(o -> !o.key().endsWith("/"))
                 .map(this::toConfiguration)
                 .toList();
         return new ConfigurationList(S3_VERSION, configs);
     }
 
-    private Configuration toConfiguration(S3ObjectSummary summary) {
-        var key = summary.getKey();
-        var path = (configPath!= null && key.startsWith(configPath)) ? key.substring(configPath.length()) : key;
+    private Configuration toConfiguration(S3Object s3Object) {
+        var key = s3Object.key();
+        var path = (configPath != null && key.startsWith(configPath)) ? key.substring(configPath.length()) : key;
         var content = readFileContent(key);
         return new Configuration(path, content);
     }
@@ -95,8 +107,10 @@ public class S3Repository implements PersistenceConfigRepository {
     }
 
     private String readFileContent(String key) {
-        try (S3Object s3Object = s3Client.getObject(bucketName, key)) {
-            return IOUtils.toString(s3Object.getObjectContent(), StandardCharsets.UTF_8);
+        var request = GetObjectRequest.builder().bucket(bucketName).key(key).build();
+        try {
+            var response = s3Client.getObject(request, ResponseTransformer.toBytes());
+            return response.asUtf8String();
         } catch (Exception e) {
             log.warn("Could not read S3 object: {}", key, e);
             return null;
@@ -107,7 +121,10 @@ public class S3Repository implements PersistenceConfigRepository {
     public ConfigVersion save(Configuration configuration) {
         var path = configuration.getPath();
         var key = resolveKey(path);
-        s3Client.putObject(bucketName, key, configuration.getContent());
+        var request = PutObjectRequest.builder().bucket(bucketName).key(key).build();
+        var content = Optional.ofNullable(configuration.getContent()).orElse(Strings.EMPTY);
+        var requestBody = RequestBody.fromString(content, StandardCharsets.UTF_8);
+        s3Client.putObject(request, requestBody);
         return S3_VERSION;
     }
 
@@ -120,21 +137,41 @@ public class S3Repository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion setRepositoryState(List<Configuration> configurations) {
         // Delete all objects under config/ and re-upload
-        ObjectListing listing = s3Client.listObjects(bucketName, configPrefix);
-        listing.getObjectSummaries().forEach(summary ->
-                s3Client.deleteObject(bucketName, resolveKey(summary.getKey()))
-        );
+        var requestList = ListObjectsV2Request.builder().bucket(bucketName).prefix(configPrefix).build();
+        var responseList = s3Client.listObjectsV2Paginator(requestList);
+        var keys = responseList.contents().stream()
+                .map(S3Object::key)
+                .toList();
+        deleteByKeys(keys);
         configurations.forEach(this::save);
         return S3_VERSION;
     }
 
     @Override
     public ConfigVersion deleteAll(List<String> paths) {
-        paths.forEach(path -> {
-            String key = resolveKey(path);
-            s3Client.deleteObject(bucketName, key);
-        });
+        List<String> normalized = paths.stream()
+                .filter(Objects::nonNull)
+                .map(this::resolveKey)
+                .toList();
+        deleteByKeys(normalized);
         return S3_VERSION;
+    }
+
+    private void deleteByKeys(List<String> keys) {
+        for (List<String> batch : Lists.partition(keys, 1000)) {
+            var request = DeleteObjectsRequest.builder()
+                    .bucket(bucketName)
+                    .delete(Delete.builder()
+                            .objects(
+                                    batch.stream()
+                                            .map(k -> ObjectIdentifier.builder().key(k).build())
+                                            .toList()
+                            )
+                            .build())
+                    .build();
+
+            s3Client.deleteObjects(request);
+        }
     }
 
     private String resolveKey(String path) {

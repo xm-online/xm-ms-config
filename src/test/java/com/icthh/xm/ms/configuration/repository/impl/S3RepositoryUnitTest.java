@@ -2,25 +2,34 @@ package com.icthh.xm.ms.configuration.repository.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.icthh.xm.commons.config.domain.Configuration;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
+import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
+import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
 @RunWith(Parameterized.class)
 public class S3RepositoryUnitTest {
@@ -35,24 +44,40 @@ public class S3RepositoryUnitTest {
 
     private static final String TEST_FILE_YAML = "test-file.yaml";
     private static final String TEST_BUCKET_NAME = "test-bucket";
-    private AmazonS3 s3Client;
+    private S3Client s3Client;
     private S3Repository s3Repository;
     private String configPrefix;
 
     @Before
     public void setUp() {
-        s3Client = mock(AmazonS3.class);
+        s3Client = mock(S3Client.class);
         s3Repository = new S3Repository(s3Client, TEST_BUCKET_NAME, configPath);
         configPrefix = configPath != null ? configPath + "/config/" : "config/";
     }
 
     @Test
     public void shouldSaveConfiguration() {
-        String path = "/config/test.file";
-        String content = "test-content";
+        var path = "/config/test.file";
+        var content = "test-content";
         var config = new Configuration(path, content);
         s3Repository.save(config);
-        verify(s3Client).putObject(eq(TEST_BUCKET_NAME), eq(configPrefix + "test.file"), eq(content));
+        var requestArgumentCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+        var bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        verify(s3Client).putObject(requestArgumentCaptor.capture(), bodyCaptor.capture());
+        assertEquals(TEST_BUCKET_NAME, requestArgumentCaptor.getValue().bucket());
+        assertEquals(configPrefix + "test.file", requestArgumentCaptor.getValue().key());
+        var stored = getBodyContent(bodyCaptor);
+        assertEquals(content, stored);
+    }
+
+    private static String getBodyContent(ArgumentCaptor<RequestBody> bodyCaptor) {
+        String stored;
+        try (java.io.InputStream is = bodyCaptor.getValue().contentStreamProvider().newStream()) {
+            stored = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read request body", e);
+        }
+        return stored;
     }
 
     @Test
@@ -78,8 +103,12 @@ public class S3RepositoryUnitTest {
     public void shouldDeleteAllConfigurations() {
         List<String> paths = List.of("/config/file1.yml", "/config/file2.yml");
         s3Repository.deleteAll(paths);
-        verify(s3Client).deleteObject(TEST_BUCKET_NAME, configPrefix + "file1.yml");
-        verify(s3Client).deleteObject(TEST_BUCKET_NAME, configPrefix + "file2.yml");
+        var deleteCaptor = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
+        verify(s3Client).deleteObjects(deleteCaptor.capture());
+        var deleted = deleteCaptor.getValue().delete().objects();
+        assertEquals(2, deleted.size());
+        var keys = deleted.stream().map(ObjectIdentifier::key).toList();
+        assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), keys);
     }
 
     @Test
@@ -93,23 +122,37 @@ public class S3RepositoryUnitTest {
 
     @Test
     public void shouldSetRepositoryState() {
-        ObjectListing listing = mock(ObjectListing.class);
-        S3ObjectSummary summary1 = new S3ObjectSummary();
-        summary1.setKey("config/file1.yml");
-        S3ObjectSummary summary2 = new S3ObjectSummary();
-        summary2.setKey("config/file2.yml");
-        when(listing.getObjectSummaries()).thenReturn(List.of(summary1, summary2));
-        when(s3Client.listObjects(eq(TEST_BUCKET_NAME), eq(configPrefix))).thenReturn(listing);
+        var objects = List.of(
+                S3Object.builder().key(configPrefix + "file1.yml").build(),
+                S3Object.builder().key(configPrefix + "file2.yml").build()
+        );
+        var paginator = Mockito.mock(ListObjectsV2Iterable.class);
+        when(paginator.contents()).thenReturn(objects::iterator);
+        when(s3Client.listObjectsV2Paginator(ArgumentMatchers.<ListObjectsV2Request>argThat(request ->
+                request != null && TEST_BUCKET_NAME.equals(request.bucket()) && configPrefix.equals(request.prefix()))))
+                .thenReturn(paginator);
 
         Configuration config1 = new Configuration("/config/file3.yml", "new-content-3");
         Configuration config2 = new Configuration("/config/file4.yml", "new-content-4");
         List<Configuration> newConfigs = List.of(config1, config2);
 
         s3Repository.setRepositoryState(newConfigs);
-        verify(s3Client).deleteObject(TEST_BUCKET_NAME, configPrefix + "file1.yml");
-        verify(s3Client).deleteObject(TEST_BUCKET_NAME, configPrefix + "file2.yml");
-        verify(s3Client).putObject(TEST_BUCKET_NAME, configPrefix + "file3.yml", "new-content-3");
-        verify(s3Client).putObject(TEST_BUCKET_NAME, configPrefix + "file4.yml", "new-content-4");
+
+        // verify batch delete
+        ArgumentCaptor<DeleteObjectsRequest> delCaptor = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
+        verify(s3Client).deleteObjects(delCaptor.capture());
+        var deleted = delCaptor.getValue().delete().objects();
+        assertEquals(2, deleted.size());
+        var deletedKeys = deleted.stream().map(ObjectIdentifier::key).toList();
+        assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), deletedKeys);
+
+        // verify uploads of new configs
+        verify(s3Client).putObject(ArgumentMatchers.<PutObjectRequest>argThat(
+                        r -> r.bucket().equals(TEST_BUCKET_NAME) && r.key().equals(configPrefix + "file3.yml")),
+                any(RequestBody.class));
+        verify(s3Client).putObject(ArgumentMatchers.<PutObjectRequest>argThat(
+                        r -> r.bucket().equals(TEST_BUCKET_NAME) && r.key().equals(configPrefix + "file4.yml")),
+                any(RequestBody.class));
     }
 
     private void mockTenantS3Data(String tenantKey, String content) {
@@ -117,18 +160,27 @@ public class S3RepositoryUnitTest {
     }
 
     private void mockS3ConfigData(String contentPath, String contentFileName, String content) {
-        var listing = mock(ObjectListing.class);
-        var summary = new S3ObjectSummary();
-        summary.setKey(contentPath + contentFileName);
-        when(listing.getObjectSummaries()).thenReturn(List.of(summary));
-        when(s3Client.listObjects(eq(TEST_BUCKET_NAME), eq(contentPath))).thenReturn(listing);
+        // S3 paginator stub to return all objects under the prefix
+        var objects = List.of(S3Object.builder().key(contentPath + contentFileName).build());
+        var paginator = Mockito.mock(ListObjectsV2Iterable.class);
+        when(paginator.contents()).thenReturn(objects::iterator);
+        when(s3Client.listObjectsV2Paginator(ArgumentMatchers.<ListObjectsV2Request>argThat(request ->
+                request != null && TEST_BUCKET_NAME.equals(request.bucket()) && contentPath.equals(request.prefix()))))
+                .thenReturn(paginator);
 
-        S3Object s3Object = mock(S3Object.class);
-        when(s3Client.getObject(eq(TEST_BUCKET_NAME), eq(contentPath + contentFileName))).thenReturn(s3Object);
-        S3ObjectInputStream s3InputStream = new S3ObjectInputStream(
-                new java.io.ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8)),
-                mock(HttpRequestBase.class)
-        );
-        when(s3Object.getObjectContent()).thenReturn(s3InputStream);
+        // mock getObject with ResponseTransformer.toBytes() using conditional Answer to avoid NPE
+        var responseBytes = ResponseBytes.fromByteArray(
+                GetObjectResponse.builder().build(), content.getBytes(StandardCharsets.UTF_8));
+        when(s3Client.getObject(
+                any(GetObjectRequest.class),
+                ArgumentMatchers.<ResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>any())
+        ).thenAnswer(invocation -> {
+            GetObjectRequest request = invocation.getArgument(0);
+            if (request != null && TEST_BUCKET_NAME.equals(request.bucket()) && (contentPath + contentFileName).equals(
+                    request.key())) {
+                return responseBytes;
+            }
+            return ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), new byte[0]);
+        });
     }
 }

@@ -1,11 +1,5 @@
 package com.icthh.xm.ms.configuration.config;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.icthh.xm.commons.config.client.service.TenantAliasService;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.request.XmRequestContextHolder;
@@ -23,6 +17,7 @@ import com.icthh.xm.ms.configuration.repository.impl.S3Repository;
 import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
@@ -34,6 +29,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.lang.Nullable;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 
 @Slf4j
 @Configuration
@@ -75,7 +75,7 @@ public class BeanConfiguration {
             XmAuthenticationContextHolder authenticationContextHolder,
             XmRequestContextHolder requestContextHolder,
             FileService fileService,
-            @Nullable AmazonS3 s3Client) {
+            @Nullable S3Client s3Client) {
 
         var mode = resolveRepositoryMode(applicationProperties);
         var s3Config = getS3Configuration(applicationProperties);
@@ -142,18 +142,24 @@ public class BeanConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "application.config-repository.s3", name = "enabled", havingValue = "true")
-    public AmazonS3 amazonS3(ApplicationProperties applicationProperties) {
+    public S3Client s3Client(ApplicationProperties applicationProperties) {
         var s3Config = applicationProperties.getConfigRepository().getS3();
-        AWSCredentials credentials = new BasicAWSCredentials(s3Config.getAccessKey(), s3Config.getSecretKey());
-        return AmazonS3ClientBuilder.standard()
-                .withEndpointConfiguration(
-                        new AwsClientBuilder.EndpointConfiguration(s3Config.getEndpoint(), s3Config.getRegion()))
-                .withCredentials(new AWSStaticCredentialsProvider(credentials))
-                .withPathStyleAccessEnabled(s3Config.getPathStyleAccess())
+        var credentials = AwsBasicCredentials.create(s3Config.getAccessKey(), s3Config.getSecretKey());
+        return S3Client.builder()
+                .endpointOverride(URI.create(s3Config.getEndpoint()))
+                .credentialsProvider(StaticCredentialsProvider.create(credentials))
+                .region(Region.of(s3Config.getRegion()))
+                .serviceConfiguration(buildS3Configuration(s3Config))
                 .build();
     }
 
-    private static S3Repository createS3Repository(S3 s3, AmazonS3 s3Client) {
+    private static S3Configuration buildS3Configuration(S3 s3Config) {
+        return S3Configuration.builder()
+                .pathStyleAccessEnabled(s3Config.getPathStyleAccess())
+                .build();
+    }
+
+    private static S3Repository createS3Repository(S3 s3, S3Client s3Client) {
         log.info("Creating s3 repository");
         return new S3Repository(s3Client, s3.getBucket(), s3.getConfigPath());
     }
@@ -169,7 +175,7 @@ public class BeanConfiguration {
     private static DynamicConfigRepository createDynamicConfigRepository(S3 s3,
             ApplicationProperties applicationProperties, Lock lock, TenantContextHolder tenantContextHolder,
             XmAuthenticationContextHolder authenticationContextHolder, XmRequestContextHolder requestContextHolder,
-            FileService fileService, AmazonS3 s3Client) {
+            FileService fileService, S3Client s3Client) {
         log.info("Creating dynamic config repository");
         return getDynamicConfigRepository(s3, applicationProperties, lock, tenantContextHolder,
                 authenticationContextHolder,
@@ -179,7 +185,7 @@ public class BeanConfiguration {
     private static DynamicConfigRepository getDynamicConfigRepository(S3 s3,
             ApplicationProperties applicationProperties, Lock lock, TenantContextHolder tenantContextHolder,
             XmAuthenticationContextHolder authenticationContextHolder, XmRequestContextHolder requestContextHolder,
-            FileService fileService, AmazonS3 s3Client) {
+            FileService fileService, S3Client s3Client) {
         var s3Repository = createS3Repository(s3, s3Client);
         var jGitRepository = createJGitRepository(applicationProperties, lock, tenantContextHolder,
                 authenticationContextHolder, requestContextHolder, fileService);
