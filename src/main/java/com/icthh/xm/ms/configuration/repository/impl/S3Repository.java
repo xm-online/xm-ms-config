@@ -1,11 +1,15 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
+import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 import com.google.common.collect.Lists;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -58,11 +62,6 @@ public class S3Repository implements PersistenceConfigRepository {
         return readFromDirectory(configPrefix);
     }
 
-    @Override
-    public ConfigurationList findAllInTenant(String tenantKey) {
-        return readFromDirectory(configPrefix + "tenants/" + tenantKey + "/");
-    }
-
     private ConfigurationList readFromDirectory(String prefix) {
         var request = ListObjectsV2Request.builder()
                 .bucket(bucketName)
@@ -71,16 +70,39 @@ public class S3Repository implements PersistenceConfigRepository {
         var response = s3Client.listObjectsV2Paginator(request);
         var configs = response.contents().stream()
                 .filter(o -> !o.key().endsWith("/"))
-                .map(this::toConfiguration)
+                .map(this::findConfiguration)
                 .toList();
         return new ConfigurationList(S3_VERSION, configs);
     }
 
-    private Configuration toConfiguration(S3Object s3Object) {
+    private Configuration findConfiguration(S3Object s3Object) {
         var key = s3Object.key();
         var path = (configPath != null && key.startsWith(configPath)) ? key.substring(configPath.length()) : key;
-        var content = readFileContent(key);
-        return new Configuration(path, content);
+        var s3File = readFile(path, null);
+        return new Configuration(path, s3File.content);
+    }
+
+    private S3File readFile(String path, String version) {
+        var key = resolveKey(path);
+        var request = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .versionId(version)
+                .key(key)
+                .build();
+        try {
+            var response = s3Client.getObject(request, ResponseTransformer.toBytes());
+            var content = response.asUtf8String();
+            version = response.response().versionId();
+            return new S3File(version, content);
+        } catch (Exception e) {
+            log.warn("Could not read S3 object: {}", key, e);
+            return new S3File(version, null);
+        }
+    }
+
+    @Override
+    public ConfigurationList findAllInTenant(String tenantKey) {
+        return readFromDirectory(configPrefix + "tenants/" + tenantKey + "/");
     }
 
     @Override
@@ -93,28 +115,18 @@ public class S3Repository implements PersistenceConfigRepository {
 
     @Override
     public ConfigurationItem find(String path) {
-        var key = resolveKey(path);
-        var content = readFileContent(key);
-        return new ConfigurationItem(S3_VERSION, new Configuration(path, content));
+        var s3File = readFile(path, null);
+        return new ConfigurationItem(buildConfigVersion(s3File.version), new Configuration(path, s3File.content));
+    }
+
+    private static ConfigVersion buildConfigVersion(String s3Version) {
+        return Optional.ofNullable(s3Version).map(ConfigVersion::new).orElse(S3_VERSION);
     }
 
     @Override
     public Configuration find(String path, ConfigVersion version) {
-        // S3 does not support versioning by default, so ignore version param
-        return Optional.of(find(path))
-                .map(ConfigurationItem::getData)
-                .orElse(null);
-    }
-
-    private String readFileContent(String key) {
-        var request = GetObjectRequest.builder().bucket(bucketName).key(key).build();
-        try {
-            var response = s3Client.getObject(request, ResponseTransformer.toBytes());
-            return response.asUtf8String();
-        } catch (Exception e) {
-            log.warn("Could not read S3 object: {}", key, e);
-            return null;
-        }
+        var s3File = readFile(path, version.getMainVersion());
+        return new Configuration(path, s3File.content);
     }
 
     @Override
@@ -124,14 +136,34 @@ public class S3Repository implements PersistenceConfigRepository {
         var request = PutObjectRequest.builder().bucket(bucketName).key(key).build();
         var content = Optional.ofNullable(configuration.getContent()).orElse(Strings.EMPTY);
         var requestBody = RequestBody.fromString(content, StandardCharsets.UTF_8);
-        s3Client.putObject(request, requestBody);
-        return S3_VERSION;
+        var response = s3Client.putObject(request, requestBody);
+        return buildConfigVersion(response.versionId());
     }
 
     @Override
     public ConfigVersion saveAll(List<Configuration> configurations, Map<String, String> configHashes) {
-        configurations.forEach(this::save);
+        configurations.forEach(configuration -> save(configuration, configHashes.get(configuration.getPath())));
         return S3_VERSION;
+    }
+
+    private void save(Configuration configuration, String oldConfigHash) {
+        if (isBlank(oldConfigHash)) {
+            return;
+        }
+        assertConfigHash(configuration, oldConfigHash);
+        save(configuration);
+    }
+
+    private void assertConfigHash(Configuration configuration, String oldConfigHash) {
+        if (isBlank(oldConfigHash)) {
+            return;
+        }
+        var s3File = readFile(configuration.getPath(), null);
+        String expectedOldConfigHash = sha1Hex(s3File.content);
+        log.debug("Expected hash {}, actual hash {}", expectedOldConfigHash, oldConfigHash);
+        if (!expectedOldConfigHash.equals(oldConfigHash)) {
+            throw new ConcurrentConfigModificationException();
+        }
     }
 
     @Override
@@ -188,5 +220,9 @@ public class S3Repository implements PersistenceConfigRepository {
     public ConfigVersion getCurrentVersion() {
         // S3 does not have commit versions, return pseudo-version
         return S3_VERSION;
+    }
+
+    private record S3File(String version, String content) {
+
     }
 }

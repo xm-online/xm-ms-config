@@ -9,14 +9,13 @@ import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DynamicConfigRepository implements PersistenceConfigRepository {
-
-    private static final ConfigVersion S3_VERSION = new ConfigVersion("s3");
 
     private final PersistenceConfigRepository jGitRepository;
     private final PersistenceConfigRepository s3Repository;
@@ -45,19 +44,19 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
 
     @Override
     public ConfigurationList findAllInTenant(String tenantKey) {
-        var jGitConfigurationList = jGitRepository.findAllInTenant(tenantKey);
-        var jGitData = jGitConfigurationList.getData();
-        var s3ConfigurationList = s3Repository.findAllInTenant(tenantKey);
-        var s3Data = s3ConfigurationList.getData();
-        var jGitVersion = jGitConfigurationList.getVersion();
-        return getConfigurationList(s3Data, jGitData, jGitVersion);
+        return fetchFromRepositories(repository -> repository.findAllInTenant(tenantKey));
     }
 
     @Override
     public ConfigurationList findAllInTenants(Set<String> tenants) {
-        var jGitConfigurationList = jGitRepository.findAllInTenants(tenants);
+        return fetchFromRepositories(repository -> repository.findAllInTenants(tenants));
+    }
+
+    private ConfigurationList fetchFromRepositories(
+            Function<PersistenceConfigRepository, ConfigurationList> findConfigurationsQuery) {
+        var jGitConfigurationList = findConfigurationsQuery.apply(jGitRepository);
         var jGitData = jGitConfigurationList.getData();
-        var s3ConfigurationList = s3Repository.findAllInTenants(tenants);
+        var s3ConfigurationList = findConfigurationsQuery.apply(s3Repository);
         var s3Data = s3ConfigurationList.getData();
         var jGitVersion = jGitConfigurationList.getVersion();
         return getConfigurationList(s3Data, jGitData, jGitVersion);
@@ -87,11 +86,11 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion saveAll(List<Configuration> configurations, Map<String, String> configHashes) {
         var s3Configs = findS3Config(configurations);
+        var version = ConfigVersion.UNDEFINED_VERSION;
         if (!s3Configs.isEmpty()) {
-            s3Repository.saveAll(s3Configs, configHashes);
+            version = s3Repository.saveAll(s3Configs, configHashes);
         }
 
-        var version = S3_VERSION;
         var gitConfigs = findGitConfig(configurations);
         if (!gitConfigs.isEmpty()) {
             version = jGitRepository.saveAll(gitConfigs, configHashes);
@@ -115,11 +114,11 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion setRepositoryState(List<Configuration> configurations) {
         var s3Configs = findS3Config(configurations);
+        var version = ConfigVersion.UNDEFINED_VERSION;
         if (!s3Configs.isEmpty()) {
-            s3Repository.setRepositoryState(s3Configs);
+            version = s3Repository.setRepositoryState(s3Configs);
         }
 
-        var version = S3_VERSION;
         var gitConfigs = findGitConfig(configurations);
         if (!gitConfigs.isEmpty()) {
             version = jGitRepository.setRepositoryState(gitConfigs);
@@ -131,11 +130,11 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
     @Override
     public ConfigVersion deleteAll(List<String> paths) {
         var s3Paths = paths.stream().filter(this::isS3Routed).toList();
+        var version = ConfigVersion.UNDEFINED_VERSION;
         if (!s3Paths.isEmpty()) {
-            s3Repository.deleteAll(s3Paths);
+            version = s3Repository.deleteAll(s3Paths);
         }
 
-        var version = S3_VERSION;
         var gitPaths = paths.stream().filter(path -> !isS3Routed(path)).toList();
         if (!gitPaths.isEmpty()) {
             version = jGitRepository.deleteAll(gitPaths);

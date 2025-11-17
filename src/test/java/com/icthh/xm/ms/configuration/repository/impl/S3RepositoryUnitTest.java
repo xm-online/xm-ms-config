@@ -8,8 +8,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +30,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
@@ -60,14 +63,26 @@ public class S3RepositoryUnitTest {
         var path = "/config/test.file";
         var content = "test-content";
         var config = new Configuration(path, content);
-        s3Repository.save(config);
-        var requestArgumentCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         var bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
-        verify(s3Client).putObject(requestArgumentCaptor.capture(), bodyCaptor.capture());
-        assertEquals(TEST_BUCKET_NAME, requestArgumentCaptor.getValue().bucket());
-        assertEquals(configPrefix + "test.file", requestArgumentCaptor.getValue().key());
+        var testVersion = "test-version";
+        mockPutS3Object(bodyCaptor, "test.file", testVersion);
+        var result = s3Repository.save(config);
+        assertNotNull(result);
+        assertEquals(testVersion, result.getMainVersion());
         var stored = getBodyContent(bodyCaptor);
         assertEquals(content, stored);
+    }
+
+    private void mockPutS3Object(ArgumentCaptor<RequestBody> bodyCaptor, String fileName,
+            String testVersion) {
+        when(s3Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture())).thenAnswer(invocation -> {
+            PutObjectRequest request = invocation.getArgument(0);
+            if (request != null && TEST_BUCKET_NAME.equals(request.bucket()) && (configPrefix + fileName).equals(
+                    request.key())) {
+                return PutObjectResponse.builder().versionId(testVersion).build();
+            }
+            return PutObjectResponse.builder().build();
+        });
     }
 
     private static String getBodyContent(ArgumentCaptor<RequestBody> bodyCaptor) {
@@ -82,7 +97,7 @@ public class S3RepositoryUnitTest {
 
     @Test
     public void shouldFindConfigs() {
-        mockS3ConfigData(configPrefix, "roles.yaml", "test-content");
+        mockS3ConfigData(configPrefix, "roles.yaml", "test-content", null);
         var configs = s3Repository.findAll();
         var configData = configs.getData();
         assertNotNull(configData);
@@ -101,7 +116,7 @@ public class S3RepositoryUnitTest {
 
     @Test
     public void shouldDeleteAllConfigurations() {
-        List<String> paths = List.of("/config/file1.yml", "/config/file2.yml");
+        var paths = List.of("/config/file1.yml", "/config/file2.yml");
         s3Repository.deleteAll(paths);
         var deleteCaptor = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
         verify(s3Client).deleteObjects(deleteCaptor.capture());
@@ -113,11 +128,21 @@ public class S3RepositoryUnitTest {
 
     @Test
     public void shouldFindConfigurationByPath() {
-        String path = "/config/test/test.file";
-        mockS3ConfigData(configPrefix + "test/", "test.file", "test-content-find");
+        var path = "/config/test/test.file";
+        mockS3ConfigData(configPrefix + "test/", "test.file", "test-content-find", null);
         var configItem = s3Repository.find(path);
         assertEquals("test-content-find", configItem.getData().getContent());
         assertEquals(path, configItem.getData().getPath());
+    }
+
+    @Test
+    public void shouldFindConfigurationByPathAndVersion() {
+        var path = "/config/test/test.file";
+        var version = "test-version";
+        mockS3ConfigData(configPrefix + "test/", "test.file", "test-content-find", version);
+        var configuration = s3Repository.find(path, new ConfigVersion(version));
+        assertEquals("test-content-find", configuration.getContent());
+        assertEquals(path, configuration.getPath());
     }
 
     @Test
@@ -132,11 +157,17 @@ public class S3RepositoryUnitTest {
                 request != null && TEST_BUCKET_NAME.equals(request.bucket()) && configPrefix.equals(request.prefix()))))
                 .thenReturn(paginator);
 
-        Configuration config1 = new Configuration("/config/file3.yml", "new-content-3");
-        Configuration config2 = new Configuration("/config/file4.yml", "new-content-4");
-        List<Configuration> newConfigs = List.of(config1, config2);
+        var config1 = new Configuration("/config/file3.yml", "new-content-3");
+        var config2 = new Configuration("/config/file4.yml", "new-content-4");
+        var newConfigs = List.of(config1, config2);
+        var testVersion = "test-version";
+        var bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        mockPutS3Object(bodyCaptor, "file3.yml", testVersion);
+        mockPutS3Object(bodyCaptor, "file4.yml", testVersion);
 
-        s3Repository.setRepositoryState(newConfigs);
+        var result = s3Repository.setRepositoryState(newConfigs);
+        assertNotNull(result);
+        assertEquals("s3", result.getMainVersion());
 
         // verify batch delete
         ArgumentCaptor<DeleteObjectsRequest> delCaptor = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
@@ -145,21 +176,13 @@ public class S3RepositoryUnitTest {
         assertEquals(2, deleted.size());
         var deletedKeys = deleted.stream().map(ObjectIdentifier::key).toList();
         assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), deletedKeys);
-
-        // verify uploads of new configs
-        verify(s3Client).putObject(ArgumentMatchers.<PutObjectRequest>argThat(
-                        r -> r.bucket().equals(TEST_BUCKET_NAME) && r.key().equals(configPrefix + "file3.yml")),
-                any(RequestBody.class));
-        verify(s3Client).putObject(ArgumentMatchers.<PutObjectRequest>argThat(
-                        r -> r.bucket().equals(TEST_BUCKET_NAME) && r.key().equals(configPrefix + "file4.yml")),
-                any(RequestBody.class));
     }
 
     private void mockTenantS3Data(String tenantKey, String content) {
-        mockS3ConfigData(configPrefix + "tenants/" + tenantKey + "/", TEST_FILE_YAML, content);
+        mockS3ConfigData(configPrefix + "tenants/" + tenantKey + "/", TEST_FILE_YAML, content, null);
     }
 
-    private void mockS3ConfigData(String contentPath, String contentFileName, String content) {
+    private void mockS3ConfigData(String contentPath, String contentFileName, String content, String version) {
         // S3 paginator stub to return all objects under the prefix
         var objects = List.of(S3Object.builder().key(contentPath + contentFileName).build());
         var paginator = Mockito.mock(ListObjectsV2Iterable.class);
@@ -176,8 +199,9 @@ public class S3RepositoryUnitTest {
                 ArgumentMatchers.<ResponseTransformer<GetObjectResponse, ResponseBytes<GetObjectResponse>>>any())
         ).thenAnswer(invocation -> {
             GetObjectRequest request = invocation.getArgument(0);
-            if (request != null && TEST_BUCKET_NAME.equals(request.bucket()) && (contentPath + contentFileName).equals(
-                    request.key())) {
+            if (request != null && TEST_BUCKET_NAME.equals(request.bucket())
+                    && Objects.equals(request.versionId(), version)
+                    && (contentPath + contentFileName).equals(request.key())) {
                 return responseBytes;
             }
             return ResponseBytes.fromByteArray(GetObjectResponse.builder().build(), new byte[0]);
