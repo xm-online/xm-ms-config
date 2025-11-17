@@ -2,17 +2,22 @@ package com.icthh.xm.ms.configuration.repository.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
+import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,35 +74,13 @@ public class S3RepositoryUnitTest {
         var result = s3Repository.save(config);
         assertNotNull(result);
         assertEquals(testVersion, result.getMainVersion());
-        var stored = getBodyContent(bodyCaptor);
+        var stored = getBodyContent(bodyCaptor.getValue());
         assertEquals(content, stored);
-    }
-
-    private void mockPutS3Object(ArgumentCaptor<RequestBody> bodyCaptor, String fileName,
-            String testVersion) {
-        when(s3Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture())).thenAnswer(invocation -> {
-            PutObjectRequest request = invocation.getArgument(0);
-            if (request != null && TEST_BUCKET_NAME.equals(request.bucket()) && (configPrefix + fileName).equals(
-                    request.key())) {
-                return PutObjectResponse.builder().versionId(testVersion).build();
-            }
-            return PutObjectResponse.builder().build();
-        });
-    }
-
-    private static String getBodyContent(ArgumentCaptor<RequestBody> bodyCaptor) {
-        String stored;
-        try (java.io.InputStream is = bodyCaptor.getValue().contentStreamProvider().newStream()) {
-            stored = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("Failed to read request body", e);
-        }
-        return stored;
     }
 
     @Test
     public void shouldFindConfigs() {
-        mockS3ConfigData(configPrefix, "roles.yaml", "test-content", null);
+        mockGetListS3Objects(configPrefix, "roles.yaml", "test-content");
         var configs = s3Repository.findAll();
         var configData = configs.getData();
         assertNotNull(configData);
@@ -107,9 +90,9 @@ public class S3RepositoryUnitTest {
 
     @Test
     public void shouldFindConfigsForTenants() {
-        mockTenantS3Data("TENANT1", "tenant1_content");
-        mockTenantS3Data("TENANT2", "tenant2_content");
-        mockTenantS3Data("TENANT3", "tenant3_content");
+        mockGetListS3Objects("TENANT1", "tenant1_content");
+        mockGetListS3Objects("TENANT2", "tenant2_content");
+        mockGetListS3Objects("TENANT3", "tenant3_content");
         var allConfigs = s3Repository.findAllInTenants(Set.of("TENANT1", "TENANT3"));
         assertEquals(2, allConfigs.getData().size());
     }
@@ -129,7 +112,7 @@ public class S3RepositoryUnitTest {
     @Test
     public void shouldFindConfigurationByPath() {
         var path = "/config/test/test.file";
-        mockS3ConfigData(configPrefix + "test/", "test.file", "test-content-find", null);
+        mockGetS3Object(configPrefix + "test/", "test.file", "test-content-find", null);
         var configItem = s3Repository.find(path);
         assertEquals("test-content-find", configItem.getData().getContent());
         assertEquals(path, configItem.getData().getPath());
@@ -139,7 +122,7 @@ public class S3RepositoryUnitTest {
     public void shouldFindConfigurationByPathAndVersion() {
         var path = "/config/test/test.file";
         var version = "test-version";
-        mockS3ConfigData(configPrefix + "test/", "test.file", "test-content-find", version);
+        mockGetS3Object(configPrefix + "test/", "test.file", "test-content-find", version);
         var configuration = s3Repository.find(path, new ConfigVersion(version));
         assertEquals("test-content-find", configuration.getContent());
         assertEquals(path, configuration.getPath());
@@ -178,11 +161,83 @@ public class S3RepositoryUnitTest {
         assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), deletedKeys);
     }
 
-    private void mockTenantS3Data(String tenantKey, String content) {
-        mockS3ConfigData(configPrefix + "tenants/" + tenantKey + "/", TEST_FILE_YAML, content, null);
+    @Test
+    public void shouldSaveAllConfigurations() {
+        var configs = List.of(
+                new Configuration("/config/file1.yml", "content-1"),
+                new Configuration("/config/file2.yml", "content-2")
+        );
+        var bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        when(s3Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture()))
+                .thenReturn(PutObjectResponse.builder().versionId("any-version").build());
+        var result = s3Repository.saveAll(configs, Map.of());
+        assertNotNull(result);
+        assertEquals("s3", result.getMainVersion());
+        assertEquals(2, bodyCaptor.getAllValues().size());
+        var storedContents = bodyCaptor.getAllValues().stream()
+                .map(this::getBodyContent)
+                .toList();
+        assertEquals(List.of("content-1", "content-2"), storedContents);
     }
 
-    private void mockS3ConfigData(String contentPath, String contentFileName, String content, String version) {
+    @Test
+    public void shouldThrowConcurrentModificationOnHashMismatch() {
+        var existingContent = "existing-content";
+        var fileName = "file1.yml";
+        mockGetS3Object(configPrefix, fileName, existingContent, null);
+        var wrongHash = DigestUtils.sha1Hex("other-content");
+        var config = new Configuration("/config/" + fileName, "new-content");
+        assertThrows(
+                ConcurrentConfigModificationException.class,
+                () -> s3Repository.saveAll(List.of(config), Map.of(config.getPath(), wrongHash))
+        );
+        verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    public void shouldSaveWhenHashMatches() {
+        var existingContent = "existing-content";
+        var fileName = "file2.yml";
+        mockGetS3Object(configPrefix, fileName, existingContent, null);
+        var correctHash = DigestUtils.sha1Hex(existingContent);
+        var config = new Configuration("/config/" + fileName, "updated-content");
+        var bodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+        when(s3Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture()))
+                .thenReturn(PutObjectResponse.builder().versionId("any-version").build());
+        var result = s3Repository.saveAll(List.of(config), Map.of(config.getPath(), correctHash));
+        assertNotNull(result);
+        assertEquals("s3", result.getMainVersion());
+        verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+        assertEquals(1, bodyCaptor.getAllValues().size());
+    }
+
+    private void mockPutS3Object(ArgumentCaptor<RequestBody> bodyCaptor, String fileName,
+            String testVersion) {
+        when(s3Client.putObject(any(PutObjectRequest.class), bodyCaptor.capture())).thenAnswer(invocation -> {
+            PutObjectRequest request = invocation.getArgument(0);
+            if (request != null && TEST_BUCKET_NAME.equals(request.bucket()) && (configPrefix + fileName).equals(
+                    request.key())) {
+                return PutObjectResponse.builder().versionId(testVersion).build();
+            }
+            return PutObjectResponse.builder().build();
+        });
+    }
+
+    private String getBodyContent(RequestBody body) {
+        String stored;
+        try (java.io.InputStream is = body.contentStreamProvider().newStream()) {
+            stored = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to read request body", e);
+        }
+        return stored;
+    }
+
+    private void mockGetListS3Objects(String tenantKey, String content) {
+        mockGetListS3Objects(configPrefix + "tenants/" + tenantKey + "/", TEST_FILE_YAML, content);
+    }
+
+    private void mockGetListS3Objects(String contentPath, String contentFileName, String content) {
         // S3 paginator stub to return all objects under the prefix
         var objects = List.of(S3Object.builder().key(contentPath + contentFileName).build());
         var paginator = Mockito.mock(ListObjectsV2Iterable.class);
@@ -191,6 +246,10 @@ public class S3RepositoryUnitTest {
                 request != null && TEST_BUCKET_NAME.equals(request.bucket()) && contentPath.equals(request.prefix()))))
                 .thenReturn(paginator);
 
+        mockGetS3Object(contentPath, contentFileName, content, null);
+    }
+
+    private void mockGetS3Object(String contentPath, String contentFileName, String content, String version) {
         // mock getObject with ResponseTransformer.toBytes() using conditional Answer to avoid NPE
         var responseBytes = ResponseBytes.fromByteArray(
                 GetObjectResponse.builder().build(), content.getBytes(StandardCharsets.UTF_8));
