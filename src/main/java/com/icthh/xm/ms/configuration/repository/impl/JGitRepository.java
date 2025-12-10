@@ -97,6 +97,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     public static final String UNDEFINED_COMMIT = "undefined";
     public static final String REFS_HEADS = "refs/heads/";
     public static final String GIT_REPOSITORY = "git repository";
+    private static final int GIT_PRIORITY = Short.MAX_VALUE;
 
     private final GitProperties gitProperties;
 
@@ -128,6 +129,22 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("Git branch to use {}", gitProperties.getBranchName());
         cloneRepository();
         log.info("Git working directory {}", rootDirectory.getAbsolutePath());
+    }
+
+    @Override
+    public String type() {
+        return "GIT";
+    }
+
+    @Override
+    public int priority() {
+        return GIT_PRIORITY;
+    }
+
+    @Override
+    public boolean isApplicable(String path) {
+        // Git repository is the fallback - it handles all paths
+        return true;
     }
 
     @Override

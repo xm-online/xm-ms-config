@@ -5,6 +5,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import com.google.common.collect.Lists;
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
@@ -33,18 +34,55 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 public class S3Repository implements PersistenceConfigRepository {
 
     private static final ConfigVersion S3_VERSION = new ConfigVersion("s3");
+    private static final int S3_PRIORITY = 1; // Highest priority
 
     private final String bucketName;
     private final String configPath;
     private final S3Client s3Client;
     private final String configPrefix;
+    private final S3Rules s3Rules;
 
-    public S3Repository(S3Client s3Client, String bucketName, String configPath) {
+    public S3Repository(S3Client s3Client, String bucketName, String configPath, S3Rules s3Rules) {
         this.s3Client = s3Client;
         this.bucketName = bucketName;
         this.configPath = configPath;
+        this.s3Rules = s3Rules;
         this.configPrefix = resolveConfigPrefix(configPath);
         log.info("S3 bucket to use: {}, config path: {}", bucketName, configPath);
+    }
+
+    @Override
+    public String type() {
+        return "S3";
+    }
+
+    @Override
+    public int priority() {
+        return S3_PRIORITY;
+    }
+
+    @Override
+    public boolean isApplicable(String path) {
+        // If no rules configured, this repository handles all paths
+        if (s3Rules == null || s3Rules.getIncludePaths().isEmpty()) {
+            return true;
+        }
+
+        // Check include/exclude rules
+        boolean included = s3Rules.getIncludePaths().stream()
+                .anyMatch(pattern -> pathMatches(pattern, path));
+        boolean excluded = s3Rules.getExcludePaths().stream()
+                .anyMatch(pattern -> pathMatches(pattern, path));
+
+        return included && !excluded;
+    }
+
+    private boolean pathMatches(String pattern, String path) {
+        if (pattern.endsWith("*")) {
+            String prefix = pattern.substring(0, pattern.length() - 1);
+            return path.startsWith(prefix);
+        }
+        return path.equals(pattern);
     }
 
     private static String resolveConfigPrefix(String configPath) {
