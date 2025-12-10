@@ -9,7 +9,7 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 @Slf4j
-public class S3Repository implements PersistenceConfigRepository {
+public class S3Repository implements PersistenceConfigRepositoryStrategy {
 
     private static final ConfigVersion S3_VERSION = new ConfigVersion("s3");
     private static final int S3_PRIORITY = 1; // Highest priority

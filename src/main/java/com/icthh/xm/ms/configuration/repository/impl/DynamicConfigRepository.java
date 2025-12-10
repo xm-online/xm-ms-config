@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -18,38 +20,26 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
 
     private static final int DYNAMIC_PRIORITY = -1;
 
-    private final List<PersistenceConfigRepository> repositories;
-    private final PersistenceConfigRepository lowestPriorityRepository;
+    private final List<PersistenceConfigRepositoryStrategy> repositories;
+    private final PersistenceConfigRepositoryStrategy lowestPriorityRepository;
 
-    public DynamicConfigRepository(List<PersistenceConfigRepository> repositories) {
+    public DynamicConfigRepository(List<PersistenceConfigRepositoryStrategy> repositories) {
         // Sort by priority (lower number = higher priority)
         this.repositories = repositories.stream()
-                .sorted(Comparator.comparingInt(PersistenceConfigRepository::priority))
+                .sorted(Comparator.comparingInt(PersistenceConfigRepositoryStrategy::priority))
                 .toList();
 
         // Lowest priority repo (highest number) is used for version operations
         this.lowestPriorityRepository = repositories.stream()
-                .max(Comparator.comparingInt(PersistenceConfigRepository::priority))
+                .max(Comparator.comparingInt(PersistenceConfigRepositoryStrategy::priority))
                 .orElseThrow(() -> new IllegalArgumentException("At least one repository must be provided"));
 
         log.info("DynamicConfigRepository initialized with {} repositories, lowest priority: {}",
                 repositories.size(), lowestPriorityRepository.getClass().getSimpleName());
     }
 
-    @Override
     public String type() {
         return "DYNAMIC";
-    }
-
-    @Override
-    public int priority() {
-        return DYNAMIC_PRIORITY;
-    }
-
-    @Override
-    public boolean isApplicable(String path) {
-        // Dynamic repository handles all paths
-        return true;
     }
 
     private PersistenceConfigRepository getRepositoryForPath(String path) {

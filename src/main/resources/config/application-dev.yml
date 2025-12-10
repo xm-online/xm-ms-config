@@ -73,11 +73,19 @@ jhipster:
 
 application:
     adminApiRestrictionEnabled: true
+    config-repository:
+        mode: DYNAMIC
+        s3:
+            access-key: mock
+            secret-key: mock
+            bucket: xm-config-bucket
+            region: mock
+            endpoint: http://localhost:4566
     git:
-        uri:
+        uri: /Users/serhii.senko/work/XM/xm-ms-config-repository
         login:
         password:
-        branch-name:
+        branch-name: ee-test
         max-wait-time-second: 30
         depth: 50
 

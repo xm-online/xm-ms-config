@@ -11,7 +11,7 @@ import com.icthh.xm.ms.configuration.config.SshTransportConfigCallback;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.utils.Task;
@@ -87,7 +87,7 @@ import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
-public class JGitRepository implements PersistenceConfigRepository {
+public class JGitRepository implements PersistenceConfigRepositoryStrategy {
 
     private static final String GIT_FOLDER = ".git";
     private static final String GIT_COMMIT_MSG_UPDATE_TPL = "Update [%s] by user [%s] from tenant [%s]. %s";

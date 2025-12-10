@@ -8,6 +8,7 @@ import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import com.icthh.xm.ms.configuration.repository.impl.DynamicConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
@@ -70,7 +71,7 @@ public class BeanConfiguration {
      */
     @Bean
     @ConditionalOnExpression("'${application.config-repository.mode}'.equalsIgnoreCase('DYNAMIC')")
-    public PersistenceConfigRepository dynamicRepository(List<PersistenceConfigRepository> repositories) {
+    public PersistenceConfigRepository dynamicRepository(List<PersistenceConfigRepositoryStrategy> repositories) {
         log.info("Creating dynamic config repository bean with {} base repositories", repositories.size());
         return new DynamicConfigRepository(repositories);
     }
