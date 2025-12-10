@@ -88,6 +88,7 @@ public class ApplicationProperties {
     @Setter
     public static class ConfigRepository {
 
+        private String mode = "GIT";
         private S3 s3 = new S3();
     }
 
@@ -95,8 +96,6 @@ public class ApplicationProperties {
     @Setter
     public static class S3 {
 
-        private Boolean enabled;
-        private Boolean dynamicRepositoryMode;
         private String endpoint;
         private String accessKey;
         private String secretKey;

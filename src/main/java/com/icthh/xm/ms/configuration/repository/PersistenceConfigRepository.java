@@ -10,6 +10,14 @@ import java.util.Set;
 
 public interface PersistenceConfigRepository {
 
+    /**
+     * Returns the type identifier of this repository.
+     * Used to match repository with configuration mode.
+     *
+     * @return the repository type (e.g., "GIT", "S3", "DYNAMIC")
+     */
+    String type();
+
     boolean hasVersion(ConfigVersion version);
 
     ConfigurationList findAll();
