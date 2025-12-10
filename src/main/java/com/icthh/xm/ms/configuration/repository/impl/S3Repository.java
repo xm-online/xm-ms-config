@@ -185,9 +185,6 @@ public class S3Repository implements PersistenceConfigRepository {
     }
 
     private void save(Configuration configuration, String oldConfigHash) {
-        if (isBlank(oldConfigHash)) {
-            return;
-        }
         assertConfigHash(configuration, oldConfigHash);
         save(configuration);
     }
