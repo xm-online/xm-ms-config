@@ -1,0 +1,205 @@
+package com.icthh.xm.ms.configuration.service.processors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.icthh.xm.commons.config.domain.Configuration;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
+
+@Slf4j
+@Component
+@Order(HIGHEST_PRECEDENCE + IncludeConfigurationProcessor.GAP_FOR_FUTURE)
+public class IncludeConfigurationProcessor implements TenantConfigurationProcessor {
+
+    public static final int GAP_FOR_FUTURE = 1000_000;
+    private static final String INCLUDE_KEYWORD = "$include";
+
+    private final ObjectMapper jsonMapper = new ObjectMapper();
+    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+
+    // Dependency tracking: key is the included file path, value is set of files that depend on it
+    private final Map<String, Set<String>> dependencyRegistry = new ConcurrentHashMap<>();
+
+    @Override
+    public boolean isSupported(Configuration configuration) {
+        return true;
+    }
+
+    @SneakyThrows
+    @Override
+    public List<Configuration> processConfiguration(Configuration configuration,
+                                                    Map<String, Configuration> originalStorage,
+                                                    Map<String, Configuration> targetStorage,
+                                                    Set<Configuration> configToReprocess,
+                                                    Map<String, Set<Configuration>> externalConfigs) {
+
+        String filePath = configuration.getPath();
+        String originalContent = configuration.getContent();
+        log.trace("Config before replace {}", originalContent);
+
+        // Check if any files that depend on this file need to be reprocessed
+        Set<String> dependentFiles = dependencyRegistry.get(filePath);
+        if (dependentFiles != null) {
+            for (String dependentFile : dependentFiles) {
+                Configuration dependentConfig = originalStorage.get(dependentFile);
+                if (dependentConfig != null && !dependentConfig.equals(configuration)) {
+                    configToReprocess.add(dependentConfig);
+                    log.debug("Adding dependent file to reprocess: {}", dependentFile);
+                }
+            }
+        }
+
+        String content = replaceIncludeByActualContent(filePath, originalContent, originalStorage);
+        log.trace("Config after replace {}", content);
+        if (!content.equals(originalContent)) {
+            return singletonList(new Configuration(configuration.getPath(), content));
+        } else {
+            return emptyList();
+        }
+    }
+
+    private String replaceIncludeByActualContent(String filePath, String originalContent,
+                                                  Map<String, Configuration> originalStorage) {
+        // Check if file ends with json, yml, or yaml
+        if (!isConfigFile(filePath)) {
+            return originalContent;
+        }
+
+        // Fast check using string contains method
+        if (!originalContent.contains(INCLUDE_KEYWORD)) {
+            return originalContent;
+        }
+
+        try {
+            // Try to parse the file
+            ObjectMapper mapper = getMapperForFile(filePath);
+            Object parsedContent = mapper.readValue(originalContent, Object.class);
+
+            // Process includes recursively
+            Object processedContent = processIncludes(parsedContent, filePath, originalStorage, new HashMap<>());
+
+            // Convert back to string
+            return mapper.writeValueAsString(processedContent);
+        } catch (Exception e) {
+            log.error("Failed to parse file {} for include processing: {}", filePath, e.getMessage(), e);
+            return originalContent;
+        }
+    }
+
+    private boolean isConfigFile(String filePath) {
+        return filePath.endsWith(".json") || filePath.endsWith(".yml") || filePath.endsWith(".yaml");
+    }
+
+    private ObjectMapper getMapperForFile(String filePath) {
+        if (filePath.endsWith(".json")) {
+            return jsonMapper;
+        } else {
+            return yamlMapper;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object processIncludes(Object node, String currentFilePath,
+                                   Map<String, Configuration> originalStorage,
+                                   Map<String, Object> processedIncludes) {
+        if (node instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) node;
+            Map<String, Object> result = new HashMap<>();
+
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                if (INCLUDE_KEYWORD.equals(key) && value instanceof String) {
+                    String includePathRaw = (String) value;
+                    String absolutePath = resolveIncludePath(currentFilePath, includePathRaw);
+
+                    // Track dependency
+                    dependencyRegistry.computeIfAbsent(absolutePath, k -> ConcurrentHashMap.newKeySet())
+                                     .add(currentFilePath);
+                    log.debug("Registered dependency: {} depends on {}", currentFilePath, absolutePath);
+
+                    // Check if we already processed this include (avoid infinite loops)
+                    if (processedIncludes.containsKey(absolutePath)) {
+                        return processedIncludes.get(absolutePath);
+                    }
+
+                    // Read the included file
+                    Configuration includedConfig = originalStorage.get(absolutePath);
+                    if (includedConfig == null) {
+                        log.warn("Included file not found in originalStorage: {}, leaving $include unchanged", absolutePath);
+                        result.put(key, value);
+                    } else {
+                        try {
+                            // Parse and process the included file recursively
+                            ObjectMapper mapper = getMapperForFile(absolutePath);
+                            Object includedContent = mapper.readValue(includedConfig.getContent(), Object.class);
+
+                            // Mark as being processed
+                            processedIncludes.put(absolutePath, includedContent);
+
+                            Object processedInclude = processIncludes(includedContent, absolutePath,
+                                                                     originalStorage, processedIncludes);
+
+                            // If the included content is a map, merge it into the current map
+                            if (processedInclude instanceof Map) {
+                                Map<String, Object> includedMap = (Map<String, Object>) processedInclude;
+                                result.putAll(includedMap);
+                            } else {
+                                // If it's not a map, just set it as the value
+                                result.put(key, processedInclude);
+                            }
+                        } catch (Exception e) {
+                            log.error("Failed to process included file {}: {}", absolutePath, e.getMessage(), e);
+                            result.put(key, value);
+                        }
+                    }
+                } else {
+                    // Recursively process nested structures
+                    result.put(key, processIncludes(value, currentFilePath, originalStorage, processedIncludes));
+                }
+            }
+            return result;
+        } else if (node instanceof List) {
+            List<Object> list = (List<Object>) node;
+            List<Object> result = new ArrayList<>();
+            for (Object item : list) {
+                result.add(processIncludes(item, currentFilePath, originalStorage, processedIncludes));
+            }
+            return result;
+        } else {
+            return node;
+        }
+    }
+
+    private String resolveIncludePath(String currentFilePath, String includePath) {
+        if (includePath.startsWith("/")) {
+            // Absolute path
+            return includePath;
+        } else {
+            // Relative path - resolve based on current file path
+            Path currentPath = Paths.get(currentFilePath).getParent();
+            if (currentPath == null) {
+                return includePath;
+            }
+            Path resolvedPath = currentPath.resolve(includePath).normalize();
+            return resolvedPath.toString().replace("\\", "/");
+        }
+    }
+
+}
