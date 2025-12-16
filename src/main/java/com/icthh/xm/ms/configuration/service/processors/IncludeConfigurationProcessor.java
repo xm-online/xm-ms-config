@@ -37,7 +37,7 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
 
     @Override
     public boolean isSupported(Configuration configuration) {
-        return true;
+        return isConfigFile(configuration.getPath());
     }
 
     @SneakyThrows
@@ -52,6 +52,19 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
         String originalContent = configuration.getContent();
         log.trace("Config before replace {}", originalContent);
 
+        reprocessDependsFile(configuration, originalStorage, configToReprocess, filePath);
+
+        String content = replaceIncludeByActualContent(filePath, originalContent, originalStorage);
+        log.trace("Config after replace {}", content);
+        if (!content.equals(originalContent)) {
+            return singletonList(new Configuration(configuration.getPath(), content));
+        } else {
+            return emptyList();
+        }
+    }
+
+    private void reprocessDependsFile(Configuration configuration, Map<String, Configuration> originalStorage,
+                                      Set<Configuration> configToReprocess, String filePath) {
         // Check if any files that depend on this file need to be reprocessed
         Set<String> dependentFiles = dependencyRegistry.get(filePath);
         if (dependentFiles != null) {
@@ -62,14 +75,6 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
                     log.debug("Adding dependent file to reprocess: {}", dependentFile);
                 }
             }
-        }
-
-        String content = replaceIncludeByActualContent(filePath, originalContent, originalStorage);
-        log.trace("Config after replace {}", content);
-        if (!content.equals(originalContent)) {
-            return singletonList(new Configuration(configuration.getPath(), content));
-        } else {
-            return emptyList();
         }
     }
 
@@ -125,50 +130,18 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
                 String key = entry.getKey();
                 Object value = entry.getValue();
 
-                if (INCLUDE_KEYWORD.equals(key) && value instanceof String) {
-                    String includePathRaw = (String) value;
+                if (INCLUDE_KEYWORD.equals(key) && value instanceof String includePathRaw) {
                     String absolutePath = resolveIncludePath(currentFilePath, includePathRaw);
 
-                    // Track dependency
-                    dependencyRegistry.computeIfAbsent(absolutePath, k -> ConcurrentHashMap.newKeySet())
-                                     .add(currentFilePath);
-                    log.debug("Registered dependency: {} depends on {}", currentFilePath, absolutePath);
+                    trackDependency(absolutePath, currentFilePath);
 
                     // Check if we already processed this include (avoid infinite loops)
                     if (processedIncludes.containsKey(absolutePath)) {
                         return processedIncludes.get(absolutePath);
                     }
 
-                    // Read the included file
-                    Configuration includedConfig = originalStorage.get(absolutePath);
-                    if (includedConfig == null) {
-                        log.warn("Included file not found in originalStorage: {}, leaving $include unchanged", absolutePath);
-                        result.put(key, value);
-                    } else {
-                        try {
-                            // Parse and process the included file recursively
-                            ObjectMapper mapper = getMapperForFile(absolutePath);
-                            Object includedContent = mapper.readValue(includedConfig.getContent(), Object.class);
-
-                            // Mark as being processed
-                            processedIncludes.put(absolutePath, includedContent);
-
-                            Object processedInclude = processIncludes(includedContent, absolutePath,
-                                                                     originalStorage, processedIncludes);
-
-                            // If the included content is a map, merge it into the current map
-                            if (processedInclude instanceof Map) {
-                                Map<String, Object> includedMap = (Map<String, Object>) processedInclude;
-                                result.putAll(includedMap);
-                            } else {
-                                // If it's not a map, just set it as the value
-                                result.put(key, processedInclude);
-                            }
-                        } catch (Exception e) {
-                            log.error("Failed to process included file {}: {}", absolutePath, e.getMessage(), e);
-                            result.put(key, value);
-                        }
-                    }
+                    // Load and process the included file
+                    processIncludeFile(absolutePath, includePathRaw, originalStorage, processedIncludes, result);
                 } else {
                     // Recursively process nested structures
                     result.put(key, processIncludes(value, currentFilePath, originalStorage, processedIncludes));
@@ -176,21 +149,69 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
             }
             return result;
         } else if (node instanceof List) {
-            List<Object> list = (List<Object>) node;
-            List<Object> result = new ArrayList<>();
-            for (Object item : list) {
-                result.add(processIncludes(item, currentFilePath, originalStorage, processedIncludes));
-            }
-            return result;
+            return processListNode((List<Object>) node, currentFilePath, originalStorage, processedIncludes);
         } else {
             return node;
         }
     }
 
+    private void trackDependency(String absolutePath, String currentFilePath) {
+        dependencyRegistry.computeIfAbsent(absolutePath, k -> ConcurrentHashMap.newKeySet())
+                         .add(currentFilePath);
+        log.debug("Registered dependency: {} depends on {}", currentFilePath, absolutePath);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void processIncludeFile(String absolutePath, String includePathRaw,
+                                   Map<String, Configuration> originalStorage,
+                                   Map<String, Object> processedIncludes,
+                                   Map<String, Object> result) {
+        Configuration includedConfig = originalStorage.get(absolutePath);
+        if (includedConfig == null) {
+            log.warn("Included file not found in originalStorage: {}, leaving $include unchanged", absolutePath);
+            result.put(INCLUDE_KEYWORD, includePathRaw);
+            return;
+        }
+
+        try {
+            // Parse and process the included file recursively
+            ObjectMapper mapper = getMapperForFile(absolutePath);
+            Object includedContent = mapper.readValue(includedConfig.getContent(), Object.class);
+
+            // Mark as being processed
+            processedIncludes.put(absolutePath, includedContent);
+
+            Object processedInclude = processIncludes(includedContent, absolutePath,
+                                                     originalStorage, processedIncludes);
+
+            // If the included content is a map, merge it into the current map
+            if (processedInclude instanceof Map) {
+                Map<String, Object> includedMap = (Map<String, Object>) processedInclude;
+                result.putAll(includedMap);
+            } else {
+                // If it's not a map, just set it as the value
+                result.put(INCLUDE_KEYWORD, processedInclude);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process included file {}: {}", absolutePath, e.getMessage(), e);
+            result.put(INCLUDE_KEYWORD, includePathRaw);
+        }
+    }
+
+    private List<Object> processListNode(List<Object> list, String currentFilePath,
+                                        Map<String, Configuration> originalStorage,
+                                        Map<String, Object> processedIncludes) {
+        List<Object> result = new ArrayList<>();
+        for (Object item : list) {
+            result.add(processIncludes(item, currentFilePath, originalStorage, processedIncludes));
+        }
+        return result;
+    }
+
     private String resolveIncludePath(String currentFilePath, String includePath) {
         if (includePath.startsWith("/")) {
-            // Absolute path
-            return includePath;
+            Path normalizedPath = Paths.get(includePath).normalize();
+            return normalizedPath.toString().replace("\\", "/");
         } else {
             // Relative path - resolve based on current file path
             Path currentPath = Paths.get(currentFilePath).getParent();
