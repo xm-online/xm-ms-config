@@ -74,10 +74,10 @@ jhipster:
 application:
     adminApiRestrictionEnabled: true
     git:
-        uri:
+        uri: /Users/serhii.senko/work/XM/xm-ms-config-repository
         login:
         password:
-        branch-name:
+        branch-name: ee-test
         max-wait-time-second: 30
         depth: 50
 

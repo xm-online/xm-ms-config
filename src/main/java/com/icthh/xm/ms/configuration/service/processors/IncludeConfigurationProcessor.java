@@ -23,10 +23,9 @@ import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
 @Slf4j
 @Component
-@Order(HIGHEST_PRECEDENCE + IncludeConfigurationProcessor.GAP_FOR_FUTURE)
 public class IncludeConfigurationProcessor implements TenantConfigurationProcessor {
 
-    public static final int GAP_FOR_FUTURE = 1000_000;
+    public static final int GAP_FOR_FUTURE = 10;
     private static final String INCLUDE_KEYWORD = "$include";
 
     private final ObjectMapper jsonMapper = new ObjectMapper();
@@ -61,6 +60,11 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
         } else {
             return emptyList();
         }
+    }
+
+    @Override
+    public Integer getPriority() {
+        return TenantConfigurationProcessor.super.getPriority() - GAP_FOR_FUTURE;
     }
 
     private void reprocessDependsFile(Configuration configuration, Map<String, Configuration> originalStorage,

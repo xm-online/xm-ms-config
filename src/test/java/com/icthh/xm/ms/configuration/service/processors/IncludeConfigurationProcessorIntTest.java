@@ -711,4 +711,62 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
 
         assertEquals("Processed configuration should match expected", expectedMap, actualMap);
     }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeFileWithDollarIncludeTextAndMainFileHasEnvironmentVariable() {
+        // Create tenant profile with environment variable
+        String tenantProfilePath = "/config/tenants/XM/tenant-profile.yml";
+        String tenantProfileContent = """
+            environment:
+              apiToken: SECRET_TOKEN_123
+            """;
+
+        // Create the included file that contains "$include" as text (not a directive)
+        String includedFilePath = "/config/tenants/XM/help.json";
+        String includedFileContent = """
+            {
+              "helpText": "To include other configs, use $include key",
+              "example": "$include: common.json"
+            }
+            """;
+
+        // Create the main file that includes the help file AND has an environment variable
+        String mainFilePath = "/config/tenants/XM/app-config.json";
+        String mainFileContent = """
+            {
+              "$include": "help.json",
+              "apiKey": "${environment.apiToken}",
+              "appName": "myapp"
+            }
+            """;
+
+        // Expected result: included content merged, $include text preserved, env variable replaced
+        String expectedContent = """
+            {
+              "helpText": "To include other configs, use $include key",
+              "example": "$include: common.json",
+              "apiKey": "SECRET_TOKEN_123",
+              "appName": "myapp"
+            }
+            """;
+
+        // Post tenant profile first, then the config files
+        configurationService.updateConfiguration(new Configuration(tenantProfilePath, tenantProfileContent));
+        configurationService.updateConfiguration(new Configuration(includedFilePath, includedFileContent));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse and compare as maps for exact match
+        Map<String, Object> actualMap = parseJson(processedConfig.getContent());
+        Map<String, Object> expectedMap = parseJson(expectedContent);
+
+        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+    }
 }
