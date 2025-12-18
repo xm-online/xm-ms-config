@@ -302,12 +302,16 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         state.cleanProcessedConfiguration(toPathsList(configurations));
         Set<Configuration> configToReprocess = new HashSet<>();
         for(Configuration configuration : changedConfigurationFiles) {
+            Configuration workingConfig = new Configuration(configuration.getPath(), configuration.getContent());
             configurationProcessors.stream()
                 .sorted(Comparator.comparing(TenantConfigurationProcessor::getPriority))
                 .forEach(processor -> {
-                    var configs = processor.safeRun(configuration, state, configToReprocess, externalConfigs);
-                    state.addProcessedConfiguration(configuration, configs);
-                    addProducedFileToProcessingQueueIfExist(configuration, state, configToReprocess);
+                    var configs = processor.safeRun(workingConfig, state, configToReprocess, externalConfigs);
+                    state.addProcessedConfiguration(workingConfig, configs);
+                    addProducedFileToProcessingQueueIfExist(workingConfig, state, configToReprocess);
+                    if (configs.containsKey(workingConfig.getPath())) {
+                      workingConfig.setContent(configs.get(workingConfig.getPath()).getContent());
+                    }
                 });
         }
         if (!configToReprocess.isEmpty()) {
