@@ -88,6 +88,7 @@ public class BeanConfiguration {
      * @return the configured {@link JGitRepository}
      */
     @Bean
+    @ConditionalOnExpression("!'${application.config-repository.mode}'.equalsIgnoreCase('S3')")
     public PersistenceConfigRepository gitRepository(
             ApplicationProperties applicationProperties,
             @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,

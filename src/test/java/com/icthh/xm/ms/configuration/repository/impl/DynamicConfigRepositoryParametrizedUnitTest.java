@@ -1,8 +1,11 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,7 +13,7 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,12 +21,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @RunWith(Parameterized.class)
 public class DynamicConfigRepositoryParametrizedUnitTest {
 
-    private PersistenceConfigRepository jGitRepository;
-    private PersistenceConfigRepository s3Repository;
+    private PersistenceConfigRepositoryStrategy jGitRepository;
+    private PersistenceConfigRepositoryStrategy s3Repository;
     private DynamicConfigRepository repository;
 
     @Parameters(name = "path={0},expectedRepo={1}")
@@ -44,19 +48,22 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
 
     @Before
     public void setUp() {
-        jGitRepository = mock(PersistenceConfigRepository.class);
-        s3Repository = mock(PersistenceConfigRepository.class);
+        jGitRepository = mock(PersistenceConfigRepositoryStrategy.class);
+        when(jGitRepository.isApplicable(any())).thenReturn(true);
+        when(jGitRepository.priority()).thenReturn(Integer.MAX_VALUE);
         S3Rules s3Rules = new S3Rules();
         s3Rules.setIncludePaths(List.of("/config/s3/*", "/config/s3-full-path.txt"));
         s3Rules.setExcludePaths(List.of("/config/s3/uaa/*"));
-        repository = new DynamicConfigRepository(jGitRepository, s3Repository, s3Rules);
+        var s3Client = mock(S3Client.class);
+        s3Repository = spy(new S3Repository(s3Client, "/config", "null", s3Rules));
+        repository = new DynamicConfigRepository(List.of(s3Repository, jGitRepository));
     }
 
     @Test
     public void testFindDelegatesToCorrectRepo() {
         var item = mock(ConfigurationItem.class);
         when(jGitRepository.find(path)).thenReturn(item);
-        when(s3Repository.find(path)).thenReturn(item);
+        doReturn(item).when(s3Repository).find(path);
 
         var result = repository.find(path);
         assertEquals(item, result);
@@ -74,7 +81,7 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         var configuration = mock(Configuration.class);
         var version = new ConfigVersion("TST");
         when(jGitRepository.find(path, version)).thenReturn(configuration);
-        when(s3Repository.find(path, version)).thenReturn(configuration);
+        doReturn(configuration).when(s3Repository).find(path, version);
 
         var result = repository.find(path, version);
         assertEquals(configuration, result);
@@ -93,7 +100,7 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         when(config.getPath()).thenReturn(path);
         var version = new ConfigVersion(expectedRepo);
         when(jGitRepository.save(config)).thenReturn(version);
-        when(s3Repository.save(config)).thenReturn(version);
+        doReturn(version).when(s3Repository).save(config);
 
         var result = repository.save(config);
         assertEquals(version, result);
@@ -111,7 +118,7 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         var paths = List.of(path);
         var version = new ConfigVersion(expectedRepo);
         when(jGitRepository.deleteAll(paths)).thenReturn(version);
-        when(s3Repository.deleteAll(paths)).thenReturn(version);
+        doReturn(version).when(s3Repository).deleteAll(paths);
 
         var result = repository.deleteAll(paths);
         assertEquals(version, result);
