@@ -36,6 +36,7 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
                 repositories.size(), lowestPriorityRepository.getClass().getSimpleName());
     }
 
+    @Override
     public String type() {
         return "DYNAMIC";
     }
