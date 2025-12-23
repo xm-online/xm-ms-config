@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Import;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -71,6 +72,7 @@ public class BeanConfiguration {
      */
     @Bean
     @ConditionalOnExpression("'${application.config-repository.mode}'.equalsIgnoreCase('DYNAMIC')")
+    @DependsOn("gitRepository")
     public PersistenceConfigRepository dynamicRepository(List<PersistenceConfigRepositoryStrategy> repositories) {
         log.info("Creating dynamic config repository bean with {} base repositories", repositories.size());
         return new DynamicConfigRepository(repositories);
