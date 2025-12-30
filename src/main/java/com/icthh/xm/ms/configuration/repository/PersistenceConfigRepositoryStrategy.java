@@ -1,14 +1,5 @@
 package com.icthh.xm.ms.configuration.repository;
 
-import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.domain.ConfigVersion;
-import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
-import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 public interface PersistenceConfigRepositoryStrategy extends PersistenceConfigRepository {
 
     /**

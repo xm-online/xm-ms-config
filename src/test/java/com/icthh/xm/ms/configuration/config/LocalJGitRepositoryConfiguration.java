@@ -12,6 +12,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.Git;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -31,19 +32,26 @@ public class LocalJGitRepositoryConfiguration {
 
     @Bean
     @SneakyThrows
-    public PersistenceConfigRepository configRepository(ApplicationProperties applicationProperties,
-                                                        TenantContextHolder tenantContextHolder,
-                                                        XmAuthenticationContextHolder authenticationContextHolder,
-                                                        XmRequestContextHolder requestContextHolder,
-                                                        FileService fileService) {
+    public PersistenceConfigRepository configRepository(
+            @Qualifier("gitRepository") PersistenceConfigRepository gitRepository) {
+        return gitRepository;
+    }
+
+    @Bean
+    @SneakyThrows
+    public PersistenceConfigRepository gitRepository(ApplicationProperties applicationProperties,
+            TenantContextHolder tenantContextHolder,
+            XmAuthenticationContextHolder authenticationContextHolder,
+            XmRequestContextHolder requestContextHolder,
+            FileService fileService) {
         createGitRepository(serverGitFolder, initTestGitFolder, applicationProperties.getGit());
         ReentrantLock lock = new ReentrantLock();
         return new JGitRepository(applicationProperties.getGit(),
-            lock,
-            tenantContextHolder,
-            authenticationContextHolder,
-            requestContextHolder,
-            fileService) {
+                lock,
+                tenantContextHolder,
+                authenticationContextHolder,
+                requestContextHolder,
+                fileService) {
             @Override
             protected void cloneRepository() {
                 if (isNotBlank(applicationProperties.getGit().getUri())) {

@@ -3,8 +3,13 @@ package com.icthh.xm.ms.configuration.repository.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,13 +17,14 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class DynamicConfigRepositoryUnitTest {
 
@@ -44,25 +50,29 @@ public class DynamicConfigRepositoryUnitTest {
     private static final ConfigurationList J_GIT_CONFIGURATION_LIST_WITH_LEGACY = new ConfigurationList(
             J_GIT_VERSION, J_GIT_CONFIGS_WITH_LEGACY_CONFIG);
 
-    private PersistenceConfigRepository jGitRepository;
-    private PersistenceConfigRepository s3Repository;
+    private PersistenceConfigRepositoryStrategy jGitRepository;
+    private PersistenceConfigRepositoryStrategy s3Repository;
     private DynamicConfigRepository repository;
 
     @Before
     public void setUp() {
-        jGitRepository = mock(PersistenceConfigRepository.class);
-        s3Repository = mock(PersistenceConfigRepository.class);
+        jGitRepository = mock(PersistenceConfigRepositoryStrategy.class);
+        when(jGitRepository.isApplicable(any())).thenReturn(true);
+        when(jGitRepository.priority()).thenReturn(Integer.MAX_VALUE);
+        S3Client s3Client = mock(S3Client.class);
         S3Rules s3Rules = new S3Rules();
         s3Rules.setIncludePaths(List.of("/config/s3/*", "/config/s3-full-path.txt"));
         s3Rules.setExcludePaths(List.of("/config/s3/uaa/*"));
-        repository = new DynamicConfigRepository(jGitRepository, s3Repository, s3Rules);
+        s3Repository = spy(new S3Repository(s3Client, "/config", null, s3Rules));
+        repository = new DynamicConfigRepository(List.of(jGitRepository, s3Repository));
     }
 
     @Test
     public void testSaveAllSavesAllConfigurations() {
         var allConfigs = Stream.concat(S_3_CONFIGS.stream(), J_GIT_CONFIGS.stream()).toList();
-
         Map<String, String> configHashes = Map.of();
+        doReturn(S_3_VERSION).when(s3Repository).saveAll(anyList(), anyMap());
+
         repository.saveAll(allConfigs, configHashes);
         verify(jGitRepository).saveAll(J_GIT_CONFIGS, configHashes);
         verify(s3Repository).saveAll(S_3_CONFIGS, configHashes);
@@ -73,6 +83,7 @@ public class DynamicConfigRepositoryUnitTest {
         var s3Paths = List.of(CONFIG_1_PATH, "/config/s3-full-path.txt");
         var gitPaths = List.of("/config/git/file2.yml", "/config/s3/uaa/file3.yml");
         var allPaths = Stream.concat(s3Paths.stream(), gitPaths.stream()).toList();
+        doReturn(S_3_VERSION).when(s3Repository).deleteAll(s3Paths);
 
         repository.deleteAll(allPaths);
         verify(jGitRepository).deleteAll(gitPaths);
@@ -83,9 +94,9 @@ public class DynamicConfigRepositoryUnitTest {
     public void testFindAllReturnsAllConfigurations() {
         var allConfigs = Stream.concat(S_3_CONFIGS.stream(), J_GIT_CONFIGS_WITH_LEGACY_CONFIG.stream()).toList();
         var allConfigurationList = new ConfigurationList(S_3_VERSION, allConfigs);
-
         when(jGitRepository.findAll()).thenReturn(J_GIT_CONFIGURATION_LIST_WITH_LEGACY);
-        when(s3Repository.findAll()).thenReturn(S_3_CONFIGURATION_LIST);
+        doReturn(S_3_CONFIGURATION_LIST).when(s3Repository).findAll();
+
         var result = repository.findAll();
         var expectedConfigurations = allConfigurationList.getData();
         var actualConfigurations = result.getData();
@@ -99,6 +110,8 @@ public class DynamicConfigRepositoryUnitTest {
     @Test
     public void testSetRepositoryStateDelegatesToCorrectRepositories() {
         var allConfigs = Stream.concat(S_3_CONFIGS.stream(), J_GIT_CONFIGS.stream()).toList();
+        doReturn(S_3_VERSION).when(s3Repository).setRepositoryState(S_3_CONFIGS);
+
         repository.setRepositoryState(allConfigs);
         verify(jGitRepository).setRepositoryState(J_GIT_CONFIGS);
         verify(s3Repository).setRepositoryState(S_3_CONFIGS);
@@ -108,7 +121,7 @@ public class DynamicConfigRepositoryUnitTest {
     public void testFindAllInTenantReturnsAllConfigurations() {
         var tenantKey = "tenant1";
         when(jGitRepository.findAllInTenant(tenantKey)).thenReturn(J_GIT_CONFIGURATION_LIST_WITH_LEGACY);
-        when(s3Repository.findAllInTenant(tenantKey)).thenReturn(S_3_CONFIGURATION_LIST);
+        doReturn(S_3_CONFIGURATION_LIST).when(s3Repository).findAllInTenant(tenantKey);
 
         var result = repository.findAllInTenant(tenantKey);
         var actualConfigurations = result.getData();
@@ -124,7 +137,7 @@ public class DynamicConfigRepositoryUnitTest {
     public void testFindAllInTenantsReturnsAllConfigurations() {
         var tenants = Set.of("tenant1", "tenant2");
         when(jGitRepository.findAllInTenants(tenants)).thenReturn(J_GIT_CONFIGURATION_LIST_WITH_LEGACY);
-        when(s3Repository.findAllInTenants(tenants)).thenReturn(S_3_CONFIGURATION_LIST);
+        doReturn(S_3_CONFIGURATION_LIST).when(s3Repository).findAllInTenants(tenants);
 
         var result = repository.findAllInTenants(tenants);
         var actualConfigurations = result.getData();
@@ -158,7 +171,7 @@ public class DynamicConfigRepositoryUnitTest {
     public void testRecloneConfigurationDelegatesToJGitRepository() {
         repository.recloneConfiguration();
         verify(jGitRepository).recloneConfiguration();
-        verify(s3Repository, never()).recloneConfiguration();
+        verify(s3Repository).recloneConfiguration();
     }
 
     private static Configuration findConfig1(List<Configuration> actualConfigurations) {

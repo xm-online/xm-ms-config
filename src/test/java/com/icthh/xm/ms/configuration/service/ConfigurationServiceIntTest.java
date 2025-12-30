@@ -4,11 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
-import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
-import java.util.Collection;
 import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
@@ -16,6 +15,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.util.AntPathMatcher;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
@@ -59,7 +58,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     TenantAliasRefreshableConfiguration tenantAliasRefreshableConfiguration;
 
     @Autowired
-    JGitRepository repository;
+    @Qualifier("configRepository")
+    PersistenceConfigRepository repository;
 
     @Before
     public void before() {

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.icthh.xm.commons.config.domain.Configuration;
+import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +60,7 @@ public class S3RepositoryUnitTest {
     @Before
     public void setUp() {
         s3Client = mock(S3Client.class);
-        s3Repository = new S3Repository(s3Client, TEST_BUCKET_NAME, configPath);
+        s3Repository = new S3Repository(s3Client, TEST_BUCKET_NAME, configPath, new S3Rules());
         configPrefix = configPath != null ? configPath + "/config/" : "config/";
     }
 
