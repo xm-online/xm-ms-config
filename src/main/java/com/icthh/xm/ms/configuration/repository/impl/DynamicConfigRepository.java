@@ -18,8 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DynamicConfigRepository implements PersistenceConfigRepository {
 
-    private static final int DYNAMIC_PRIORITY = -1;
-
     private final List<PersistenceConfigRepositoryStrategy> repositories;
     private final PersistenceConfigRepositoryStrategy lowestPriorityRepository;
 
@@ -38,6 +36,7 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
                 repositories.size(), lowestPriorityRepository.getClass().getSimpleName());
     }
 
+    @Override
     public String type() {
         return "DYNAMIC";
     }

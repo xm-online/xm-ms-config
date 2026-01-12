@@ -44,6 +44,32 @@ public class BeanConfiguration {
     public static final String UPDATE_IN_MEMORY = "in-memory-update-lock";
 
     /**
+     * Creates the Git Repository bean.
+     *
+     * @param applicationProperties the application properties
+     * @param lock the lock for tenant configuration
+     * @param tenantContextHolder the tenant context holder
+     * @param authenticationContextHolder the authentication context holder
+     * @param requestContextHolder the request context holder
+     * @param fileService the file service
+     * @return the configured {@link JGitRepository}
+     */
+    @Bean
+    @ConditionalOnExpression("'${application.config-repository.mode}'.equalsIgnoreCase('GIT') || '${application.config-repository.mode}'.equalsIgnoreCase('DYNAMIC')")
+    public PersistenceConfigRepository gitRepository(
+            ApplicationProperties applicationProperties,
+            @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
+            TenantContextHolder tenantContextHolder,
+            XmAuthenticationContextHolder authenticationContextHolder,
+            XmRequestContextHolder requestContextHolder,
+            FileService fileService) {
+
+        log.info("Creating Git repository bean");
+        return new JGitRepository(applicationProperties.getGit(), lock,
+                tenantContextHolder, authenticationContextHolder, requestContextHolder, fileService);
+    }
+
+    /**
      * Creates the S3 Repository bean.
      *
      * @param applicationProperties the application properties
@@ -74,31 +100,6 @@ public class BeanConfiguration {
     public PersistenceConfigRepository dynamicRepository(List<PersistenceConfigRepositoryStrategy> repositories) {
         log.info("Creating dynamic config repository bean with {} base repositories", repositories.size());
         return new DynamicConfigRepository(repositories);
-    }
-
-    /**
-     * Creates the Git Repository bean.
-     *
-     * @param applicationProperties the application properties
-     * @param lock the lock for tenant configuration
-     * @param tenantContextHolder the tenant context holder
-     * @param authenticationContextHolder the authentication context holder
-     * @param requestContextHolder the request context holder
-     * @param fileService the file service
-     * @return the configured {@link JGitRepository}
-     */
-    @Bean
-    public PersistenceConfigRepository gitRepository(
-            ApplicationProperties applicationProperties,
-            @Qualifier(TENANT_CONFIGURATION_LOCK) Lock lock,
-            TenantContextHolder tenantContextHolder,
-            XmAuthenticationContextHolder authenticationContextHolder,
-            XmRequestContextHolder requestContextHolder,
-            FileService fileService) {
-
-        log.info("Creating Git repository bean");
-        return new JGitRepository(applicationProperties.getGit(), lock,
-                tenantContextHolder, authenticationContextHolder, requestContextHolder, fileService);
     }
 
     /**

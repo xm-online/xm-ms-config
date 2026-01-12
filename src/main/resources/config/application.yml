@@ -189,9 +189,8 @@ application:
           accept-unknown-host: true
 #    Uncomment for configure S3 repository supporting
 #    config-repository:
+#        mode: DYNAMIC # GIT, S3, DYNAMIC
 #        s3:
-#            enabled: false
-#            dynamicRepositoryMode: true
 #            endpoint: http://localhost:9000
 #            accessKey: ${S3_ACCESS_KEY}
 #            secretKey: ${S3_SECRET_KEY}
