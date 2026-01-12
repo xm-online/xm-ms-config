@@ -187,7 +187,23 @@ application:
     git:
       ssh:
           accept-unknown-host: true
-
+#    Uncomment for configure S3 repository supporting
+#    config-repository:
+#        mode: DYNAMIC # GIT, S3, DYNAMIC
+#        s3:
+#            endpoint: http://localhost:9000
+#            accessKey: ${S3_ACCESS_KEY}
+#            secretKey: ${S3_SECRET_KEY}
+#            region: eu-central-1
+#            bucket: xm-config
+#            config-path: xm-config # Required to save config files in a subdirectory instead of the bucket root
+#            path-style-access: true # Required for Minio
+#            rules:
+#                include-paths:
+#                    - /config/tenants/*
+#                    - /config/global/*
+#                exclude-paths:
+#                    - /config/legacy/*
 gracefulShutdown:
     enabled: false
     shutdownDelay:

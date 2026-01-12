@@ -108,3 +108,4 @@ application:
     excludeConfigPatterns:
         - "/config/tenants/excluded/**"
     jwk-update-debounce-seconds: 2
+
