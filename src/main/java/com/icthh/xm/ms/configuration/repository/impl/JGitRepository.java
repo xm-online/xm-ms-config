@@ -11,7 +11,7 @@ import com.icthh.xm.ms.configuration.config.SshTransportConfigCallback;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
-import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.utils.Task;
@@ -87,7 +87,7 @@ import static org.eclipse.jgit.lib.RepositoryCache.FileKey.isGitRepository;
 import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 @Slf4j
-public class JGitRepository implements PersistenceConfigRepository {
+public class JGitRepository implements PersistenceConfigRepositoryStrategy {
 
     private static final String GIT_FOLDER = ".git";
     private static final String GIT_COMMIT_MSG_UPDATE_TPL = "Update [%s] by user [%s] from tenant [%s]. %s";
@@ -97,6 +97,7 @@ public class JGitRepository implements PersistenceConfigRepository {
     public static final String UNDEFINED_COMMIT = "undefined";
     public static final String REFS_HEADS = "refs/heads/";
     public static final String GIT_REPOSITORY = "git repository";
+    private static final int GIT_PRIORITY = Short.MAX_VALUE;
 
     private final GitProperties gitProperties;
 
@@ -128,6 +129,22 @@ public class JGitRepository implements PersistenceConfigRepository {
         log.info("Git branch to use {}", gitProperties.getBranchName());
         cloneRepository();
         log.info("Git working directory {}", rootDirectory.getAbsolutePath());
+    }
+
+    @Override
+    public String type() {
+        return "GIT";
+    }
+
+    @Override
+    public int priority() {
+        return GIT_PRIORITY;
+    }
+
+    @Override
+    public boolean isApplicable(String path) {
+        // Git repository is the fallback - it handles all paths
+        return true;
     }
 
     @Override

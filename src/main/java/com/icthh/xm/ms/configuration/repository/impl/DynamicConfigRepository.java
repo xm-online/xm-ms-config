@@ -1,45 +1,61 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
 import com.icthh.xm.commons.config.domain.Configuration;
-import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3Rules;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class DynamicConfigRepository implements PersistenceConfigRepository {
 
-    private final PersistenceConfigRepository jGitRepository;
-    private final PersistenceConfigRepository s3Repository;
-    private final S3Rules s3Rules;
+    private final List<PersistenceConfigRepositoryStrategy> repositories;
+    private final PersistenceConfigRepositoryStrategy lowestPriorityRepository;
 
-    public DynamicConfigRepository(PersistenceConfigRepository jGitRepository, PersistenceConfigRepository s3Repository, S3Rules s3Rules) {
-        this.jGitRepository = jGitRepository;
-        this.s3Repository = s3Repository;
-        this.s3Rules = s3Rules;
+    public DynamicConfigRepository(List<PersistenceConfigRepositoryStrategy> repositories) {
+        // Sort by priority (lower number = higher priority)
+        this.repositories = repositories.stream()
+                .sorted(Comparator.comparingInt(PersistenceConfigRepositoryStrategy::priority))
+                .toList();
+
+        // Lowest priority repo (highest number) is used for version operations
+        this.lowestPriorityRepository = repositories.stream()
+                .max(Comparator.comparingInt(PersistenceConfigRepositoryStrategy::priority))
+                .orElseThrow(() -> new IllegalArgumentException("At least one repository must be provided"));
+
+        log.info("DynamicConfigRepository initialized with {} repositories, lowest priority: {}",
+                repositories.size(), lowestPriorityRepository.getClass().getSimpleName());
+    }
+
+    @Override
+    public String type() {
+        return "DYNAMIC";
+    }
+
+    private PersistenceConfigRepository getRepositoryForPath(String path) {
+        return repositories.stream()
+                .filter(repo -> repo.isApplicable(path))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No repository found for path: " + path));
     }
 
     @Override
     public boolean hasVersion(ConfigVersion version) {
-        return jGitRepository.hasVersion(version);
+        return lowestPriorityRepository.hasVersion(version);
     }
 
     @Override
     public ConfigurationList findAll() {
-        var jGitConfigurationList = jGitRepository.findAll();
-        var jGitData = jGitConfigurationList.getData();
-        var s3ConfigurationList = s3Repository.findAll();
-        var s3Data = s3ConfigurationList.getData();
-        var jGitVersion = jGitConfigurationList.getVersion();
-        return getConfigurationList(s3Data, jGitData, jGitVersion);
+        return fetchFromRepositories(PersistenceConfigRepository::findAll);
     }
 
     @Override
@@ -54,135 +70,96 @@ public class DynamicConfigRepository implements PersistenceConfigRepository {
 
     private ConfigurationList fetchFromRepositories(
             Function<PersistenceConfigRepository, ConfigurationList> findConfigurationsQuery) {
-        var jGitConfigurationList = findConfigurationsQuery.apply(jGitRepository);
-        var jGitData = jGitConfigurationList.getData();
-        var s3ConfigurationList = findConfigurationsQuery.apply(s3Repository);
-        var s3Data = s3ConfigurationList.getData();
-        var jGitVersion = jGitConfigurationList.getVersion();
-        return getConfigurationList(s3Data, jGitData, jGitVersion);
+        // Fetch from all repositories
+        var allConfigurations = repositories.stream()
+                .map(findConfigurationsQuery)
+                .toList();
+
+        // Get version from lowest priority repository
+        var version = findConfigurationsQuery.apply(lowestPriorityRepository).getVersion();
+
+        // Merge configurations by priority
+        return mergeConfigurationLists(allConfigurations, version);
     }
 
     @Override
     public ConfigurationItem find(String path) {
-        return isS3Routed(path)
-                ? s3Repository.find(path)
-                : jGitRepository.find(path);
+        return getRepositoryForPath(path).find(path);
     }
 
     @Override
     public Configuration find(String path, ConfigVersion version) {
-        return isS3Routed(path)
-                ? s3Repository.find(path, version)
-                : jGitRepository.find(path, version);
+        return getRepositoryForPath(path).find(path, version);
     }
 
     @Override
     public ConfigVersion save(Configuration configuration) {
-        return isS3Routed(configuration.getPath())
-                ? s3Repository.save(configuration)
-                : jGitRepository.save(configuration);
+        return getRepositoryForPath(configuration.getPath()).save(configuration);
     }
 
     @Override
     public ConfigVersion saveAll(List<Configuration> configurations, Map<String, String> configHashes) {
-        var s3Configs = findS3Config(configurations);
+        // Group configurations by repository
+        var configsByRepo = configurations.stream()
+                .collect(Collectors.groupingBy(config -> getRepositoryForPath(config.getPath())));
+
         var version = ConfigVersion.UNDEFINED_VERSION;
-        if (!s3Configs.isEmpty()) {
-            version = s3Repository.saveAll(s3Configs, configHashes);
+        for (var entry : configsByRepo.entrySet()) {
+            version = entry.getKey().saveAll(entry.getValue(), configHashes);
         }
-
-        var gitConfigs = findGitConfig(configurations);
-        if (!gitConfigs.isEmpty()) {
-            version = jGitRepository.saveAll(gitConfigs, configHashes);
-        }
-
         return version;
-    }
-
-    private List<Configuration> findGitConfig(List<Configuration> configurations) {
-        return configurations.stream()
-                .filter(config -> !isS3Routed(config.getPath()))
-                .toList();
-    }
-
-    private List<Configuration> findS3Config(List<Configuration> configurations) {
-        return configurations.stream()
-                .filter(config -> isS3Routed(config.getPath()))
-                .toList();
     }
 
     @Override
     public ConfigVersion setRepositoryState(List<Configuration> configurations) {
-        var s3Configs = findS3Config(configurations);
+        // Group configurations by repository
+        var configsByRepo = configurations.stream()
+                .collect(Collectors.groupingBy(config -> getRepositoryForPath(config.getPath())));
+
         var version = ConfigVersion.UNDEFINED_VERSION;
-        if (!s3Configs.isEmpty()) {
-            version = s3Repository.setRepositoryState(s3Configs);
+        for (var entry : configsByRepo.entrySet()) {
+            version = entry.getKey().setRepositoryState(entry.getValue());
         }
-
-        var gitConfigs = findGitConfig(configurations);
-        if (!gitConfigs.isEmpty()) {
-            version = jGitRepository.setRepositoryState(gitConfigs);
-        }
-
         return version;
     }
 
     @Override
     public ConfigVersion deleteAll(List<String> paths) {
-        var s3Paths = paths.stream().filter(this::isS3Routed).toList();
-        var version = ConfigVersion.UNDEFINED_VERSION;
-        if (!s3Paths.isEmpty()) {
-            version = s3Repository.deleteAll(s3Paths);
-        }
+        // Group paths by repository
+        var pathsByRepo = paths.stream()
+                .collect(Collectors.groupingBy(this::getRepositoryForPath));
 
-        var gitPaths = paths.stream().filter(path -> !isS3Routed(path)).toList();
-        if (!gitPaths.isEmpty()) {
-            version = jGitRepository.deleteAll(gitPaths);
+        var version = ConfigVersion.UNDEFINED_VERSION;
+        for (var entry : pathsByRepo.entrySet()) {
+            version = entry.getKey().deleteAll(entry.getValue());
         }
         return version;
     }
 
     @Override
     public void recloneConfiguration() {
-        jGitRepository.recloneConfiguration();
+        repositories.forEach(PersistenceConfigRepository::recloneConfiguration);
     }
 
     @Override
     public ConfigVersion getCurrentVersion() {
-        return jGitRepository.getCurrentVersion();
+        return lowestPriorityRepository.getCurrentVersion();
     }
 
-    private ConfigurationList getConfigurationList(List<Configuration> s3Data, List<Configuration> jGitData,
-            ConfigVersion jGitVersion) {
-        var s3Map = s3Data.stream().collect(Collectors.toMap(Configuration::getPath, c -> c));
-        var gitMap = jGitData.stream().collect(Collectors.toMap(Configuration::getPath, c -> c));
+    private ConfigurationList mergeConfigurationLists(List<ConfigurationList> configurationLists, ConfigVersion version) {
+        // Create a map to hold configurations by path, with priority-based override
+        Map<String, Configuration> mergedConfigs = configurationLists.stream()
+                .flatMap(list -> list.getData().stream())
+                .collect(Collectors.toMap(
+                        Configuration::getPath,
+                        config -> config,
+                        (config1, config2) -> {
+                            // When there's a conflict, keep the one from the repository with higher priority
+                            // (the first one encountered, since repositories are already sorted)
+                            return config1;
+                        }
+                ));
 
-        var allPaths = Stream.concat(
-                        jGitData.stream().map(Configuration::getPath),
-                        s3Data.stream().map(Configuration::getPath)
-                )
-                .distinct()
-                .toList();
-
-        var mergedList = allPaths.stream()
-                .map(path -> isS3Routed(path) ? s3Map.get(path) : gitMap.get(path))
-                .filter(java.util.Objects::nonNull)
-                .toList();
-
-        return new ConfigurationList(jGitVersion, mergedList);
-    }
-
-    private boolean isS3Routed(String path) {
-        boolean included = s3Rules.getIncludePaths().stream().anyMatch(pattern -> pathMatches(pattern, path));
-        boolean excluded = s3Rules.getExcludePaths().stream().anyMatch(pattern -> pathMatches(pattern, path));
-        return included && !excluded;
-    }
-
-    private boolean pathMatches(String pattern, String path) {
-        if (pattern.endsWith("*")) {
-            String prefix = pattern.substring(0, pattern.length() - 1);
-            return path.startsWith(prefix);
-        }
-        return path.equals(pattern);
+        return new ConfigurationList(version, mergedConfigs.values().stream().toList());
     }
 }
