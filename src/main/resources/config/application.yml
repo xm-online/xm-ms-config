@@ -187,9 +187,9 @@ application:
     git:
       ssh:
           accept-unknown-host: true
+    config-repository:
+        mode: GIT # GIT, S3, DYNAMIC
 #    Uncomment for configure S3 repository supporting
-#    config-repository:
-#        mode: DYNAMIC # GIT, S3, DYNAMIC
 #        s3:
 #            endpoint: http://localhost:9000
 #            accessKey: ${S3_ACCESS_KEY}
