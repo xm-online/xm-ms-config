@@ -165,6 +165,7 @@ application:
     tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config, /api/private/config_map/pattern
     kafka-enabled: true
     kafka-system-queue: system_queue
+    kafka-in-memory-config-topic: in_memory_config_topic
     kafka-metadata-max-age: 60000 #in milliseconds
     versionCacheMaxSize: 100
     update-config-available: true
