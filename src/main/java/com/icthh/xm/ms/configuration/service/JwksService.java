@@ -21,6 +21,7 @@ public class JwksService {
     public static final String TENANT_REPLACE_PATTERN = "{tenant}";
     public static final String IDP_CLIENT_KEY_REPLACE_PATTERN = "{idpClientKey}";
 
+    private final UpdateInMemoryEventService inMemoryService;
     private final ConfigurationService configurationService;
     private final JwkFetcher jwkFetcher;
 
@@ -31,7 +32,7 @@ public class JwksService {
             .map(idpClientKey -> builderJwkConfiguration(tenantKey, idpClientKey, ""))
             .collect(toMap(Configuration::getPath, identity()));
         jwks.putAll(getJwks(tenantKey, newClients));
-        configurationService.saveConfigurations(new ArrayList<>(jwks.values()), Map.of());
+        inMemoryService.sendEvent(tenantKey, jwks);
     }
 
     private Configuration builderJwkConfiguration(String tenantKey, String idpClientKey, String content) {

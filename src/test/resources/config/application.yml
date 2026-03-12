@@ -102,6 +102,7 @@ application:
         max-wait-time-second: 30
         depth: 1
     kafka-system-queue: system_queue
+    kafka-in-memory-config-topic: in_memory_config_topic
     lep:
         tenant-script-storage: XM_MS_CONFIG
         processor-enabled: true

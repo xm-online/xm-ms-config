@@ -30,6 +30,7 @@ public class ApplicationProperties {
     private List<String> binaryFileTypes = Collections.emptyList();
     private boolean kafkaEnabled;
     private String kafkaSystemQueue;
+    private String kafkaInMemoryConfigTopic;
     private Integer kafkaMetadataMaxAge;
     private boolean updateConfigAvailable = true;
 
