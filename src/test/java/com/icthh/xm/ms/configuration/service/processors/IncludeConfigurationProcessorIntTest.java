@@ -769,4 +769,349 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
 
         assertEquals("Processed configuration should match expected", expectedMap, actualMap);
     }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayJsonFiles() {
+        // Create multiple files to be included
+        String includedFile1Path = "/config/tenants/XM/common/database.json";
+        String includedFile1Content = """
+            {
+              "dbHost": "localhost",
+              "dbPort": 5432
+            }
+            """;
+
+        String includedFile2Path = "/config/tenants/XM/common/cache.json";
+        String includedFile2Content = """
+            {
+              "cacheEnabled": true,
+              "cacheTtl": 3600
+            }
+            """;
+
+        String includedFile3Path = "/config/tenants/XM/common/logging.json";
+        String includedFile3Content = """
+            {
+              "logLevel": "INFO",
+              "logFormat": "json"
+            }
+            """;
+
+        // Create the main file that includes all three files using array syntax
+        String mainFilePath = "/config/tenants/XM/config.json";
+        String mainFileContent = """
+            {
+              "$include": ["common/database.json", "common/cache.json", "common/logging.json"],
+              "appName": "myapp"
+            }
+            """;
+
+        // Expected result after include processing - all files merged
+        String expectedContent = """
+            {
+              "dbHost": "localhost",
+              "dbPort": 5432,
+              "cacheEnabled": true,
+              "cacheTtl": 3600,
+              "logLevel": "INFO",
+              "logFormat": "json",
+              "appName": "myapp"
+            }
+            """;
+
+        // Post all files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(includedFile2Path, includedFile2Content));
+        configurationService.updateConfiguration(new Configuration(includedFile3Path, includedFile3Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse and compare as maps
+        Map<String, Object> actualMap = parseJson(processedConfig.getContent());
+        Map<String, Object> expectedMap = parseJson(expectedContent);
+
+        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+    }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayYamlFiles() {
+        // Create multiple YAML files to be included
+        String includedFile1Path = "/config/tenants/XM/common/database.yml";
+        String includedFile1Content = """
+            dbHost: localhost
+            dbPort: 5432
+            """;
+
+        String includedFile2Path = "/config/tenants/XM/common/cache.yml";
+        String includedFile2Content = """
+            cacheEnabled: true
+            cacheTtl: 3600
+            """;
+
+        // Create the main file that includes both files using array syntax
+        String mainFilePath = "/config/tenants/XM/config.yml";
+        String mainFileContent = """
+            $include:
+              - common/database.yml
+              - common/cache.yml
+            appName: myapp
+            """;
+
+        // Expected result after include processing
+        String expectedContent = """
+            dbHost: localhost
+            dbPort: 5432
+            cacheEnabled: true
+            cacheTtl: 3600
+            appName: myapp
+            """;
+
+        // Post all files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(includedFile2Path, includedFile2Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse and compare as maps
+        Map<String, Object> actualMap = parseYaml(processedConfig.getContent());
+        Map<String, Object> expectedMap = parseYaml(expectedContent);
+
+        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+    }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayWithMissingFile() {
+        // Create only one of the files to be included
+        String includedFile1Path = "/config/tenants/XM/common/existing.json";
+        String includedFile1Content = """
+            {
+              "existingKey": "existingValue"
+            }
+            """;
+
+        // Create the main file that includes both existing and non-existing files
+        String mainFilePath = "/config/tenants/XM/config.json";
+        String mainFileContent = """
+            {
+              "$include": ["common/existing.json", "common/nonexistent1.json", "common/nonexistent2.json"],
+              "appName": "myapp"
+            }
+            """;
+
+        // Post files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse result
+        Map<String, Object> actualMap = parseJson(processedConfig.getContent());
+
+        // The existing file should be merged
+        assertEquals("existingValue", actualMap.get("existingKey"));
+        assertEquals("myapp", actualMap.get("appName"));
+        // The non-existing file path should remain in $include
+        assertEquals(List.of("common/nonexistent1.json", "common/nonexistent2.json"), actualMap.get("$include"));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayInNestedObject() {
+        // Create files to be included
+        String includedFile1Path = "/config/tenants/XM/db-credentials.json";
+        String includedFile1Content = """
+            {
+              "username": "dbuser",
+              "password": "dbpass"
+            }
+            """;
+
+        String includedFile2Path = "/config/tenants/XM/db-settings.json";
+        String includedFile2Content = """
+            {
+              "poolSize": 10,
+              "timeout": 30
+            }
+            """;
+
+        // Create the main file with $include array in nested object
+        String mainFilePath = "/config/tenants/XM/config.json";
+        String mainFileContent = """
+            {
+              "appName": "myapp",
+              "database": {
+                "host": "localhost",
+                "port": 5432,
+                "$include": ["db-credentials.json", "db-settings.json"]
+              }
+            }
+            """;
+
+        // Expected result after include processing
+        String expectedContent = """
+            {
+              "appName": "myapp",
+              "database": {
+                "host": "localhost",
+                "port": 5432,
+                "username": "dbuser",
+                "password": "dbpass",
+                "poolSize": 10,
+                "timeout": 30
+              }
+            }
+            """;
+
+        // Post all files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(includedFile2Path, includedFile2Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse and compare as maps
+        Map<String, Object> actualMap = parseJson(processedConfig.getContent());
+        Map<String, Object> expectedMap = parseJson(expectedContent);
+
+        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+    }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayWithAbsoluteAndRelativePaths() {
+        // Create files to be included
+        String includedFile1Path = "/config/tenants/XM/shared/global.json";
+        String includedFile1Content = """
+            {
+              "globalKey": "globalValue"
+            }
+            """;
+
+        String includedFile2Path = "/config/tenants/XM/app/local.json";
+        String includedFile2Content = """
+            {
+              "localKey": "localValue"
+            }
+            """;
+
+        // Create the main file with mixed absolute and relative paths
+        String mainFilePath = "/config/tenants/XM/app/config.json";
+        String mainFileContent = """
+            {
+              "$include": ["/config/tenants/XM/shared/global.json", "local.json"],
+              "appName": "myapp"
+            }
+            """;
+
+        // Expected result
+        String expectedContent = """
+            {
+              "globalKey": "globalValue",
+              "localKey": "localValue",
+              "appName": "myapp"
+            }
+            """;
+
+        // Post all files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(includedFile2Path, includedFile2Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Retrieve the processed configuration
+        Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+
+        assertNotNull("Configuration map should not be null", configMap);
+        Configuration processedConfig = configMap.get(mainFilePath);
+        assertNotNull("Configuration should be present", processedConfig);
+
+        // Parse and compare as maps
+        Map<String, Object> actualMap = parseJson(processedConfig.getContent());
+        Map<String, Object> expectedMap = parseJson(expectedContent);
+
+        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+    }
+
+    @Test
+    @SneakyThrows
+    public void testIncludeArrayDependencyReprocessing() {
+        // Create the included files
+        String includedFile1Path = "/config/tenants/XM/shared/data1.json";
+        String includedFile1Content = """
+            {
+              "value1": "initial1"
+            }
+            """;
+
+        String includedFile2Path = "/config/tenants/XM/shared/data2.json";
+        String includedFile2Content = """
+            {
+              "value2": "initial2"
+            }
+            """;
+
+        // Create the file that includes both
+        String mainFilePath = "/config/tenants/XM/config.json";
+        String mainFileContent = """
+            {
+              "$include": ["shared/data1.json", "shared/data2.json"],
+              "appName": "myapp"
+            }
+            """;
+
+        // Post all files
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, includedFile1Content));
+        configurationService.updateConfiguration(new Configuration(includedFile2Path, includedFile2Content));
+        configurationService.updateConfiguration(new Configuration(mainFilePath, mainFileContent));
+
+        // Verify initial state
+        Map<String, Configuration> initialConfigMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+        Configuration initialConfig = initialConfigMap.get(mainFilePath);
+        Map<String, Object> actualInitialMap = parseJson(initialConfig.getContent());
+
+        assertEquals("initial1", actualInitialMap.get("value1"));
+        assertEquals("initial2", actualInitialMap.get("value2"));
+
+        // Update one of the included files
+        String updatedIncludedContent = """
+            {
+              "value1": "updated1"
+            }
+            """;
+
+        configurationService.updateConfiguration(new Configuration(includedFile1Path, updatedIncludedContent));
+
+        // Verify that the main file is reprocessed with updated value
+        Map<String, Configuration> updatedConfigMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
+        Configuration updatedConfig = updatedConfigMap.get(mainFilePath);
+        Map<String, Object> actualUpdatedMap = parseJson(updatedConfig.getContent());
+
+        assertEquals("updated1", actualUpdatedMap.get("value1"));
+        assertEquals("initial2", actualUpdatedMap.get("value2"));
+        assertEquals("myapp", actualUpdatedMap.get("appName"));
+    }
 }

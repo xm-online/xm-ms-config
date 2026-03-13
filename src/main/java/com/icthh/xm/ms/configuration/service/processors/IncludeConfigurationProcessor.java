@@ -5,7 +5,6 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -14,12 +13,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
 @Slf4j
 @Component
@@ -135,17 +134,12 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
                 Object value = entry.getValue();
 
                 if (INCLUDE_KEYWORD.equals(key) && value instanceof String includePathRaw) {
-                    String absolutePath = resolveIncludePath(currentFilePath, includePathRaw);
-
-                    trackDependency(absolutePath, currentFilePath);
-
-                    // Check if we already processed this include (avoid infinite loops)
-                    if (processedIncludes.containsKey(absolutePath)) {
-                        return processedIncludes.get(absolutePath);
+                    if (!processIncludeFile(currentFilePath, includePathRaw, originalStorage, processedIncludes, result)) {
+                        result.put(INCLUDE_KEYWORD, includePathRaw);
                     }
-
-                    // Load and process the included file
-                    processIncludeFile(absolutePath, includePathRaw, originalStorage, processedIncludes, result);
+                } else if (INCLUDE_KEYWORD.equals(key) && value instanceof List<?> includePathsRaw) {
+                    // Handle array of include paths: $include: [path1, path2, path3]
+                    processIncludeArray(includePathsRaw, currentFilePath, originalStorage, processedIncludes, result);
                 } else {
                     // Recursively process nested structures
                     result.put(key, processIncludes(value, currentFilePath, originalStorage, processedIncludes));
@@ -165,40 +159,75 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
         log.debug("Registered dependency: {} depends on {}", currentFilePath, absolutePath);
     }
 
-    @SuppressWarnings("unchecked")
-    private void processIncludeFile(String absolutePath, String includePathRaw,
-                                   Map<String, Configuration> originalStorage,
-                                   Map<String, Object> processedIncludes,
-                                   Map<String, Object> result) {
+    private boolean processIncludeFile(String currentFilePath, String includePathRaw,
+                                        Map<String, Configuration> originalStorage,
+                                        Map<String, Object> processedIncludes,
+                                        Map<String, Object> result) {
+        String absolutePath = resolveIncludePath(currentFilePath, includePathRaw);
+        trackDependency(absolutePath, currentFilePath);
+
+        if (processedIncludes.containsKey(absolutePath)) {
+            mergeIncludedContent(processedIncludes.get(absolutePath), result);
+            return true;
+        }
+
+        Optional<Object> processed = loadAndProcessIncludedFile(absolutePath, originalStorage, processedIncludes);
+        if (processed.isEmpty()) {
+            return false;
+        }
+        mergeIncludedContent(processed.get(), result);
+        return true;
+    }
+
+    private void processIncludeArray(List<?> includePathsRaw, String currentFilePath,
+                                     Map<String, Configuration> originalStorage,
+                                     Map<String, Object> processedIncludes,
+                                     Map<String, Object> result) {
+        List<String> failedPaths = new ArrayList<>();
+
+        for (Object pathObj : includePathsRaw) {
+            if (!(pathObj instanceof String includePathRaw)) {
+                log.warn("Invalid path in $include array (not a string): {}, skipping", pathObj);
+                continue;
+            }
+            if (!processIncludeFile(currentFilePath, includePathRaw, originalStorage, processedIncludes, result)) {
+                failedPaths.add(includePathRaw);
+            }
+        }
+
+        if (!failedPaths.isEmpty()) {
+            result.put(INCLUDE_KEYWORD, failedPaths.size() == 1 ? failedPaths.getFirst() : failedPaths);
+        }
+    }
+
+    private Optional<Object> loadAndProcessIncludedFile(String absolutePath,
+                                                        Map<String, Configuration> originalStorage,
+                                                        Map<String, Object> processedIncludes) {
         Configuration includedConfig = originalStorage.get(absolutePath);
         if (includedConfig == null) {
-            log.warn("Included file not found in originalStorage: {}, leaving $include unchanged", absolutePath);
-            result.put(INCLUDE_KEYWORD, includePathRaw);
-            return;
+            log.warn("Included file not found in originalStorage: {}", absolutePath);
+            return Optional.empty();
         }
 
         try {
-            // Parse and process the included file recursively
             ObjectMapper mapper = getMapperForFile(absolutePath);
             Object includedContent = mapper.readValue(includedConfig.getContent(), Object.class);
-
-            // Mark as being processed
             processedIncludes.put(absolutePath, includedContent);
-
-            Object processedInclude = processIncludes(includedContent, absolutePath,
-                                                     originalStorage, processedIncludes);
-
-            // If the included content is a map, merge it into the current map
-            if (processedInclude instanceof Map) {
-                Map<String, Object> includedMap = (Map<String, Object>) processedInclude;
-                result.putAll(includedMap);
-            } else {
-                // If it's not a map, just set it as the value
-                result.put(INCLUDE_KEYWORD, processedInclude);
-            }
+            Object processedInclude = processIncludes(includedContent, absolutePath, originalStorage, processedIncludes);
+            return Optional.of(processedInclude);
         } catch (Exception e) {
             log.error("Failed to process included file {}: {}", absolutePath, e.getMessage(), e);
-            result.put(INCLUDE_KEYWORD, includePathRaw);
+            return Optional.empty();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void mergeIncludedContent(Object processedInclude, Map<String, Object> result) {
+        if (processedInclude instanceof Map) {
+            Map<String, Object> includedMap = (Map<String, Object>) processedInclude;
+            result.putAll(includedMap);
+        } else {
+            result.put(INCLUDE_KEYWORD, processedInclude);
         }
     }
 
