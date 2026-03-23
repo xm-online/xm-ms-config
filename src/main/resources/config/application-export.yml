@@ -1,0 +1,15 @@
+spring:
+    main:
+        web-application-type: none
+
+xm-config.enabled: false
+
+application:
+    kafka-enabled: false
+    send-refresh-on-startup: false
+    config-repository:
+        mode: GIT
+    git:
+        branch-name: master
+        max-wait-time-second: 30
+        depth: 1

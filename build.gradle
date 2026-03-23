@@ -283,6 +283,12 @@ tasks.register('cleanResources', Delete) {
     delete "build/resources"
 }
 
+tasks.register('exportConfig', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.icthh.xm.ms.configuration.ConfigExporter'
+    args = findProperty('exportArgs')?.split(' ')?.toList() ?: []
+}
+
 wrapper {
     gradleVersion = "8.10"
 }
