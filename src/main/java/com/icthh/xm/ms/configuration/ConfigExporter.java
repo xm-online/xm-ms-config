@@ -3,12 +3,14 @@ package com.icthh.xm.ms.configuration;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.export.ExportBeanConfiguration;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,10 @@ public class ConfigExporter {
     private static final String EXPORT_PROFILE = "export";
 
     public static void main(String[] args) {
+        new ConfigExporter().execute(args);
+    }
+
+    protected void execute(String[] args) {
         if (args.length != 2) {
             log.error("Usage: java ConfigExporter <path-to-config-repository> <path-to-output.zip>");
             System.exit(1);
@@ -34,15 +40,15 @@ public class ConfigExporter {
 
         log.info("Exporting configuration from [{}] to [{}]", repoPath, outputPath);
 
-        SpringApplication app = new SpringApplication(ExportBeanConfiguration.class);
-        app.setAdditionalProfiles(EXPORT_PROFILE);
-        app.setListeners(List.of(new EnvironmentPostProcessorApplicationListener()));
-        app.setDefaultProperties(Map.of(
-            "application.git.uri", repoPath
-        ));
-
-        try (ConfigurableApplicationContext ctx = app.run()) {
+        try (ConfigurableApplicationContext ctx = createApplicationContext(repoPath)) {
             ConfigurationService configurationService = ctx.getBean(ConfigurationService.class);
+            TenantAliasTreeService tenantAliasTreeService = ctx.getBean(TenantAliasTreeService.class);
+
+            log.info("Updating tenant alias tree...");
+            Optional<Configuration> configuration = configurationService.findConfiguration(TenantAliasTreeService.TENANT_ALIAS_CONFIG);
+            configuration.ifPresent(value ->
+                tenantAliasTreeService.updateAliasTree(new Configuration(TenantAliasTreeService.TENANT_ALIAS_CONFIG, value.getContent())));
+            log.info("Tenant alias tree updated");
 
             log.info("Reading configuration map...");
             Map<String, Configuration> configs = configurationService.getConfigurationMap(null);
@@ -59,7 +65,17 @@ public class ConfigExporter {
         }
     }
 
-    private static String resolveOutputPath(String path) {
+    protected ConfigurableApplicationContext createApplicationContext(String repoPath) {
+        SpringApplication app = new SpringApplication(ExportBeanConfiguration.class);
+        app.setAdditionalProfiles(EXPORT_PROFILE);
+        app.setListeners(List.of(new EnvironmentPostProcessorApplicationListener()));
+        app.setDefaultProperties(Map.of(
+            "application.git.uri", repoPath
+        ));
+        return app.run();
+    }
+
+    private String resolveOutputPath(String path) {
         File file = new File(path);
         if (file.isDirectory()) {
             return new File(file, CONFIG_EXPORT_ZIP).getAbsolutePath();
@@ -67,7 +83,7 @@ public class ConfigExporter {
         return path;
     }
 
-    private static void writeZip(Map<String, Configuration> configs, String outputPath) throws IOException {
+    private void writeZip(Map<String, Configuration> configs, String outputPath) throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputPath))) {
             for (Map.Entry<String, Configuration> entry : configs.entrySet()) {
                 Configuration config = entry.getValue();
@@ -83,7 +99,7 @@ public class ConfigExporter {
         }
     }
 
-    private static String normalizePath(String path) {
+    private String normalizePath(String path) {
         return path != null && path.startsWith("/") ? path.substring(1) : path;
     }
 }
