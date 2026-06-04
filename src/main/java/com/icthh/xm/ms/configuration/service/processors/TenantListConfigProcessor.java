@@ -1,7 +1,8 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantState;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ import static java.util.Collections.emptyList;
 @Component
 public class TenantListConfigProcessor implements TenantConfigurationProcessor {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = JsonMapper.builder().build();
     private final String applicationName;
     public final Map<String, List<TenantState>> tenantListStub;
 

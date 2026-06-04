@@ -1,7 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.messaging.event.system.SystemEvent;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
@@ -10,10 +10,10 @@ import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.repository.kafka.SystemQueueConsumer;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.icthh.xm.ms.configuration.repository.kafka.InMemoryConfigQueueConsumer.UPDATE_IN_MEMORY;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,13 +42,13 @@ public class IdpUpdateConfigIntTest extends AbstractSpringBootTest {
     public static final List<String> JWKS = List.of("/config/tenants/TEST_TENANT/config/idp/clients/TestClient1-jwks-cache.json",
         "/config/tenants/TEST_TENANT/config/idp/clients/TestClient2-jwks-cache.json");
 
-    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private final ObjectMapper mapper = JsonMapper.builder().build();
 
-    @MockBean
+    @MockitoBean
     ConfigTopicProducer configTopicProducer;
-    @MockBean
+    @MockitoBean
     KafkaTemplate<String, String> kafkaTemplate;
-    @MockBean
+    @MockitoBean
     JwkFetcher jwkFetcher;
 
     @Autowired

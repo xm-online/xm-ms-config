@@ -4,8 +4,9 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import java.util.List;
@@ -31,7 +32,7 @@ public class RoleNameProcessor implements TenantConfigurationProcessor {
     private static final String ROLE_CONFIG_PATH = "/config/tenants/{tenantKey}/roles.yml";
 
     private final AntPathMatcher matcher = new AntPathMatcher();
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper mapper = YAMLMapper.builder().build();
     private final ApplicationProperties applicationProperties;
 
     @Override

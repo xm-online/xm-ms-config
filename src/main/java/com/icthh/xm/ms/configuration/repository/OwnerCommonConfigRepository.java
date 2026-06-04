@@ -28,6 +28,11 @@ public class OwnerCommonConfigRepository implements CommonConfigRepository {
     }
 
     @Override
+    public Map<String, Configuration> getConfigByPatternPaths(String version, Collection<String> paths) {
+        return configurationService.getConfigMapAntPattern(version, paths);
+    }
+
+    @Override
     public void updateConfigFullPath(Configuration configuration, String oldConfigHash) {
         configurationService.updateConfiguration(configuration, oldConfigHash);
     }

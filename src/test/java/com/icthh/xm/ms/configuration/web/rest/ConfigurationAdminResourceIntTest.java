@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
@@ -8,8 +9,8 @@ import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationHashSum;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -50,7 +51,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
 
     private MockMvc mockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(configurationAdminResource)
                 .setControllerAdvice(exceptionTranslator)
@@ -155,7 +156,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/test/folder/subfolder/documentname.yml?toJson")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.field").value("field value"));
     }
 
@@ -356,7 +357,7 @@ public class ConfigurationAdminResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + CONFIG + TENANTS + "/TENANT2/hash")
             .contentType(MediaType.TEXT_PLAIN))
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().json(new ObjectMapper().writeValueAsString(response)))
+            .andExpect(content().json(JsonMapper.builder().build().writeValueAsString(response)))
             .andExpect(status().is2xxSuccessful());
     }
 

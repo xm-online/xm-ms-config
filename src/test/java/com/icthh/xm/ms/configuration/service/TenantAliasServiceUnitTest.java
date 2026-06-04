@@ -10,8 +10,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.tenant.TenantContext;
@@ -22,8 +23,8 @@ import java.util.Optional;
 
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
@@ -36,7 +37,7 @@ public class TenantAliasServiceUnitTest extends AbstractUnitTest {
     TenantContextHolder tenantContextHolder;
     TenantAliasTreeService tenantAliasService;
 
-    @Before
+    @BeforeEach
     public void before() {
         tenantAliasTreeStorage = new TenantAliasTreeStorage(tenantContextHolder);
         tenantAliasService = new TenantAliasTreeService(configurationService, tenantAliasTreeStorage);
@@ -82,7 +83,7 @@ public class TenantAliasServiceUnitTest extends AbstractUnitTest {
         verify(configurationService).updateConfiguration(argumentCaptor.capture());
         Configuration configuration = argumentCaptor.getValue();
 
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper mapper = YAMLMapper.builder().build();
 
         TenantAliasTree tenantAliasTree = mapper.readValue(configuration.getContent(), TenantAliasTree.class);
         TenantAliasTree tenantAliasTreeExpected = mapper.readValue(loadFile("tenantAliasTreeUpdatedParent.yml"), TenantAliasTree.class);

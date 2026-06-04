@@ -4,9 +4,10 @@ import static com.icthh.xm.ms.configuration.config.RequestContextKeys.REQUEST_SO
 import static com.icthh.xm.ms.configuration.config.RequestContextKeys.REQUEST_SOURCE_TYPE;
 import static com.icthh.xm.ms.configuration.domain.RequestSourceType.SYSTEM_QUEUE;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.logging.util.MdcUtils;
 import com.icthh.xm.commons.messaging.event.system.SystemEvent;
 import com.icthh.xm.commons.messaging.event.system.SystemEventType;
@@ -61,9 +62,9 @@ public class SystemQueueConsumer {
         initRequestContextSourceType();
         try {
             log.info("Consume system event from topic [{}]", message.topic());
-            ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            mapper.registerModule(new JavaTimeModule());
+            ObjectMapper mapper = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
             try {
                 SystemEvent event = mapper.readValue(message.value(), SystemEvent.class);
                 initRequestContextSourceName(event.getMessageSource());
@@ -83,7 +84,7 @@ public class SystemQueueConsumer {
                                  event.getEventType(), event.getMessageSource(), event.getEventId());
                         break;
                 }
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 log.error("System queue message has incorrect format: '{}' ", message.value(), e);
             }
         } finally {

@@ -3,8 +3,8 @@ package com.icthh.xm.ms.configuration.web.rest.errors;
 import com.icthh.xm.commons.exceptions.ErrorConstants;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,7 +31,7 @@ public class ExceptionTranslatorIntTest extends AbstractSpringBootTest {
 
     private MockMvc restMockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         this.restMockMvc = MockMvcBuilders.standaloneSetup(controller)

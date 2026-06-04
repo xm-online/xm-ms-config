@@ -5,7 +5,7 @@ import static com.icthh.xm.ms.configuration.config.Constants.PRIVATE;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static org.springframework.http.HttpStatus.CONFLICT;
 
-import com.codahale.metrics.annotation.Timed;
+
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
@@ -39,7 +39,6 @@ public class ConfigMapResource {
     private final ApplicationProperties applicationProperties;
 
     @GetMapping("/config_map")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(
         @RequestParam(name = "version", required = false) String version) {
@@ -47,14 +46,12 @@ public class ConfigMapResource {
     }
 
     @PostMapping("/config_map")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(@RequestBody GetConfigRequest getConfigRequest) {
         return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
     @PostMapping("/config_map/pattern")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody ConfigPatternPathDTO configPatternPathDTO) {
         return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPatternPaths()));
@@ -62,7 +59,6 @@ public class ConfigMapResource {
 
     @Deprecated(forRemoval = true)
     @PutMapping(value = "/config")
-    @Timed
     public ResponseEntity<Void> updateConfiguration(@RequestBody Configuration configuration,
                                                     @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
         assertUpdateConfigurationAvailable();

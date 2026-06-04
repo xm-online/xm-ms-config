@@ -94,7 +94,12 @@ spring:
                     enabled: false
 
     jackson:
-        serialization.write_dates_as_timestamps: false
+        deserialization:
+            fail-on-trailing-tokens: false
+        mapper:
+            sort-properties-alphabetically: false
+        serialization:
+            indent-output: true
     messages:
         basename: i18n/messages
     thymeleaf:

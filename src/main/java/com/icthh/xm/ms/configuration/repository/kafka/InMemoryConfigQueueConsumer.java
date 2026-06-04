@@ -1,9 +1,9 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.ConfigQueueEvent;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.util.MdcUtils;
@@ -34,9 +34,9 @@ public class InMemoryConfigQueueConsumer {
                                        XmRequestContextHolder requestContextHolder) {
         this.configurationService = configurationService;
         this.requestContextHolder = requestContextHolder;
-        this.objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .registerModule(new JavaTimeModule());
+        this.objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
     }
 
     /**

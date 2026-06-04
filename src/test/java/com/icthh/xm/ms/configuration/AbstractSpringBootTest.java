@@ -6,12 +6,10 @@ import com.icthh.xm.ms.configuration.config.TenantConfigMockConfiguration;
 import com.icthh.xm.ms.configuration.config.TestLepConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
+@ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {
     TestLepConfiguration.class,
     SecurityBeanOverrideConfiguration.class,
@@ -20,7 +18,6 @@ import org.springframework.test.context.junit4.SpringRunner;
     LocalJGitRepositoryConfiguration.class
 })
 @Tag("com.icthh.xm.ms.configuration.AbstractSpringBootTest")
-@ExtendWith(SpringExtension.class)
 public abstract class AbstractSpringBootTest {
 
     // TODO: To speedup test:

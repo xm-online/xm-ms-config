@@ -1,8 +1,8 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.client.repository.message.ConfigurationUpdateMessage;
 import com.icthh.xm.commons.config.domain.ConfigQueueEvent;
 import com.icthh.xm.commons.request.XmPrivilegedRequestContext;
@@ -10,8 +10,8 @@ import com.icthh.xm.commons.request.XmRequestContextHolder;
 import com.icthh.xm.ms.configuration.topic.ConfigurationUpdateEventProcessor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -59,13 +59,13 @@ public class ConfigQueueConsumerIntTest {
     @InjectMocks
     private ConfigQueueConsumer configQueueConsumer;
 
-    private ObjectMapper objectMapper = new ObjectMapper()
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-        .registerModule(new JavaTimeModule());
+    private final ObjectMapper objectMapper = JsonMapper.builder()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         when(requestContextHolder.getPrivilegedContext()).thenReturn(privilegedContext);
     }
 

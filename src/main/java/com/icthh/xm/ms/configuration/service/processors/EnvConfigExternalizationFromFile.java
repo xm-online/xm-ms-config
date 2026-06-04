@@ -10,12 +10,13 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.text.StringSubstitutor.replace;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ValueNode;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import java.util.Iterator;
@@ -38,7 +39,7 @@ import org.springframework.util.AntPathMatcher;
 public class EnvConfigExternalizationFromFile implements TenantConfigurationProcessor {
 
     private final Map<String, String> environment;
-    private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper objectMapper = YAMLMapper.builder().build();
     private final Map<String, TenantProfileEntry> tenantProfileCash = new ConcurrentHashMap<>();
     private final AntPathMatcher matcher = new AntPathMatcher();
 
@@ -176,7 +177,7 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
     private void addKeys(String currentPath, JsonNode jsonNode, Map<String, String> map) {
         if (jsonNode.isObject()) {
             ObjectNode objectNode = (ObjectNode) jsonNode;
-            Iterator<Map.Entry<String, JsonNode>> iter = objectNode.fields();
+            Iterator<Map.Entry<String, JsonNode>> iter = objectNode.properties().iterator();
             String pathPrefix = currentPath.isEmpty() ? "" : currentPath + ".";
 
             while (iter.hasNext()) {
@@ -190,7 +191,7 @@ public class EnvConfigExternalizationFromFile implements TenantConfigurationProc
             }
         } else if (jsonNode.isValueNode()) {
             ValueNode valueNode = (ValueNode) jsonNode;
-            map.put(currentPath, valueNode.asText());
+            map.put(currentPath, valueNode.asString());
         }
     }
 

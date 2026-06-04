@@ -1,8 +1,8 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class DynamicConfigRepositoryUnitTest {
@@ -54,7 +54,7 @@ public class DynamicConfigRepositoryUnitTest {
     private PersistenceConfigRepositoryStrategy s3Repository;
     private DynamicConfigRepository repository;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         jGitRepository = mock(PersistenceConfigRepositoryStrategy.class);
         when(jGitRepository.isApplicable(any())).thenReturn(true);

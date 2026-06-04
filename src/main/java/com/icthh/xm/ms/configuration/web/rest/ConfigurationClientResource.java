@@ -1,6 +1,6 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.codahale.metrics.annotation.Timed;
+
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
@@ -8,6 +8,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.service.dto.ConfigurationsHashSumDto;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,6 @@ public class ConfigurationClientResource {
 
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PostMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.CREATE')")
     @PrivilegeDescription("Privilege to create config for client")
@@ -62,7 +62,6 @@ public class ConfigurationClientResource {
 
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PutMapping(value = PROFILE + "/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.CLIENT.UPDATE')")
     @PrivilegeDescription("Privilege to update config for client")
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
@@ -79,7 +78,6 @@ public class ConfigurationClientResource {
     }
 
     @GetMapping(value = PROFILE + "/**")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_LIST.ITEM')")
     @PrivilegeDescription("Privilege to get config for client")
@@ -89,7 +87,6 @@ public class ConfigurationClientResource {
     }
 
     @GetMapping(value = PROFILE + "/webapp/settings-private.yml")
-    @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.WEBAPP.GET_LIST.ITEM')")
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     @PrivilegeDescription("Privilege to get private ui settings")
@@ -103,7 +100,6 @@ public class ConfigurationClientResource {
     }
 
     @GetMapping(value = PROFILE + "/webapp/settings-public.yml")
-    @Timed
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     public ResponseEntity<String> getWebAppConfiguration(HttpServletRequest request) {
         String path = extractPath(request);
@@ -113,7 +109,6 @@ public class ConfigurationClientResource {
     }
 
     @GetMapping(value = PROFILE + "/webapp/public/**")
-    @Timed
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
     public ResponseEntity<String> getPublicWebAppConfigurations(HttpServletRequest request) {
         String path = extractPath(request);
@@ -123,7 +118,6 @@ public class ConfigurationClientResource {
     }
 
     @DeleteMapping(PROFILE + "/**")
-    @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.DELETE')")
     @PrivilegeDescription("Privilege to delete config for client")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
@@ -131,8 +125,7 @@ public class ConfigurationClientResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @Timed
+    @PostMapping(value = PROFILE + "/refresh/**", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.REFRESH')")
     @PrivilegeDescription("Privilege to refresh config for client")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
@@ -146,7 +139,6 @@ public class ConfigurationClientResource {
     }
 
     @PostMapping(value = PROFILE + "/configs_map")
-    @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_MAP')")
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getConfigurationsByPaths(@RequestBody List<String> paths,
@@ -157,7 +149,6 @@ public class ConfigurationClientResource {
     }
 
     @PostMapping(value = PROFILE + "/configs_git_map")
-    @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject.body}, 'CONFIG.CLIENT.GET_MAP')")
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getPersistedConfigurationsByPaths(
@@ -169,21 +160,18 @@ public class ConfigurationClientResource {
     }
 
     @GetMapping(value = PROFILE + "/configs_git_hash")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<ConfigurationsHashSumDto> getPersistedConfigurationsHashSum() {
         return ResponseEntity.ok(configurationService.findPersistedConfigurationsHashSum());
     }
 
     @GetMapping(value = PROFILE + "/configs_hash")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<ConfigurationsHashSumDto> getConfigurationsHashSum() {
         return ResponseEntity.ok(configurationService.findConfigurationsHashSum());
     }
 
     @PostMapping(value = PROFILE + "/configs_update", consumes = {APPLICATION_JSON_VALUE})
-    @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.CLIENT.UPDATE_LIST')")
     @PrivilegeDescription("Privilege to refresh config for client")
     public ResponseEntity<Void> updateFromList(@RequestBody List<Configuration> configs) {

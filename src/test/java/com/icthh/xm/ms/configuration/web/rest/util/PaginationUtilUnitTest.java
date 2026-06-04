@@ -1,9 +1,9 @@
 package com.icthh.xm.ms.configuration.web.rest.util;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;

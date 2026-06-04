@@ -25,14 +25,20 @@ plugins {
     //jhipster-needle-gradle-plugins - JHipster will add additional gradle plugins here
 }
 
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
 group = "com.icthh.xm.ms.configuration"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
-assert System.properties["java.specification.version"] == "21"
+assert System.properties["java.specification.version"] == "25"
 
 apply from: "gradle/docker.gradle"
 apply from: "gradle/version.gradle"
@@ -61,7 +67,7 @@ eclipse {
 // See https://virgo47.wordpress.com/2018/09/14/classpath-too-long-with-spring-boot-and-gradle/ for details
 // https://github.com/jhipster/generator-jhipster/issues/9713
 if (OperatingSystem.current().isWindows()) {
-    task classpathJar(type: Jar) {
+    tasks.register('classpathJar', Jar) {
         inputs.files sourceSets.main.runtimeClasspath
 
         archiveFileName = "runboot-classpath.jar"
@@ -115,11 +121,15 @@ test {
     include '**/*IntTest*'
 
     // to run all test that was not categorized
-    useJUnit {
-        excludeCategories(testCategories)
+    useJUnitPlatform {
+        excludeTags(testCategories)
     }
 
-    jvmArgs '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    jvmArgs += [
+        '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED',
+        '--add-opens', 'java.base/java.util=ALL-UNNAMED'
+    ]
 
     // uncomment if the tests reports are not generated
     // see https://github.com/jhipster/generator-jhipster/pull/2771 and https://github.com/jhipster/generator-jhipster/pull/4484
@@ -175,8 +185,6 @@ nohttp {
 }
 
 configurations {
-    providedRuntime
-    implementation.exclude module: "spring-boot-starter-tomcat"
     configureEach {
         resolutionStrategy {
             // Inherited version from Spring Boot can't be used because of regressions:
@@ -196,30 +204,25 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombok_version}"
     annotationProcessor "org.projectlombok:lombok:${lombok_version}"
 
-    implementation platform("tech.jhipster:jhipster-dependencies:${jhipsterDependenciesVersion}")
-    implementation group: "tech.jhipster", name: "jhipster-framework"
+    implementation("tech.jhipster:jhipster-framework:${jhipsterFrameworkDependenciesVersion}")
 
     implementation "io.micrometer:micrometer-registry-prometheus"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-hppc"
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
-    implementation "com.fasterxml.jackson.core:jackson-annotations"
-    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "tools.jackson.datatype:jackson-datatype-hppc"
+    implementation "tools.jackson.core:jackson-databind"
+    implementation "tools.jackson.dataformat:jackson-dataformat-yaml"
 
     implementation "org.apache.commons:commons-lang3"
     implementation "commons-io:commons-io"
     implementation "org.openapitools:jackson-databind-nullable:${jacksonDatabindNullableVersion}"
 
-    implementation "org.springframework.boot:spring-boot-loader-tools"
+    implementation "org.springframework.boot:spring-boot-loader-tools:${springBootVersion}"
     implementation "org.springframework.boot:spring-boot-starter-mail"
     implementation "org.springframework.boot:spring-boot-starter-logging"
     implementation "org.springframework.boot:spring-boot-starter-actuator"
 
-    implementation "org.springframework.boot:spring-boot-starter-aop"
+    implementation "org.springframework.boot:spring-boot-starter-aspectj"
     implementation "org.springframework.boot:spring-boot-starter-security"
-    implementation ("org.springframework.boot:spring-boot-starter-web") {
-        exclude module: "spring-boot-starter-tomcat"
-    }
-    implementation "org.springframework.boot:spring-boot-starter-undertow"
+    implementation "org.springframework.boot:spring-boot-starter-web"
     implementation "org.springframework.boot:spring-boot-starter-thymeleaf"
 
     implementation "org.springframework.cloud:spring-cloud-starter"
@@ -230,6 +233,7 @@ dependencies {
     implementation "org.springframework.security:spring-security-config"
     implementation "org.springframework.security:spring-security-data"
     implementation "org.springframework.security:spring-security-web"
+    implementation("org.springframework.retry:spring-retry")
 
     implementation "org.mapstruct:mapstruct:${mapstructVersion}"
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
@@ -248,6 +252,7 @@ dependencies {
     implementation "com.icthh.xm.commons:xm-commons-request:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-permission:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-metric:${xm_commons_version}"
+    implementation "com.icthh.xm.commons:xm-commons-metric-lep:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-topic:${xm_commons_version}"
     implementation "com.icthh.xm.commons:xm-commons-ms-web:${xm_commons_version}"
 
@@ -261,22 +266,21 @@ dependencies {
 
     testImplementation "com.jayway.jsonpath:json-path"
     testImplementation ("org.springframework.boot:spring-boot-starter-test") {
-        exclude module: "junit"
         exclude group: "com.vaadin.external.google", module: "android-json"
     }
     testImplementation "org.springframework.security:spring-security-test"
     testImplementation "org.springframework.boot:spring-boot-test"
-    testImplementation "org.junit.jupiter:junit-jupiter-engine"
-    testImplementation "org.junit.vintage:junit-vintage-engine"
+    testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test"
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
     testImplementation "com.tngtech.archunit:archunit-junit5-api:${archunitJunit5Version}"
     testRuntimeOnly "com.tngtech.archunit:archunit-junit5-engine:${archunitJunit5Version}"
-    testImplementation "com.h2database:h2"
     testImplementation "org.assertj:assertj-core"
-    testImplementation "junit:junit"
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.hamcrest:hamcrest-library"
-    //jhipster-needle-gradle-dependency - JHipster will add additional dependencies here
-    testImplementation "com.github.stefanbirkner:system-rules:${system_rules_version}"
+    testImplementation "org.postgresql:postgresql"
+    testImplementation "org.testcontainers:postgresql:${testPsqlContainer}"
+    testImplementation "org.junit-pioneer:junit-pioneer:${pioneer_version}"
 }
 
 tasks.register('cleanResources', Delete) {
@@ -289,8 +293,14 @@ tasks.register('exportConfig', JavaExec) {
     args = findProperty('exportArgs')?.split(' ')?.toList() ?: []
 }
 
+tasks.register('preCompileLep', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.icthh.xm.commons.lep.groovy.LepCompiler'
+    args = findProperty('exportArgs')?.split(' ')?.toList() ?: []
+}
+
 wrapper {
-    gradleVersion = "8.10"
+    gradleVersion = "9.2.1"
 }
 
 compileJava {

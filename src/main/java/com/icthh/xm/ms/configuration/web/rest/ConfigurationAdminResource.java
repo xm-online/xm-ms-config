@@ -1,16 +1,18 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import static com.fasterxml.jackson.databind.type.TypeFactory.defaultInstance;
+import static tools.jackson.databind.type.TypeFactory.createDefaultInstance;
 import static com.icthh.xm.ms.configuration.config.Constants.*;
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.MediaType.*;
 
-import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.MapType;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.type.MapType;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.exceptions.EntityNotFoundException;
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
@@ -46,13 +48,12 @@ import java.util.Optional;
 public class ConfigurationAdminResource {
 
     private final UrlPathHelper urlHelper = new UrlPathHelper();
-    private final ObjectMapper jsonMapper = new ObjectMapper();
-    private final ObjectMapper ymlmapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
+    private final ObjectMapper ymlmapper = YAMLMapper.builder().build();
 
     private final ConfigurationService configurationService;
 
     @PostMapping(value = CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
-    @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.CREATE.LIST')")
     @PrivilegeDescription("Privilege to create list of configurations for admin")
@@ -62,7 +63,6 @@ public class ConfigurationAdminResource {
     }
 
     @PostMapping(value = INMEMORY + CONFIG, consumes = MULTIPART_FORM_DATA_VALUE)
-    @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY.LIST')")
     @PrivilegeDescription("Privilege to update list of configurations in memory for admin")
@@ -73,7 +73,6 @@ public class ConfigurationAdminResource {
 
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PostMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.CREATE')")
     @PrivilegeDescription("Privilege to create configuration for admin")
@@ -85,7 +84,6 @@ public class ConfigurationAdminResource {
 
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PutMapping(value = CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE')")
     @PrivilegeDescription("Privilege to update configuration for admin")
     public ResponseEntity<Void> updateConfiguration(@RequestBody String content,
@@ -104,7 +102,6 @@ public class ConfigurationAdminResource {
 
     @LoggingAspectConfig(inputExcludeParams = {"content"})
     @PutMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}/**", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.UPDATE_IN_MEMORY')")
     @PrivilegeDescription("Privilege to update configuration in memory for admin")
     public ResponseEntity<Void> updateConfigurationInMemory(@RequestBody(required = false) String content,
@@ -116,7 +113,6 @@ public class ConfigurationAdminResource {
     }
 
     @DeleteMapping(value = INMEMORY + CONFIG + TENANTS + "/{tenant}", consumes = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
-    @Timed
     @PreAuthorize("hasPermission({'content': #content, 'request': #request}, 'CONFIG.ADMIN.DELETE_IN_MEMORY')")
     @PrivilegeDescription("Privilege to delete configuration in memory for admin")
     public ResponseEntity<Void> deleteConfigurationInMemory(@RequestBody(required = false) List<String> paths) {
@@ -125,7 +121,6 @@ public class ConfigurationAdminResource {
     }
 
     @GetMapping(value = CONFIG + "/**")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_LIST.ITEM')")
     @PrivilegeDescription("Privilege to get configuration for admin")
@@ -137,7 +132,6 @@ public class ConfigurationAdminResource {
     }
 
     @GetMapping(value = "/version")
-    @Timed
     @PostAuthorize("hasPermission({'returnObject': returnObject}, 'CONFIG.ADMIN.GET_VERSION')")
     @PrivilegeDescription("Privilege to get version for admin")
     public ResponseEntity<String> getVersion() {
@@ -163,9 +157,9 @@ public class ConfigurationAdminResource {
         String content = maybeConfiguration.getContent();
 
         if (path.endsWith(".yml") && toJson) {
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(convertToJson(content));
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(convertToJson(content));
         } else if (path.endsWith(".json")) {
-            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON_UTF8).body(content);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(content);
         } else {
             return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN).body(content);
         }
@@ -173,13 +167,12 @@ public class ConfigurationAdminResource {
 
     @SneakyThrows
     private String convertToJson(String yml) {
-        MapType type = defaultInstance().constructMapType(HashMap.class, String.class, Object.class);
+        MapType type = createDefaultInstance().constructMapType(HashMap.class, String.class, Object.class);
         Map<String, Object> properties = this.ymlmapper.readValue(yml, type);
         return this.jsonMapper.writeValueAsString(properties);
     }
 
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}/**")
-    @Timed
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.DELETE')")
     @PrivilegeDescription("Privilege to delete configuration for admin")
     public ResponseEntity<Void> deleteConfiguration(HttpServletRequest request) {
@@ -188,7 +181,6 @@ public class ConfigurationAdminResource {
     }
 
     @DeleteMapping(CONFIG + TENANTS + "/{tenant}")
-    @Timed
     @PreAuthorize("hasPermission({'request': #paths}, 'CONFIG.ADMIN.DELETE.LIST')")
     @PrivilegeDescription("Privilege to delete list of configurations for admin")
     public ResponseEntity<Void> deleteConfigurations(@RequestBody(required = false) List<String> paths,
@@ -204,8 +196,7 @@ public class ConfigurationAdminResource {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = CONFIG + REFRESH + "/**", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @Timed
+    @PostMapping(value = CONFIG + REFRESH + "/**", produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.REFRESH')")
     @PrivilegeDescription("Privilege to refresh configuration for admin")
     public ResponseEntity<Void> refreshConfiguration(HttpServletRequest request) {
@@ -220,15 +211,13 @@ public class ConfigurationAdminResource {
     }
 
     @GetMapping(value = CONFIG + REFRESH + "/available")
-    @Timed
     @PreAuthorize("hasPermission({}, 'CONFIG.ADMIN.REFRESH')")
     @PrivilegeDescription("Privilege to check admin refresh availability")
     public ResponseEntity<Map<String, Boolean>> isAdminRefreshAvailable() {
         return ResponseEntity.ok().body(Map.of("available", configurationService.isAdminRefreshAvailable()));
     }
 
-    @PostMapping(value = CONFIG + RECLONE, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    @Timed
+    @PostMapping(value = CONFIG + RECLONE, produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasPermission({'request': #request}, 'CONFIG.ADMIN.RECLONE')")
     @PrivilegeDescription("Privilege to reclone configuration")
     public ResponseEntity<Void> recloneConfiguration(HttpServletRequest request) {
@@ -237,7 +226,6 @@ public class ConfigurationAdminResource {
     }
 
     @PostMapping(value = CONFIG + "/zip", consumes = MULTIPART_FORM_DATA_VALUE)
-    @Timed
     @SneakyThrows
     @PreAuthorize("hasPermission({'files': #files, 'tenant': #tenant}, 'CONFIG.ADMIN.UPDATE_BY_ZIP')")
     @PrivilegeDescription("Privilege to create list of configurations for admin")
@@ -247,7 +235,6 @@ public class ConfigurationAdminResource {
     }
 
     @GetMapping(value = CONFIG + TENANTS + "/{tenant}" + "/hash")
-    @Timed
     @LoggingAspectConfig(resultDetails = false)
     @PostAuthorize("hasPermission({'returnObject': returnObject.body, 'request': #request}, 'CONFIG.ADMIN.GET_HASH_SUM')")
     @PrivilegeDescription("Privilege to get configuration hash sum for admin")

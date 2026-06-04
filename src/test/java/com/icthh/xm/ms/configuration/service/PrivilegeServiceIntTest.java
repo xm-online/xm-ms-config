@@ -12,8 +12,8 @@ import com.icthh.xm.ms.configuration.config.RequestContextKeys;
 import com.icthh.xm.ms.configuration.domain.RequestSourceType;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import org.apache.commons.io.IOUtils;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -29,7 +29,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static com.icthh.xm.ms.configuration.domain.RequestSourceType.SYSTEM_QUEUE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,7 +53,7 @@ public class PrivilegeServiceIntTest extends AbstractSpringBootTest {
     @Mock
     private XmRequestContextHolder requestContextHolder;
 
-    @Before
+    @BeforeEach
     public void before() {
         when(tenantContext.getTenantKey()).thenReturn(Optional.of(TenantKey.valueOf("tenant")));
         when(xmRequestContext.getValue(RequestContextKeys.REQUEST_SOURCE_TYPE,

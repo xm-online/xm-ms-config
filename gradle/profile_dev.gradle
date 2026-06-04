@@ -11,6 +11,9 @@ configurations {
 
 dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools"
+    implementation "org.postgresql:postgresql"
+    testImplementation "org.testcontainers:postgresql"
+    developmentOnly "org.springframework.boot:spring-boot-docker-compose"
 }
 
 def profiles = "dev"
@@ -30,7 +33,9 @@ springBoot {
 }
 
 bootRun {
-    args = []
+    args = ["--spring.profiles.active=${profiles}"]
+    systemProperty 'user.timezone', 'UTC'
+    environment 'POSTGRES_PORT', '0'
 }
 
 processResources {

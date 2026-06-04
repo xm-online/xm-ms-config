@@ -1,10 +1,10 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.client.config.XmConfigProperties;
 import com.icthh.xm.commons.config.domain.ConfigEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
@@ -32,11 +32,13 @@ public class ConfigTopicProducer {
     private final KafkaTemplate<String, String> template;
     private final XmConfigProperties configProperties;
 
-    private final ObjectMapper mapper = new ObjectMapper()
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    private final ObjectMapper mapper = JsonMapper.builder()
+        .changeDefaultPropertyInclusion(incl ->
+                    incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+        )
         .addMixIn(ConfigVersion.class, ConfigVersionMixIn.class)
-        .registerModule(new JavaTimeModule());
+        .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+        .build();
 
     @Value("${xm-config.kafka-config-topic}")
     private String topicName;
@@ -53,7 +55,7 @@ public class ConfigTopicProducer {
     private Optional<String> serializeEvent(Object event) {
         try {
             return Optional.ofNullable(mapper.writeValueAsString(event));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("Error while serializing system event: {}", event, e);
         }
 

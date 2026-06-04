@@ -3,9 +3,9 @@ package com.icthh.xm.ms.configuration.repository.impl;
 import static com.icthh.xm.commons.domain.idp.IdpConstants.IDP_PUBLIC_SETTINGS_CONFIG_PATH_PATTERN;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.client.api.RefreshableConfiguration;
 import com.icthh.xm.commons.domain.idp.IdpConfigUtils;
 import com.icthh.xm.commons.domain.idp.model.IdpPublicConfig;
@@ -39,7 +39,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
 
     private static final String KEY_TENANT = "tenant";
 
-    private final ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper objectMapper = YAMLMapper.builder().build();
     private final AntPathMatcher matcher = new AntPathMatcher();
 
     /**
@@ -151,7 +151,7 @@ public class IdpConfigRepository implements RefreshableConfiguration {
     private IdpPublicConfig parseConfig(String tenantKey, String config) {
         try {
             return objectMapper.readValue(config, IdpPublicConfig.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Something went wrong during attempt to read config [{}] for tenant [{}]. " +
                 "Creating default config.", config, tenantKey, e);
             return new IdpPublicConfig();

@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.commons.config.client.api.AbstractConfigService;
+import com.icthh.xm.commons.config.client.api.FetchConfigurationSettings;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -25,6 +26,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -80,7 +82,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
                                 ApplicationEventPublisher publisher,
                                 VersionCache version,
                                 @Qualifier(UPDATE_IN_MEMORY)
-                                Lock lock) {
+                                Lock lock, FetchConfigurationSettings fetchConfigurationSettings) {
+        super(fetchConfigurationSettings);
         this.memoryStorage = memoryStorage;
         this.persistenceRepository = persistenceRepository;
         this.configTopicProducer = configTopicProducer;

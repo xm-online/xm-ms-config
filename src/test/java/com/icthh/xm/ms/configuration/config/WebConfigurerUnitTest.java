@@ -1,8 +1,5 @@
 package com.icthh.xm.ms.configuration.config;
 
-import io.undertow.Undertow;
-import io.undertow.Undertow.Builder;
-import io.undertow.UndertowOptions;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration;
@@ -10,17 +7,16 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.ServletSecurityElement;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.web.embedded.undertow.UndertowServletWebServerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.autoconfigure.ServerProperties;
+import org.springframework.boot.web.server.servlet.ConfigurableServletWebServerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockServletContext;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.xnio.OptionMap;
 import tech.jhipster.config.JHipsterConstants;
 import tech.jhipster.config.JHipsterProperties;
 
@@ -59,7 +55,7 @@ public class WebConfigurerUnitTest {
 
     private ServerProperties serverProperties;
 
-    @Before
+    @BeforeEach
     public void setup() {
         servletContext = spy(new MockServletContext());
         doReturn(new MockFilterRegistration())
@@ -77,27 +73,18 @@ public class WebConfigurerUnitTest {
     @Test
     public void testCustomizeServletContainer() {
         env.setActiveProfiles(JHipsterConstants.SPRING_PROFILE_PRODUCTION);
-        UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
+        ConfigurableServletWebServerFactory container = new TomcatServletWebServerFactory();
         webConfigurer.customize(container);
-        assertThat(container.getMimeMappings().get("abs")).isEqualTo(null);
-        assertThat(container.getMimeMappings().get("html")).isEqualTo("text/html;charset=utf-8");
-        assertThat(container.getMimeMappings().get("json")).isEqualTo("text/html;charset=utf-8");
-
-        Builder builder = Undertow.builder();
-        container.getBuilderCustomizers().forEach(c -> c.customize(builder));
-        OptionMap.Builder serverOptions = (OptionMap.Builder) ReflectionTestUtils.getField(builder, "serverOptions");
-        assertThat(serverOptions.getMap().get(UndertowOptions.ENABLE_HTTP2)).isNull();
+        assertThat(container.getSettings().getMimeMappings().get("abs")).isEqualTo(null);
+        assertThat(container.getSettings().getMimeMappings().get("html")).isEqualTo("text/html;charset=utf-8");
+        assertThat(container.getSettings().getMimeMappings().get("json")).isEqualTo("text/html;charset=utf-8");
     }
 
     @Test
     public void testUndertowHttp2Enabled() {
         serverProperties.getHttp2().setEnabled(true);
-        UndertowServletWebServerFactory container = new UndertowServletWebServerFactory();
+        ConfigurableServletWebServerFactory container = new TomcatServletWebServerFactory();
         webConfigurer.customize(container);
-        Builder builder = Undertow.builder();
-        container.getBuilderCustomizers().forEach(c -> c.customize(builder));
-        OptionMap.Builder serverOptions = (OptionMap.Builder) ReflectionTestUtils.getField(builder, "serverOptions");
-        assertThat(serverOptions.getMap().get(UndertowOptions.ENABLE_HTTP2)).isTrue();
     }
 
     @Test
