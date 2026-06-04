@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
@@ -55,6 +56,7 @@ public class PrivilegeServiceIntTest extends AbstractSpringBootTest {
 
     @BeforeEach
     public void before() {
+        MockitoAnnotations.openMocks(this);
         when(tenantContext.getTenantKey()).thenReturn(Optional.of(TenantKey.valueOf("tenant")));
         when(xmRequestContext.getValue(RequestContextKeys.REQUEST_SOURCE_TYPE,
             RequestSourceType.class)).thenReturn(SYSTEM_QUEUE);
