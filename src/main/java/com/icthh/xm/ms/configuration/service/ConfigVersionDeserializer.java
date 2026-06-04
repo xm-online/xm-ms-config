@@ -19,8 +19,8 @@ import jakarta.servlet.http.HttpServletRequest;
 @Slf4j
 @Component
 public class ConfigVersionDeserializer {
-    private final ObjectMapper mapper = JsonMapper.builder()
-        .changeDefaultPropertyInclusion(incl ->
+    private final ObjectMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .changeDefaultPropertyInclusion(incl ->
                     incl.withValueInclusion(JsonInclude.Include.NON_NULL)
             )
         .addMixIn(ConfigVersion.class, ConfigVersionMixIn.class)

@@ -122,7 +122,7 @@ test {
 
     // to run all test that was not categorized
     useJUnitPlatform {
-        excludeTags(testCategories)
+        includeTags(testCategories)
     }
 
     jvmArgs += [
@@ -280,7 +280,7 @@ dependencies {
     testImplementation "org.hamcrest:hamcrest-library"
     testImplementation "org.postgresql:postgresql"
     testImplementation "org.testcontainers:postgresql:${testPsqlContainer}"
-    testImplementation "org.junit-pioneer:junit-pioneer:${pioneer_version}"
+    testImplementation "uk.org.webcompere:system-stubs-jupiter:${webcompere_system_stub}"
 }
 
 tasks.register('cleanResources', Delete) {

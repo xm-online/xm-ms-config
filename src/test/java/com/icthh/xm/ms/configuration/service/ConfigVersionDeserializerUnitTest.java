@@ -29,7 +29,7 @@ public class ConfigVersionDeserializerUnitTest extends AbstractUnitTest {
     public void testFromWithValidJson() {
         String validJson = "{\"mainVersion\":\"1.0.0\"}";
         ConfigVersion result = deserializer.from(validJson);
-        assertEquals(result.getMainVersion(), "1.0.0");
+        assertEquals("1.0.0", result.getMainVersion());
     }
 
     @Test

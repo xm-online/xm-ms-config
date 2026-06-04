@@ -6,21 +6,27 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static com.icthh.xm.ms.configuration.service.processors.EnvConfigExternalizationUnitTest.ENV_BLACKLIST;
 import static java.util.Collections.emptyMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(SystemStubsExtension.class)
 public class EnvConfigExternalizationFromFileUnitTest extends AbstractUnitTest {
 
-    @Rule
+    @SystemStub
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Test

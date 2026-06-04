@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
@@ -9,14 +10,12 @@ import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -27,25 +26,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(SystemStubsExtension.class)
 public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
-    @Rule
+    @SystemStub
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
-    @MockBean
+    @MockitoBean
     ConfigTopicProducer configTopicProducer;
 
     @Autowired
@@ -61,9 +64,9 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
     @Qualifier("configRepository")
     PersistenceConfigRepository repository;
 
-    @Before
+    @BeforeEach
     public void before() {
-        environmentVariables.clear("MAIN_valueForReplace", "LIFETENANT__valueForReplace");
+        environmentVariables.getVariables().clear();
         memoryConfigStorage.clear();
         loadTenantAliasConfig();
     }
@@ -202,7 +205,7 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration("/config/tenants/file3", "1\n"));
         ConfigVersion commit = configurationService.updateConfigurationsFromZip(
                 new MockMultipartFile("testrepo1.zip", new ClassPathResource("testrepo1.zip").getInputStream()));
-        String version = new ObjectMapper().writeValueAsString(commit);
+        String version = JsonMapper.builder().build().writeValueAsString(commit);
         Map<String, Configuration> configurationMap = configurationService.getConfigurationMap(version);
         assertEquals(Map.of(
             "/config/tenants/file1", new Configuration("/config/tenants/file1", "1\n"),

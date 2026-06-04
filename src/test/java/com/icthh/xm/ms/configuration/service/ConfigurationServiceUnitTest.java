@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 
 import java.util.List;
@@ -57,7 +58,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
     @BeforeEach
     public void before() {
-        when(tenantContextHolder.getContext()).thenReturn(new TenantContext() {
+        Mockito.lenient().when(tenantContextHolder.getContext()).thenReturn(new TenantContext() {
             @Override
             public boolean isInitialized() {
                 return true;
