@@ -1,6 +1,10 @@
 package com.icthh.xm.ms.configuration.service;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.core.env.ConfigurableEnvironment;
 import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
@@ -46,7 +50,7 @@ import static org.mockito.Mockito.verify;
 public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @SystemStub
-    public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+    public static final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @MockitoBean
     ConfigTopicProducer configTopicProducer;
@@ -66,7 +70,8 @@ public class ConfigurationServiceIntTest extends AbstractSpringBootTest {
 
     @BeforeEach
     public void before() {
-        environmentVariables.getVariables().clear();
+        environmentVariables.remove("MAIN_valueForReplace");
+        environmentVariables.remove("LIFETENANT_valueForReplace");
         memoryConfigStorage.clear();
         loadTenantAliasConfig();
     }
