@@ -278,9 +278,8 @@ dependencies {
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.hamcrest:hamcrest-library"
-    testImplementation "org.postgresql:postgresql"
-    testImplementation "org.testcontainers:postgresql:${testPsqlContainer}"
     testImplementation "uk.org.webcompere:system-stubs-jupiter:${webcompere_system_stub}"
+    testImplementation "com.h2database:h2"
 }
 
 tasks.register('cleanResources', Delete) {
