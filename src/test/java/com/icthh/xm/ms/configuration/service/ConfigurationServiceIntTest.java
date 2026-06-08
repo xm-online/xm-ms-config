@@ -1,10 +1,6 @@
 package com.icthh.xm.ms.configuration.service;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.core.env.ConfigurableEnvironment;
 import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
