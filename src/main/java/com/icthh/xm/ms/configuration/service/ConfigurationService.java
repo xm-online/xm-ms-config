@@ -82,7 +82,8 @@ public class ConfigurationService extends AbstractConfigService implements Initi
                                 ApplicationEventPublisher publisher,
                                 VersionCache version,
                                 @Qualifier(UPDATE_IN_MEMORY)
-                                Lock lock, FetchConfigurationSettings fetchConfigurationSettings) {
+                                Lock lock,
+                                FetchConfigurationSettings fetchConfigurationSettings) {
         super(fetchConfigurationSettings);
         this.memoryStorage = memoryStorage;
         this.persistenceRepository = persistenceRepository;

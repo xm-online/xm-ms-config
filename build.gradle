@@ -120,10 +120,7 @@ test {
     include '**/*UnitTest*'
     include '**/*IntTest*'
 
-    // to run all test that was not categorized
-    useJUnitPlatform {
-        includeTags(testCategories)
-    }
+    useJUnitPlatform {}
 
     jvmArgs += [
         '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
@@ -279,7 +276,6 @@ dependencies {
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.hamcrest:hamcrest-library"
     testImplementation "uk.org.webcompere:system-stubs-jupiter:${webcompere_system_stub}"
-    testImplementation "com.h2database:h2"
 }
 
 tasks.register('cleanResources', Delete) {

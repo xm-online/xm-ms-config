@@ -30,7 +30,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ConfigExporterTest extends AbstractUnitTest {
+class ConfigExporterUnitTest extends AbstractUnitTest {
 
     private static final String REPO_PATH = "repo-path";
     private static final String EXPORT_ZIP = "export.zip";

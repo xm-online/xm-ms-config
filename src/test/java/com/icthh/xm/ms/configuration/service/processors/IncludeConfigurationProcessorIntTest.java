@@ -1,10 +1,9 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.junit.Assert;
-import org.junit.jupiter.api.Assertions;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.dataformat.yaml.YAMLMapper;
@@ -98,7 +97,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -144,7 +143,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseYaml(processedConfig.getContent());
         Map<String, Object> expectedMap = parseYaml(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -192,7 +191,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -220,8 +219,8 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         String processedContent = processedConfig.getContent();
 
         // Verify that the $include is left unchanged when file is not found
-        Assertions.assertTrue(processedContent.contains("$include"), "Should contain $include");
-        Assertions.assertTrue(processedContent.contains("appName"), "Should contain appName");
+        assertTrue(processedContent.contains("$include"), "Should contain $include");
+        assertTrue(processedContent.contains("appName"), "Should contain appName");
     }
 
     @Test
@@ -278,7 +277,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -320,7 +319,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
 
         Map<String, Object> actualInitialMap = parseJson(initialConfig.getContent());
         Map<String, Object> expectedInitialMap = parseJson(expectedInitialContent);
-        Assertions.assertEquals(expectedInitialMap, actualInitialMap, "Initial configuration should match expected");
+        assertEquals(expectedInitialMap, actualInitialMap, "Initial configuration should match expected");
 
         // Update the included file
         String updatedIncludedContent = """
@@ -346,7 +345,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
 
         Map<String, Object> actualUpdatedMap = parseJson(updatedConfig.getContent());
         Map<String, Object> expectedUpdatedMap = parseJson(expectedUpdatedContent);
-        Assertions.assertEquals(expectedUpdatedMap, actualUpdatedMap, "Updated configuration should match expected");
+        assertEquals(expectedUpdatedMap, actualUpdatedMap, "Updated configuration should match expected");
     }
 
     @Test
@@ -375,7 +374,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(config.getContent());
         Map<String, Object> expectedMap = parseJson(fileContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Configuration should remain unchanged");
+        assertEquals(expectedMap, actualMap, "Configuration should remain unchanged");
     }
 
     @Test
@@ -423,7 +422,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -471,7 +470,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -519,7 +518,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -579,7 +578,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -659,7 +658,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -711,7 +710,7 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseYaml(processedConfig.getContent());
         Map<String, Object> expectedMap = parseYaml(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -769,6 +768,6 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        Assertions.assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 }

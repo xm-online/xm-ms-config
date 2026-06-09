@@ -15,7 +15,6 @@ import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.junit.Rule;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.core.io.ClassPathResource;
@@ -29,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepositoryTest;
@@ -61,8 +61,8 @@ public class JGitRepositoryIntTest {
         jGitRepository.save(new Configuration(path, "1"));
         ConfigVersion ref = jGitRepository.save(new Configuration(path, "2"));
         jGitRepository.save(new Configuration(path, "3"));
-        Assertions.assertEquals("3", jGitRepository.find(path).getData().getContent());
-        Assertions.assertEquals("2", jGitRepository.find(path, ref).getContent());
+        assertEquals("3", jGitRepository.find(path).getData().getContent());
+        assertEquals("2", jGitRepository.find(path, ref).getContent());
     }
 
     @Test
@@ -81,7 +81,7 @@ public class JGitRepositoryIntTest {
         String encoded = jGitRepository.find(targetFile).getData().getContent();
 
         byte[] bytes = Files.readAllBytes(source.toPath());
-        Assertions.assertEquals(Base64.getEncoder().encodeToString(bytes), encoded);
+        assertEquals(Base64.getEncoder().encodeToString(bytes), encoded);
     }
 
     @Test
@@ -89,7 +89,7 @@ public class JGitRepositoryIntTest {
         setUpRepositoriesTest(gitProperties);
         ConfigurationList list = jGitRepository.findAll();
         ConfigVersion configuration = jGitRepository.getCurrentVersion();
-        Assertions.assertEquals(list.getVersion().getMainVersion(), configuration.getMainVersion());
+        assertEquals(list.getVersion().getMainVersion(), configuration.getMainVersion());
     }
 
     @Test
@@ -98,7 +98,7 @@ public class JGitRepositoryIntTest {
         String path = "/config/dummy";
         ConfigVersion commit1 = jGitRepository.save(new Configuration(path, "unchanged_content"));
         ConfigVersion commit2 = jGitRepository.save(new Configuration(path, "unchanged_content"));
-        Assertions.assertEquals(commit1, commit2, "Expected then save return last commit when no files changed");
+        assertEquals(commit1, commit2, "Expected then save return last commit when no files changed");
     }
 
     @Test
@@ -112,10 +112,10 @@ public class JGitRepositoryIntTest {
         gitProperties.setCloneRepositoryOnUpdate(true);
 
         ConfigurationList all = jGitRepository.findAll();
-        Assertions.assertEquals(2, all.getData().size());
+        assertEquals(2, all.getData().size());
 
         ConfigurationList all2 = jGitRepository.findAllInTenants(Set.of("TENANT1", "TENANT2"));
-        Assertions.assertEquals(2, all2.getData().size());
+        assertEquals(2, all2.getData().size());
     }
 
     @Test
@@ -123,7 +123,7 @@ public class JGitRepositoryIntTest {
         setUpRepositories(gitProperties);
         try (Git git = Git.open(configGitFolder.getRoot())) {
             long commitsCount = StreamSupport.stream(git.log().call().spliterator(), false).count();
-            Assertions.assertEquals(2, commitsCount);
+            assertEquals(2, commitsCount);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -135,7 +135,7 @@ public class JGitRepositoryIntTest {
         setUpRepositories(gitProperties);
         try (Git git = Git.open(configGitFolder.getRoot())) {
             long commitsCount = StreamSupport.stream(git.log().call().spliterator(), false).count();
-            Assertions.assertEquals(1, commitsCount);
+            assertEquals(1, commitsCount);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
