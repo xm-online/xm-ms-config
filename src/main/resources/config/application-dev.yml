@@ -71,14 +71,6 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
-management:
-    tracing:
-        export:
-            enabled: false
-    otlp:
-        metrics:
-            export:
-                enabled: false
 application:
     adminApiRestrictionEnabled: true
     git:
