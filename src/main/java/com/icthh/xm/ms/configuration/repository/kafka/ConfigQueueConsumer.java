@@ -1,8 +1,9 @@
 package com.icthh.xm.ms.configuration.repository.kafka;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.client.repository.message.ConfigurationUpdateMessage;
 import com.icthh.xm.commons.config.domain.ConfigQueueEvent;
 import com.icthh.xm.commons.logging.util.MdcUtils;
@@ -34,9 +35,9 @@ public class ConfigQueueConsumer {
     public ConfigQueueConsumer(XmRequestContextHolder requestContextHolder,
                                ConfigurationUpdateEventProcessor configurationUpdateEventProcessor) {
         this.requestContextHolder = requestContextHolder;
-        this.objectMapper = new ObjectMapper()
-            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .registerModule(new JavaTimeModule());
+        this.objectMapper = JsonMapper.builder()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
         this.configurationUpdateEventProcessor = configurationUpdateEventProcessor;
     }
 
@@ -59,7 +60,7 @@ public class ConfigQueueConsumer {
                 message.topic(), event.getEventType(), event.getMessageSource(), event.getEventId());
             processEventByType(event);
 
-        } catch (IOException e) {
+        } catch (JacksonException | IOException e) {
             log.error("Message for queue: [{}] has incorrect format: '{}' ", message.topic(), message.value(), e);
         } finally {
             MdcUtils.removeRid();

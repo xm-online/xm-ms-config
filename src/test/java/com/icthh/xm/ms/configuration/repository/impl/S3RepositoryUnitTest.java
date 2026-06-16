@@ -1,7 +1,8 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -19,9 +20,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
@@ -40,16 +40,11 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
-@RunWith(Parameterized.class)
 public class S3RepositoryUnitTest {
 
-    @Parameterized.Parameters(name = "configPath={0}")
-    public static Object[] data() {
-        return new Object[]{null, "xm-config"};
+    static Stream<String> data() {
+        return Stream.of(null, "xm-config");
     }
-
-    @Parameterized.Parameter
-    public String configPath;
 
     private static final String TEST_FILE_YAML = "test-file.yaml";
     private static final String TEST_BUCKET_NAME = "test-bucket";
@@ -57,15 +52,16 @@ public class S3RepositoryUnitTest {
     private S3Repository s3Repository;
     private String configPrefix;
 
-    @Before
-    public void setUp() {
+    private void setUp(String configPath) {
         s3Client = mock(S3Client.class);
         s3Repository = new S3Repository(s3Client, TEST_BUCKET_NAME, configPath, new S3Rules());
         configPrefix = configPath != null ? configPath + "/config/" : "config/";
     }
 
-    @Test
-    public void shouldSaveConfiguration() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldSaveConfiguration(String configPath) {
+        setUp(configPath);
         var path = "/config/test.file";
         var content = "test-content";
         var config = new Configuration(path, content);
@@ -79,8 +75,10 @@ public class S3RepositoryUnitTest {
         assertEquals(content, stored);
     }
 
-    @Test
-    public void shouldFindConfigs() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldFindConfigs(String configPath) {
+        setUp(configPath);
         mockGetListS3Objects(configPrefix, "roles.yaml", "test-content");
         var configs = s3Repository.findAll();
         var configData = configs.getData();
@@ -89,8 +87,10 @@ public class S3RepositoryUnitTest {
         assertEquals("test-content", configData.getFirst().getContent());
     }
 
-    @Test
-    public void shouldFindConfigsForTenants() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldFindConfigsForTenants(String configPath) {
+        setUp(configPath);
         mockGetListS3Objects("TENANT1", "tenant1_content");
         mockGetListS3Objects("TENANT2", "tenant2_content");
         mockGetListS3Objects("TENANT3", "tenant3_content");
@@ -98,8 +98,10 @@ public class S3RepositoryUnitTest {
         assertEquals(2, allConfigs.getData().size());
     }
 
-    @Test
-    public void shouldDeleteAllConfigurations() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldDeleteAllConfigurations(String configPath) {
+        setUp(configPath);
         var paths = List.of("/config/file1.yml", "/config/file2.yml");
         s3Repository.deleteAll(paths);
         var deleteCaptor = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
@@ -110,8 +112,10 @@ public class S3RepositoryUnitTest {
         assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), keys);
     }
 
-    @Test
-    public void shouldFindConfigurationByPath() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldFindConfigurationByPath(String configPath) {
+        setUp(configPath);
         var path = "/config/test/test.file";
         mockGetS3Object(configPrefix + "test/", "test.file", "test-content-find", null);
         var configItem = s3Repository.find(path);
@@ -119,8 +123,10 @@ public class S3RepositoryUnitTest {
         assertEquals(path, configItem.getData().getPath());
     }
 
-    @Test
-    public void shouldFindConfigurationByPathAndVersion() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldFindConfigurationByPathAndVersion(String configPath) {
+        setUp(configPath);
         var path = "/config/test/test.file";
         var version = "test-version";
         mockGetS3Object(configPrefix + "test/", "test.file", "test-content-find", version);
@@ -129,8 +135,10 @@ public class S3RepositoryUnitTest {
         assertEquals(path, configuration.getPath());
     }
 
-    @Test
-    public void shouldSetRepositoryState() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldSetRepositoryState(String configPath) {
+        setUp(configPath);
         var objects = List.of(
                 S3Object.builder().key(configPrefix + "file1.yml").build(),
                 S3Object.builder().key(configPrefix + "file2.yml").build()
@@ -162,8 +170,10 @@ public class S3RepositoryUnitTest {
         assertEquals(List.of(configPrefix + "file1.yml", configPrefix + "file2.yml"), deletedKeys);
     }
 
-    @Test
-    public void shouldSaveAllConfigurations() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldSaveAllConfigurations(String configPath) {
+        setUp(configPath);
         var configs = List.of(
                 new Configuration("/config/file1.yml", "content-1"),
                 new Configuration("/config/file2.yml", "content-2")
@@ -181,8 +191,10 @@ public class S3RepositoryUnitTest {
         assertEquals(List.of("content-1", "content-2"), storedContents);
     }
 
-    @Test
-    public void shouldThrowConcurrentModificationOnHashMismatch() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldThrowConcurrentModificationOnHashMismatch(String configPath) {
+        setUp(configPath);
         var existingContent = "existing-content";
         var fileName = "file1.yml";
         mockGetS3Object(configPrefix, fileName, existingContent, null);
@@ -195,8 +207,10 @@ public class S3RepositoryUnitTest {
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
-    @Test
-    public void shouldSaveWhenHashMatches() {
+    @ParameterizedTest(name = "configPath={0}")
+    @MethodSource("data")
+    public void shouldSaveWhenHashMatches(String configPath) {
+        setUp(configPath);
         var existingContent = "existing-content";
         var fileName = "file2.yml";
         mockGetS3Object(configPrefix, fileName, existingContent, null);

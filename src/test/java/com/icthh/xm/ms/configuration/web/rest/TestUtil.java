@@ -4,8 +4,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.hamcrest.Description;
@@ -41,11 +41,9 @@ public class TestUtil {
      * @throws IOException
      */
     public static byte[] convertObjectToJsonBytes(Object object) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-
-        JavaTimeModule module = new JavaTimeModule();
-        mapper.registerModule(module);
+        ObjectMapper mapper = JsonMapper.builder()
+                .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.NON_NULL))
+            .build();
 
         return mapper.writeValueAsBytes(object);
     }

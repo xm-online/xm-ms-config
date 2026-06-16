@@ -1,15 +1,14 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,20 +16,24 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(SystemStubsExtension.class)
 public class TenantConfigExternalizationUnitTest extends AbstractUnitTest {
 
-    @Rule
+    @SystemStub
     public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper mapper = YAMLMapper.builder().build();
 
-    @Before
+    @BeforeEach
     public void before() {
         Locale.setDefault(Locale.US);
     }

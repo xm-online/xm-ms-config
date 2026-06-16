@@ -20,7 +20,6 @@ import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.prometheus.client.CollectorRegistry;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,11 +39,6 @@ public class TenantConfigMockConfiguration {
         tenants.add("DEMO");
         tenants.add("TEST");
         tenants.add("RESINTTEST");
-    }
-
-    @Bean
-    public CollectorRegistry collectorRegistry() {
-        return new CollectorRegistry();
     }
 
     @Bean

@@ -24,6 +24,13 @@
 #                        timeoutInMilliseconds: 10000
 
 management:
+    tracing:
+        export:
+            enabled: ${MANAGEMENT_TRACING_EXPORT_ENABLED:false}
+    otlp:
+        metrics:
+            export:
+                enabled: ${MANAGEMENT_OTLP_METRICS_EXPORT_ENABLED:false}
     endpoints:
         web:
             base-path: /management
@@ -86,6 +93,7 @@ spring:
         consul:
             enabled: true
             discovery:
+                query-passing: true
                 healthCheckPath: /management/health
                 instanceId: ${spring.application.name}:${spring.application.instance-id:${random.value}}
                 service-name: ${spring.application.name}
@@ -94,7 +102,12 @@ spring:
                     enabled: false
 
     jackson:
-        serialization.write_dates_as_timestamps: false
+        deserialization:
+            fail-on-trailing-tokens: false
+        mapper:
+            sort-properties-alphabetically: false
+        serialization:
+            indent-output: true
     messages:
         basename: i18n/messages
     thymeleaf:

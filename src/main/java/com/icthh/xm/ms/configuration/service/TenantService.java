@@ -4,8 +4,9 @@ import static com.icthh.xm.ms.configuration.config.BeanConfiguration.TENANT_CONF
 import static com.icthh.xm.ms.configuration.utils.LockUtils.runWithLock;
 import static java.util.Collections.emptySet;
 
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.GitProperties;
@@ -26,7 +27,7 @@ public class TenantService {
     private static final String CONFIG_LIST_STORAGE = "/config/tenants/tenants-list.json";
     public static final String OPERATION_TARGET = "tenant list";
 
-    private final ObjectMapper om = new ObjectMapper();
+    private final ObjectMapper om = JsonMapper.builder().build();
 
     private final ConfigurationService configurationService;
 

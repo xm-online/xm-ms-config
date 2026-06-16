@@ -1,8 +1,9 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ import static org.springframework.core.Ordered.LOWEST_PRECEDENCE;
 public class TenantConfigExternalization implements TenantConfigurationProcessor {
 
     private final AntPathMatcher matcher = new AntPathMatcher();
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper mapper = YAMLMapper.builder().build();
     private static final String TENANT_NAME = "tenantName";
     private final Map<String, String> env = getenv();
 

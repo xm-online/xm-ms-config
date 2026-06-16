@@ -2,11 +2,11 @@ package com.icthh.xm.ms.configuration.service;
 
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ConfigVersionDeserializerUnitTest extends AbstractUnitTest {
 
@@ -29,7 +29,7 @@ public class ConfigVersionDeserializerUnitTest extends AbstractUnitTest {
     public void testFromWithValidJson() {
         String validJson = "{\"mainVersion\":\"1.0.0\"}";
         ConfigVersion result = deserializer.from(validJson);
-        assertEquals(result.getMainVersion(), "1.0.0");
+        assertEquals("1.0.0", result.getMainVersion());
     }
 
     @Test

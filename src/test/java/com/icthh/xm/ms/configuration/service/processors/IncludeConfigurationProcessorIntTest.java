@@ -1,28 +1,29 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest {
 
-    @MockBean
+    @MockitoBean
     ConfigTopicProducer configTopicProducer;
 
     @Autowired
@@ -31,10 +32,10 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
     @Autowired
     MemoryConfigStorage memoryConfigStorage;
 
-    private final ObjectMapper jsonMapper = new ObjectMapper();
-    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
+    private final ObjectMapper yamlMapper = YAMLMapper.builder().build();
 
-    @Before
+    @BeforeEach
     public void before() {
         memoryConfigStorage.clear();
     }
@@ -88,15 +89,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -134,15 +135,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseYaml(processedConfig.getContent());
         Map<String, Object> expectedMap = parseYaml(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -182,15 +183,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -211,15 +212,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         String processedContent = processedConfig.getContent();
 
         // Verify that the $include is left unchanged when file is not found
-        assertTrue("Should contain $include", processedContent.contains("$include"));
-        assertTrue("Should contain appName", processedContent.contains("appName"));
+        assertTrue(processedContent.contains("$include"), "Should contain $include");
+        assertTrue(processedContent.contains("appName"), "Should contain appName");
     }
 
     @Test
@@ -268,15 +269,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(topFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(topFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -314,11 +315,11 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Verify initial state
         Map<String, Configuration> initialConfigMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
         Configuration initialConfig = initialConfigMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", initialConfig);
+        assertNotNull(initialConfig, "Configuration should be present");
 
         Map<String, Object> actualInitialMap = parseJson(initialConfig.getContent());
         Map<String, Object> expectedInitialMap = parseJson(expectedInitialContent);
-        assertEquals("Initial configuration should match expected", expectedInitialMap, actualInitialMap);
+        assertEquals(expectedInitialMap, actualInitialMap, "Initial configuration should match expected");
 
         // Update the included file
         String updatedIncludedContent = """
@@ -340,11 +341,11 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Verify that the main file is reprocessed
         Map<String, Configuration> updatedConfigMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
         Configuration updatedConfig = updatedConfigMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", updatedConfig);
+        assertNotNull(updatedConfig, "Configuration should be present");
 
         Map<String, Object> actualUpdatedMap = parseJson(updatedConfig.getContent());
         Map<String, Object> expectedUpdatedMap = parseJson(expectedUpdatedContent);
-        assertEquals("Updated configuration should match expected", expectedUpdatedMap, actualUpdatedMap);
+        assertEquals(expectedUpdatedMap, actualUpdatedMap, "Updated configuration should match expected");
     }
 
     @Test
@@ -365,15 +366,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the configuration using getConfigurationMap
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(filePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration config = configMap.get(filePath);
-        assertNotNull("Configuration should be present", config);
+        assertNotNull(config, "Configuration should be present");
 
         // Parse and compare as maps - content should be unchanged
         Map<String, Object> actualMap = parseJson(config.getContent());
         Map<String, Object> expectedMap = parseJson(fileContent);
 
-        assertEquals("Configuration should remain unchanged", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Configuration should remain unchanged");
     }
 
     @Test
@@ -413,15 +414,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -461,15 +462,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -509,15 +510,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -569,15 +570,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -649,15 +650,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -701,15 +702,15 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps
         Map<String, Object> actualMap = parseYaml(processedConfig.getContent());
         Map<String, Object> expectedMap = parseYaml(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 
     @Test
@@ -759,14 +760,14 @@ public class IncludeConfigurationProcessorIntTest extends AbstractSpringBootTest
         // Retrieve the processed configuration
         Map<String, Configuration> configMap = configurationService.getConfigurationMap(null, List.of(mainFilePath));
 
-        assertNotNull("Configuration map should not be null", configMap);
+        assertNotNull(configMap, "Configuration map should not be null");
         Configuration processedConfig = configMap.get(mainFilePath);
-        assertNotNull("Configuration should be present", processedConfig);
+        assertNotNull(processedConfig, "Configuration should be present");
 
         // Parse and compare as maps for exact match
         Map<String, Object> actualMap = parseJson(processedConfig.getContent());
         Map<String, Object> expectedMap = parseJson(expectedContent);
 
-        assertEquals("Processed configuration should match expected", expectedMap, actualMap);
+        assertEquals(expectedMap, actualMap, "Processed configuration should match expected");
     }
 }

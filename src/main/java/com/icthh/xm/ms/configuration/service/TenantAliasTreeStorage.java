@@ -5,8 +5,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNullElse;
 import static java.util.stream.Collectors.toList;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -25,7 +27,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantAliasTreeStorage {
 
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper mapper = YAMLMapper.builder().build();
     private final TenantContextHolder tenantContextHolder;
 
     @Getter
@@ -59,7 +61,7 @@ public class TenantAliasTreeStorage {
 
             // safe publication
             this.tenantAliasTree = tenantAliasTree;
-        } catch (IOException e) {
+        } catch (JacksonException e) {
             log.error("Error parse tenant alias config", e);
         }
     }

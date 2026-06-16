@@ -4,17 +4,19 @@ import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.type.CollectionType;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
@@ -25,11 +27,11 @@ import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import lombok.SneakyThrows;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -59,7 +61,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
 
     private MockMvc mockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(tenantResource, configurationAdminResource)
                 .setControllerAdvice(exceptionTranslator)
@@ -67,7 +69,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
         TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         tenantContextHolder.getPrivilegedContext().destroyCurrentContext();
     }
@@ -75,7 +77,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testAddTenants() {
-        ObjectMapper om = new ObjectMapper();
+        ObjectMapper om = JsonMapper.builder().build();
 
         mockMvc.perform(post("/api/tenants/entity")
                     .content("xm")
@@ -115,7 +117,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testDeleteTenants() {
-        ObjectMapper om = new ObjectMapper();
+        ObjectMapper om = JsonMapper.builder().build();
 
         mockMvc.perform(post("/api/tenants/entity")
                 .content("xm")
@@ -171,7 +173,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
 
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = JsonMapper.builder().build();
 
         mockMvc.perform(get("/api/tenants/tenant/services")
             .contentType(MediaType.TEXT_PLAIN))
@@ -196,7 +198,7 @@ public class TenantResourceIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful());
 
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        ObjectMapper mapper = YAMLMapper.builder().build();
         TenantAliasTree tenantAliasTreeExpected = mapper.readValue(loadFile("tenantAliasTreeUpdatedParent.yml"), TenantAliasTree.class);
 
         mockMvc.perform(get(API_PREFIX + TENANT_ALIAS_CONFIG)

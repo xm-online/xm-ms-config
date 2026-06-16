@@ -2,7 +2,7 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 
-import com.codahale.metrics.annotation.Timed;
+
 import com.icthh.xm.commons.permission.annotation.PrivilegeDescription;
 import com.icthh.xm.ms.configuration.domain.TenantState;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
@@ -34,7 +34,6 @@ public class TenantResource {
     private final TenantAliasTreeService tenantAliasService;
 
     @PostMapping(value = "/tenants/{serviceName}")
-    @Timed
     @PreAuthorize("hasPermission({'tenant':#tenant}, 'CONFIG.TENANT.CREATE')")
     @PrivilegeDescription("Privilege to add a new config tenant")
     public ResponseEntity<Void> addTenant(@PathVariable String serviceName, @RequestBody String tenantKey) {
@@ -43,7 +42,6 @@ public class TenantResource {
     }
 
     @PutMapping(value = "/tenants/{serviceName}/{tenantKey}")
-    @Timed
     @PreAuthorize("hasPermission({'serviceName':#serviceName, 'tenantKey':#tenantKey, 'tenantState':#tenantState}, 'CONFIG.TENANT.UPDATE')")
     @PrivilegeDescription("Privilege to update config tenant")
     public ResponseEntity<Void> updateTenant(@PathVariable String serviceName, @PathVariable String tenantKey, @RequestBody String tenantState) {
@@ -52,7 +50,6 @@ public class TenantResource {
     }
 
     @GetMapping(value = "/tenants/{serviceName}")
-    @Timed
     @PostFilter("hasPermission({'returnObject': filterObject, 'log': false}, 'CONFIG.TENANT.GET_LIST')")
     @PrivilegeDescription("Privilege to get all config tenants")
     public Set<TenantState> getTenants(@PathVariable String serviceName) {
@@ -60,7 +57,6 @@ public class TenantResource {
     }
 
     @DeleteMapping("/tenants/{serviceName}/{tenantKey}")
-    @Timed
     @PreAuthorize("hasPermission({'serviceName':#serviceName, 'tenantKey':#tenantKey}, 'CONFIG.TENANT.DELETE')")
     @PrivilegeDescription("Privilege to delete config tenant")
     public ResponseEntity<Void> deleteConfiguration(@PathVariable String serviceName, @PathVariable String tenantKey) {
@@ -69,7 +65,6 @@ public class TenantResource {
     }
 
     @GetMapping(value = "/tenants/{tenantKey}/services")
-    @Timed
     @PostFilter("hasPermission({'returnObject': filterObject, 'log': false}, 'CONFIG.SERVICES.GET_LIST')")
     @PrivilegeDescription("Privilege to get all config services")
     public Set<String> getServices(@PathVariable String tenantKey) {
@@ -77,7 +72,6 @@ public class TenantResource {
     }
 
     @PostMapping(value = "/tenants/set_parent")
-    @Timed
     @PreAuthorize("hasPermission({'tenant':#tenant}, 'CONFIG.TENANT.SET_PARENT')")
     @PrivilegeDescription("Privilege to add a new parent to tenant")
     public ResponseEntity<Void> setParent(@RequestBody String parentTenantKey) {

@@ -1,7 +1,9 @@
 package com.icthh.xm.ms.configuration.service.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +30,8 @@ public class IncludeConfigurationProcessor implements TenantConfigurationProcess
     public static final int GAP_FOR_FUTURE = 10;
     private static final String INCLUDE_KEYWORD = "$include";
 
-    private final ObjectMapper jsonMapper = new ObjectMapper();
-    private final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper jsonMapper = JsonMapper.builder().build();
+    private final ObjectMapper yamlMapper = YAMLMapper.builder().build();
 
     // Dependency tracking: key is the included file path, value is set of files that depend on it
     private final Map<String, Set<String>> dependencyRegistry = new ConcurrentHashMap<>();

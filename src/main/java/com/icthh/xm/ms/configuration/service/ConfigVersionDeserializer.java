@@ -1,10 +1,9 @@
 package com.icthh.xm.ms.configuration.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigVersionMixIn;
 import lombok.SneakyThrows;
@@ -20,11 +19,12 @@ import jakarta.servlet.http.HttpServletRequest;
 @Slf4j
 @Component
 public class ConfigVersionDeserializer {
-    private final ObjectMapper mapper = new ObjectMapper()
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    private final ObjectMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .changeDefaultPropertyInclusion(incl ->
+                    incl.withValueInclusion(JsonInclude.Include.NON_NULL)
+            )
         .addMixIn(ConfigVersion.class, ConfigVersionMixIn.class)
-        .registerModule(new JavaTimeModule());
+        .build();
 
     @SneakyThrows
     public ConfigVersion from(String value) {
@@ -33,7 +33,7 @@ public class ConfigVersionDeserializer {
         }
         try {
             return mapper.readValue(value, ConfigVersion.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("Error parse version: {}", value, e);
 
             RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();

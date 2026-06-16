@@ -1,6 +1,10 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.ExtendWith;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -10,11 +14,10 @@ import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeService;
 import lombok.SneakyThrows;
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.contrib.java.lang.system.EnvironmentVariables;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -24,6 +27,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 import java.util.Map;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.CONFIG;
@@ -34,9 +40,9 @@ import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENAN
 import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
 import static com.icthh.xm.ms.configuration.web.rest.TestUtil.loadFile;
 import static org.apache.commons.codec.digest.DigestUtils.sha1Hex;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,14 +52,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ExtendWith(SystemStubsExtension.class)
 @WithMockUser(authorities = {"SUPER-ADMIN"})
 @TestPropertySource(properties = "application.env-config-externalization-enabled=true")
 public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     public static final String TENANT_NAME = "LIFETENANT";
 
-    @ClassRule
-    public static EnvironmentVariables environmentVariables = new EnvironmentVariables();
+    @SystemStub
+    private static final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
     @Autowired
     private ConfigurationClientResource configurationClientResource;
@@ -75,7 +82,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Autowired
     ConfigurationService configurationService;
 
-    @Before
+    @BeforeEach
     public void setup() {
         mockMvc = MockMvcBuilders.standaloneSetup(configurationClientResource, configurationAdminResource)
             .setControllerAdvice(exceptionTranslator)
@@ -83,7 +90,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         TenantContextUtils.setTenant(tenantContextHolder, TENANT_NAME);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
     }
@@ -173,7 +180,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/folder/subfolder/documentname.yml?toJson")
                 .contentType(MediaType.TEXT_PLAIN))
             .andExpect(status().is2xxSuccessful())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.field").value("field value"));
     }
 
@@ -199,7 +206,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testWebappPublicConfigExternalization() {
-        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-public.yml")
                         .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
                         .contentType(MediaType.TEXT_PLAIN))
@@ -254,7 +260,6 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void testWebappPrivateConfigExternalization() {
-        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
         mockMvc.perform(post(API_PREFIX + PROFILE + "/webapp/settings-private.yml")
                         .content("varForReplace: ${environment.VARIABLE_FOR_REPLACE}")
                         .contentType(MediaType.TEXT_PLAIN))
@@ -348,7 +353,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(status().is2xxSuccessful());
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
-                .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
+                .content(JsonMapper.builder().build().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
                 .contentType(MediaType.APPLICATION_JSON))
             .andDo(print())
             .andExpect(status().is2xxSuccessful())
@@ -356,7 +361,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
             .andExpect(jsonPath("$..content").value(Matchers.containsInAnyOrder(firstContent,updatedInMemory)));
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_git_map")
-                .content(new ObjectMapper().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
+                .content(JsonMapper.builder().build().writeValueAsString(List.of(firstPath, secondPath, thirdPath, relativePath)))
                 .contentType(MediaType.APPLICATION_JSON))
             .andDo(print())
             .andExpect(status().is2xxSuccessful())
@@ -381,7 +386,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_map")
                 .param("fetchAll", "false")
-                .content(new ObjectMapper().writeValueAsString(List.of(path2)))
+                .content(JsonMapper.builder().build().writeValueAsString(List.of(path2)))
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().is2xxSuccessful())
             .andExpect(jsonPath("$..content").value(Matchers.contains(content)));
@@ -419,7 +424,7 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         configurationService.updateConfiguration(new Configuration(path2, contentToDelete));
 
         mockMvc.perform(post(API_PREFIX + PROFILE + "/configs_update")
-                .content(new ObjectMapper().writeValueAsString(List.of(
+                .content(JsonMapper.builder().build().writeValueAsString(List.of(
                     updatedConfiguration,
                     new Configuration(path2, ""),
                     new Configuration(path3, "will not be created"),

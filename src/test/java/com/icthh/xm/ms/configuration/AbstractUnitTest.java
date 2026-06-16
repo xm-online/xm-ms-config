@@ -1,10 +1,10 @@
 package com.icthh.xm.ms.configuration;
 
 import org.junit.jupiter.api.Tag;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 @Tag("com.icthh.xm.ms.configuration.AbstractUnitTest")
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public abstract class AbstractUnitTest {
 }

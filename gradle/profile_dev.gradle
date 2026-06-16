@@ -30,7 +30,8 @@ springBoot {
 }
 
 bootRun {
-    args = []
+    args = ["--spring.profiles.active=${profiles}"]
+    systemProperty 'user.timezone', 'UTC'
 }
 
 processResources {

@@ -6,8 +6,8 @@ import com.icthh.xm.commons.lep.api.LepManagementService;
 import com.icthh.xm.commons.tenant.internal.DefaultTenantContextHolder;
 import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -34,9 +34,9 @@ public class ConfigurationUpdateEventProcessorIntTest {
 
     private ConfigurationUpdateEventProcessor processor;
 
-    @Before
+    @BeforeEach
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         processor = new ConfigurationUpdateEventProcessor(new DefaultTenantContextHolder(), lepManagementService, configurationService);
     }
 

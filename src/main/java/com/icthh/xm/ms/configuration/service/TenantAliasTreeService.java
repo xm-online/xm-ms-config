@@ -1,7 +1,8 @@
 package com.icthh.xm.ms.configuration.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.config.domain.TenantAliasTree;
 import com.icthh.xm.ms.configuration.domain.UpdateAliasTreeEvent;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class TenantAliasTreeService {
 
     public static final String TENANT_ALIAS_CONFIG = "/config/tenants/tenant-aliases.yml";
-    private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private final ObjectMapper mapper = YAMLMapper.builder().build();
     private final ConfigurationService configurationService;
     private final TenantAliasTreeStorage tenantAliasTreeStorage;
 

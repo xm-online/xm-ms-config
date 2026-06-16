@@ -11,10 +11,11 @@ import com.icthh.xm.ms.configuration.domain.ConfigurationList;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.kafka.ConfigTopicProducer;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 
 import java.util.List;
@@ -24,8 +25,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.buildTenant;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -55,9 +56,9 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
     @Spy
     private Lock lock = new ReentrantLock();
 
-    @Before
+    @BeforeEach
     public void before() {
-        when(tenantContextHolder.getContext()).thenReturn(new TenantContext() {
+        Mockito.lenient().when(tenantContextHolder.getContext()).thenReturn(new TenantContext() {
             @Override
             public boolean isInitialized() {
                 return true;

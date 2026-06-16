@@ -1,6 +1,7 @@
 package com.icthh.xm.ms.configuration.repository.impl;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.stream.Stream;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -15,38 +16,32 @@ import com.icthh.xm.ms.configuration.domain.ConfigVersion;
 import com.icthh.xm.ms.configuration.domain.ConfigurationItem;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.Arguments;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@RunWith(Parameterized.class)
 public class DynamicConfigRepositoryParametrizedUnitTest {
 
     private PersistenceConfigRepositoryStrategy jGitRepository;
     private PersistenceConfigRepositoryStrategy s3Repository;
     private DynamicConfigRepository repository;
+    private String path;
+    private String expectedRepo;
 
-    @Parameters(name = "path={0},expectedRepo={1}")
-    public static Object[][] data() {
-        return new Object[][]{
-                {"/config/git/test.txt", "git"},
-                {"/config/git/another.txt", "git"},
-                {"/config/git-full-path.txt", "git"},
-                {"/config/s3/test.txt", "s3"},
-                {"/config/s3-full-path.txt", "s3"}
-        };
+    public static Stream<Arguments> data() {
+        return Stream.of(
+                Arguments.of("/config/git/test.txt", "git"),
+                Arguments.of("/config/git/another.txt", "git"),
+                Arguments.of("/config/git-full-path.txt", "git"),
+                Arguments.of("/config/s3/test.txt", "s3"),
+                Arguments.of("/config/s3-full-path.txt", "s3")
+        );
     }
 
-    @Parameter()
-    public String path;
-    @Parameter(1)
-    public String expectedRepo;
-
-    @Before
+    @BeforeEach
     public void setUp() {
         jGitRepository = mock(PersistenceConfigRepositoryStrategy.class);
         when(jGitRepository.isApplicable(any())).thenReturn(true);
@@ -59,8 +54,12 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         repository = new DynamicConfigRepository(List.of(s3Repository, jGitRepository));
     }
 
-    @Test
-    public void testFindDelegatesToCorrectRepo() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testFindDelegatesToCorrectRepo(String path, String expectedRepo) {
+        this.path = path;
+        this.expectedRepo = expectedRepo;
+        setUp();
         var item = mock(ConfigurationItem.class);
         when(jGitRepository.find(path)).thenReturn(item);
         doReturn(item).when(s3Repository).find(path);
@@ -76,8 +75,12 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         }
     }
 
-    @Test
-    public void testFindWithVersionDelegatesToCorrectRepo() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testFindWithVersionDelegatesToCorrectRepo(String path, String expectedRepo) {
+        this.path = path;
+        this.expectedRepo = expectedRepo;
+        setUp();
         var configuration = mock(Configuration.class);
         var version = new ConfigVersion("TST");
         when(jGitRepository.find(path, version)).thenReturn(configuration);
@@ -94,8 +97,12 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         }
     }
 
-    @Test
-    public void testSaveDelegatesToCorrectRepo() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testSaveDelegatesToCorrectRepo(String path, String expectedRepo) {
+        this.path = path;
+        this.expectedRepo = expectedRepo;
+        setUp();
         var config = mock(Configuration.class);
         when(config.getPath()).thenReturn(path);
         var version = new ConfigVersion(expectedRepo);
@@ -113,8 +120,12 @@ public class DynamicConfigRepositoryParametrizedUnitTest {
         }
     }
 
-    @Test
-    public void testDeleteAllDelegatesToCorrectRepo() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testDeleteAllDelegatesToCorrectRepo(String path, String expectedRepo) {
+        this.path = path;
+        this.expectedRepo = expectedRepo;
+        setUp();
         var paths = List.of(path);
         var version = new ConfigVersion(expectedRepo);
         when(jGitRepository.deleteAll(paths)).thenReturn(version);

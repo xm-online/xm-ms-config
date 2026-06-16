@@ -6,11 +6,11 @@ import com.icthh.xm.commons.tenant.TenantKey;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -31,10 +31,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class ConfigurationClientResourceMvcIntTest extends AbstractSpringBootTest {
 
-    @MockBean
+    @MockitoBean
     private ConfigurationAdminResource configurationAdminResource;
 
-    @MockBean
+    @MockitoBean
     private ConfigurationService configurationService;
 
     @Mock
@@ -42,7 +42,7 @@ public class ConfigurationClientResourceMvcIntTest extends AbstractSpringBootTes
 
     private MockMvc restTaskMockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         this.restTaskMockMvc = MockMvcBuilders.standaloneSetup(new ConfigurationClientResource(configurationAdminResource, configurationService, tenantContextHolder))

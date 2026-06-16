@@ -1,7 +1,6 @@
 package com.icthh.xm.ms.configuration.web.rest;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
@@ -10,12 +9,12 @@ import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,7 +40,7 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
     @Autowired
     private ExceptionTranslator exceptionTranslator;
 
-    @MockBean
+    @MockitoBean
     private ConfigurationService configurationService;
 
     @Mock
@@ -49,7 +48,7 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
 
     private MockMvc restTaskMockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
         this.restTaskMockMvc = MockMvcBuilders.standaloneSetup(new ConfigMapResource(configurationService, applicationProperties))
@@ -116,7 +115,7 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
         verify(configurationService).updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("someHash"));
     }
 
-    private String toJson(Object object) throws JsonProcessingException {
-        return new ObjectMapper().writeValueAsString(object);
+    private String toJson(Object object) {
+        return JsonMapper.builder().build().writeValueAsString(object);
     }
 }

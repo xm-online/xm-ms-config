@@ -15,7 +15,7 @@ import com.icthh.xm.ms.configuration.service.FileService;
 import lombok.SneakyThrows;
 import org.eclipse.jgit.api.Git;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.rules.TemporaryFolder;
 import org.springframework.core.io.ClassPathResource;
 
@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.StreamSupport;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepository;
 import static com.icthh.xm.ms.configuration.config.LocalJGitRepositoryConfiguration.createGitRepositoryTest;
-import static org.junit.Assert.assertEquals;
 
 public class JGitRepositoryIntTest {
 
@@ -98,8 +98,7 @@ public class JGitRepositoryIntTest {
         String path = "/config/dummy";
         ConfigVersion commit1 = jGitRepository.save(new Configuration(path, "unchanged_content"));
         ConfigVersion commit2 = jGitRepository.save(new Configuration(path, "unchanged_content"));
-        assertEquals("Expected then save return last commit when no files changed", commit1,
-            commit2);
+        assertEquals(commit1, commit2, "Expected then save return last commit when no files changed");
     }
 
     @Test

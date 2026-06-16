@@ -22,15 +22,25 @@
     </appender>
 -->
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT_SYNC" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>utf-8</charset>
             <Pattern>%d %-5level [%thread] [%X{rid}] %logger{0}: %msg%n</Pattern>
         </encoder>
     </appender>
 
-    <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT_JSON_SYNC" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <appender-ref ref="STDOUT_SYNC"/>
+    </appender>
+
+    <appender name="STDOUT_JSON" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>512</queueSize>
+        <appender-ref ref="STDOUT_JSON_SYNC"/>
     </appender>
 
     <logger name="com.icthh.xm.ms.configuration" level="#logback.loglevel#"/>
@@ -68,6 +78,8 @@
     <logger name="org.eclipse.jgit" level="INFO"/>
     <logger name="org.springframework.boot.actuate.endpoint.EndpointId" level="ERROR"/>
     <logger name="com.netflix.config.sources.URLConfigurationSource" level="ERROR"/>
+    <logger name="java.lang.ProcessBuilder" level="INFO"/>
+    <logger name="io.opentelemetry.sdk.trace" level="WARN"/>
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
         <resetJUL>true</resetJUL>

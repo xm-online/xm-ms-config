@@ -3,8 +3,8 @@ package com.icthh.xm.ms.configuration.web.rest;
 import com.icthh.xm.commons.logging.web.rest.LogsResource;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
 import com.icthh.xm.ms.configuration.web.rest.vm.LoggerVM;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,9 +24,9 @@ public class LogsResourceIntTest extends AbstractSpringBootTest {
 
     private MockMvc restLogsMockMvc;
 
-    @Before
+    @BeforeEach
     public void setup() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
 
         LogsResource logsResource = new LogsResource();
         this.restLogsMockMvc = MockMvcBuilders
