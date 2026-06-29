@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -51,6 +52,7 @@ import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENAN
 import static com.icthh.xm.ms.configuration.utils.ConfigPathUtils.getTenantPathPrefix;
 import static java.lang.Boolean.TRUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Comparator.comparing;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -170,6 +172,22 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     public Optional<Configuration> findConfiguration(String path) {
         return memoryStorage.getConfig(path);
+    }
+
+    /**
+     * Lists all configurations (with content) stored under the given folder (recursively) for the current tenant.
+     *
+     * @param folder absolute folder path (e.g. {@code /config/tenants/XM/webapp/public/translations/en}); it is
+     *               normalized to collapse any {@code ..} segments before matching.
+     * @return stream of configurations located under the folder sorted by absolute path, empty if none.
+     */
+    public Stream<Configuration> getConfigurationsUnderFolder(String folder) {
+        String tenant = getRequiredTenantKeyValue(tenantContextHolder);
+        String normalizedFolder = Path.of("/", folder).normalize().toString();
+        String prefix = StringUtils.appendIfMissing(normalizedFolder, "/");
+        return memoryStorage.getConfigsFromTenant(tenant).stream()
+            .filter(config -> config.getPath().startsWith(prefix))
+            .sorted(comparing(Configuration::getPath));
     }
 
     public Set<Configuration> findExternalConfiguration(String configurationKey) {
