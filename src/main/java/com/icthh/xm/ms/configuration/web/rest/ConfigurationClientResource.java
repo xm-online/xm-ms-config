@@ -42,6 +42,7 @@ import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 public class ConfigurationClientResource {
 
     private static final String EMPTY_YML = "---";
+    private static final String PUBLIC_FOLDER = "/webapp/public";
     private final UrlPathHelper urlHelper = new UrlPathHelper();
 
     private final ConfigurationAdminResource configurationAdminResource;
@@ -114,6 +115,24 @@ public class ConfigurationClientResource {
         boolean toJson = request.getParameterMap().containsKey("toJson");
         boolean processed = getBooleanParameter(request, "processed");
         return configurationAdminResource.getConfiguration(toJson, processed, path);
+    }
+
+    @GetMapping(value = PROFILE + "/webapp/public/**", params = "list")
+    @LoggingAspectConfig(inputDetails = false, resultDetails = false)
+    public ResponseEntity<List<String>> listPublicWebAppConfigurations(HttpServletRequest request) {
+        String tenantPrefix = getTenantPathPrefix(tenantContextHolder);
+        String folderPath = extractPublicFolderPath(request);
+        List<String> files = configurationService.getConfigurationPathsUnderFolder(tenantPrefix + folderPath).stream()
+            .map(path -> path.substring(tenantPrefix.length()))
+            .toList();
+        return ResponseEntity.ok(files);
+    }
+
+    // resolve the requested folder relative to the public folder, so normalization keeps '..' from reading outside it
+    private String extractPublicFolderPath(HttpServletRequest request) {
+        String pathUnderPublic = urlHelper.getPathWithinApplication(request)
+            .substring(API_PREFIX.length() + PROFILE.length() + PUBLIC_FOLDER.length());
+        return PUBLIC_FOLDER + Path.of("/", pathUnderPublic).normalize();
     }
 
     @DeleteMapping(PROFILE + "/**")

@@ -286,6 +286,55 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
+    public void testListPublicFilesByFolderRecursively() {
+        addPublicFile("/webapp/public/translations/en/common.json", "{\"a\":1}");
+        addPublicFile("/webapp/public/translations/en/errors.json", "{\"b\":2}");
+        addPublicFile("/webapp/public/translations/en/nested/extra.json", "{\"c\":3}");
+        // siblings/outside that must NOT be listed
+        addPublicFile("/webapp/public/translations/uk/common.json", "{\"d\":4}");
+        addPublicFile("/webapp/settings-public.yml", "k: v");
+
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/translations/en?list"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(3)))
+                .andExpect(jsonPath("$", Matchers.containsInAnyOrder(
+                    "/webapp/public/translations/en/common.json",
+                    "/webapp/public/translations/en/errors.json",
+                    "/webapp/public/translations/en/nested/extra.json")));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testListPublicFilesForEmptyFolderReturnsEmptyArray() {
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/does/not/exist?list"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(0)));
+    }
+
+    @Test
+    @SneakyThrows
+    public void testListConfinesTraversalToPublicFolder() {
+        addPublicFile("/webapp/public/translations/en/common.json", "{\"a\":1}");
+        addPublicFile("/webapp/settings-public.yml", "k: v"); // OUTSIDE the public folder
+
+        // ../ is normalized back into the public folder, so files outside public are never listed
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/..?list"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.everyItem(Matchers.startsWith("/webapp/public/"))))
+                .andExpect(jsonPath("$", Matchers.hasItem("/webapp/public/translations/en/common.json")))
+                .andExpect(jsonPath("$", Matchers.not(Matchers.hasItem("/webapp/settings-public.yml"))));
+    }
+
+    @SneakyThrows
+    private void addPublicFile(String path, String content) {
+        mockMvc.perform(post(API_PREFIX + PROFILE + path)
+                        .content(content)
+                        .contentType(MediaType.TEXT_PLAIN))
+                .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @SneakyThrows
     public void testGetConfigurationsByPaths() {
         String firstPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname1";
         String secondPath = CONFIG + TENANTS + "/" + TENANT_NAME + "/documentname2";
