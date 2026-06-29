@@ -80,5 +80,10 @@ application:
         branch-name:
         max-wait-time-second: 30
         depth: 50
-
+    config-repository:
+        mode: FILE
+        file:
+            path:
+            debounce-time: 2
+            read-only: false
 

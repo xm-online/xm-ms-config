@@ -91,6 +91,19 @@ public class ApplicationProperties {
 
         private String mode = "GIT";
         private S3 s3 = new S3();
+        private FileProperties file = new FileProperties();
+    }
+
+    @Getter
+    @Setter
+    public static class FileProperties {
+
+        /** Directory that CONTAINS the {@code config} folder (mirrors the Git layout). */
+        private String path;
+        /** Debounce window for batching filesystem change events, in seconds. */
+        private Integer debounceTime = 2;
+        /** When true the folder is managed externally and write operations are rejected. */
+        private boolean readOnly = false;
     }
 
     @Getter
