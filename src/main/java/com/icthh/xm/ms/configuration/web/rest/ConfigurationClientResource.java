@@ -122,7 +122,7 @@ public class ConfigurationClientResource {
     public ResponseEntity<List<String>> listPublicWebAppConfigurations(HttpServletRequest request) {
         String tenantPrefix = getTenantPathPrefix(tenantContextHolder);
         String folderPath = extractPublicFolderPath(request);
-        List<String> files = configurationService.getConfigurationPathsUnderFolder(tenantPrefix + folderPath).stream()
+        List<String> files = configurationService.getConfigurationPathsUnderFolder(tenantPrefix + folderPath)
             .map(path -> path.substring(tenantPrefix.length()))
             .toList();
         return ResponseEntity.ok(files);
