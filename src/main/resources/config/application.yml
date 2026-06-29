@@ -202,7 +202,12 @@ application:
       ssh:
           accept-unknown-host: true
     config-repository:
-        mode: GIT # GIT, S3, DYNAMIC
+        mode: GIT # GIT, S3, DYNAMIC, FILE
+#    Uncomment for configure FILE repository supporting
+#        file:
+#            path: /etc/xm-config        # directory that CONTAINS the `config` folder
+#            debounce-time: 2            # seconds to batch filesystem change events
+#            read-only: false            # true if the folder is managed externally (writes rejected)
 #    Uncomment for configure S3 repository supporting
 #        s3:
 #            endpoint: http://localhost:9000

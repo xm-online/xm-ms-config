@@ -71,6 +71,7 @@ jhipster:
 # https://www.jhipster.tech/common-application-properties/
 # ===================================================================
 
+#    Uncomment for configure FILE repository supporting
 application:
     adminApiRestrictionEnabled: true
     git:
@@ -80,5 +81,10 @@ application:
         branch-name:
         max-wait-time-second: 30
         depth: 50
-
+    config-repository:
+        mode: FILE
+        file:
+            path:
+            debounce-time: 2
+            read-only: false
 

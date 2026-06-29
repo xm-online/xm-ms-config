@@ -10,11 +10,14 @@ import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
 import com.icthh.xm.ms.configuration.repository.impl.DynamicConfigRepository;
+import com.icthh.xm.ms.configuration.repository.impl.FileRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorage;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageExcludeConfigDecorator;
 import com.icthh.xm.ms.configuration.repository.impl.MemoryConfigStorageImpl;
 import com.icthh.xm.ms.configuration.repository.impl.S3Repository;
+import com.icthh.xm.ms.configuration.service.ConfigurationService;
+import com.icthh.xm.ms.configuration.service.FileConfigWatcher;
 import com.icthh.xm.ms.configuration.service.FileService;
 import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import com.icthh.xm.ms.configuration.service.processors.TenantConfigurationProcessor;
@@ -28,6 +31,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -36,6 +40,7 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 
 @Slf4j
 @Configuration
+@EnableScheduling
 @Import(XmRequestContextConfiguration.class)
 public class BeanConfiguration {
 
@@ -85,6 +90,30 @@ public class BeanConfiguration {
         log.info("Creating S3 repository bean");
         var s3Config = applicationProperties.getConfigRepository().getS3();
         return new S3Repository(s3Client, s3Config.getBucket(), s3Config.getConfigPath(), s3Config.getRules());
+    }
+
+    /**
+     * Creates the File Repository bean (reads/writes config from a local folder).
+     */
+    @Bean
+    @ConditionalOnExpression("'${application.config-repository.mode}'.equalsIgnoreCase('FILE')")
+    public FileRepository fileRepository(ApplicationProperties applicationProperties,
+                                         FileService fileService) {
+        log.info("Creating File repository bean");
+        return new FileRepository(applicationProperties.getConfigRepository().getFile(), fileService);
+    }
+
+    /**
+     * Creates the filesystem watcher that debounces changes and pushes them to microservices.
+     */
+    @Bean
+    @ConditionalOnExpression("'${application.config-repository.mode}'.equalsIgnoreCase('FILE')")
+    public FileConfigWatcher fileConfigWatcher(ApplicationProperties applicationProperties,
+                                               ConfigurationService configurationService,
+                                               FileRepository fileRepository) {
+        log.info("Creating File config watcher bean");
+        return new FileConfigWatcher(applicationProperties.getConfigRepository().getFile(),
+            configurationService, fileRepository);
     }
 
     /**
