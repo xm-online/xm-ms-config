@@ -297,10 +297,17 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/translations/en?list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", Matchers.hasSize(3)))
-                .andExpect(jsonPath("$", Matchers.containsInAnyOrder(
+                .andExpect(jsonPath("$[*].path", Matchers.containsInAnyOrder(
                     "/webapp/public/translations/en/common.json",
                     "/webapp/public/translations/en/errors.json",
-                    "/webapp/public/translations/en/nested/extra.json")));
+                    "/webapp/public/translations/en/nested/extra.json")))
+                // content (translations) is returned alongside each path
+                .andExpect(jsonPath("$[?(@.path == '/webapp/public/translations/en/common.json')].content",
+                    Matchers.contains("{\"a\":1}")))
+                .andExpect(jsonPath("$[?(@.path == '/webapp/public/translations/en/errors.json')].content",
+                    Matchers.contains("{\"b\":2}")))
+                .andExpect(jsonPath("$[?(@.path == '/webapp/public/translations/en/nested/extra.json')].content",
+                    Matchers.contains("{\"c\":3}")));
     }
 
     @Test
@@ -320,9 +327,9 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
         // ../ is normalized back into the public folder, so files outside public are never listed
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/..?list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", Matchers.everyItem(Matchers.startsWith("/webapp/public/"))))
-                .andExpect(jsonPath("$", Matchers.hasItem("/webapp/public/translations/en/common.json")))
-                .andExpect(jsonPath("$", Matchers.not(Matchers.hasItem("/webapp/settings-public.yml"))));
+                .andExpect(jsonPath("$[*].path", Matchers.everyItem(Matchers.startsWith("/webapp/public/"))))
+                .andExpect(jsonPath("$[*].path", Matchers.hasItem("/webapp/public/translations/en/common.json")))
+                .andExpect(jsonPath("$[*].path", Matchers.not(Matchers.hasItem("/webapp/settings-public.yml"))));
     }
 
     @SneakyThrows

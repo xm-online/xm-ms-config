@@ -119,11 +119,11 @@ public class ConfigurationClientResource {
 
     @GetMapping(value = PROFILE + "/webapp/public/**", params = "list")
     @LoggingAspectConfig(inputDetails = false, resultDetails = false)
-    public ResponseEntity<List<String>> listPublicWebAppConfigurations(HttpServletRequest request) {
+    public ResponseEntity<List<Configuration>> listPublicWebAppConfigurations(HttpServletRequest request) {
         String tenantPrefix = getTenantPathPrefix(tenantContextHolder);
         String folderPath = extractPublicFolderPath(request);
-        List<String> files = configurationService.getConfigurationPathsUnderFolder(tenantPrefix + folderPath).stream()
-            .map(path -> path.substring(tenantPrefix.length()))
+        List<Configuration> files = configurationService.getConfigurationsUnderFolder(tenantPrefix + folderPath)
+            .map(config -> new Configuration(config.getPath().substring(tenantPrefix.length()), config.getContent()))
             .toList();
         return ResponseEntity.ok(files);
     }
