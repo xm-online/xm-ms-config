@@ -29,7 +29,7 @@ public class MemoryConfigStorageDeleteUnitTest extends AbstractUnitTest {
         TenantContextHolder tenantContextHolder = mock(TenantContextHolder.class);
         TenantAliasTreeStorage aliasTreeStorage = new TenantAliasTreeStorage(tenantContextHolder);
         ApplicationProperties applicationProperties = new ApplicationProperties();
-        storage = new MemoryConfigStorageImpl(List.of(), aliasTreeStorage, applicationProperties, new ReentrantLock());
+        storage = new MemoryConfigStorageImpl(List.of(), List.of(), aliasTreeStorage, applicationProperties, new ReentrantLock());
     }
 
     @Test

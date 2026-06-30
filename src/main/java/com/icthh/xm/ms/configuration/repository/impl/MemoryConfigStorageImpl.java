@@ -57,11 +57,13 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private volatile Map<String, Set<Configuration>> externalConfigs = Map.of();
 
     private final List<TenantConfigurationProcessor> configurationProcessors;
+    private final List<ConfigurationUpdateHook> updateHooks;
     private final TenantAliasTreeStorage tenantAliasTreeStorage;
     private final ApplicationProperties applicationProperties;
     private final Lock lock;
 
     public MemoryConfigStorageImpl(List<TenantConfigurationProcessor> configurationProcessors,
+                                   List<ConfigurationUpdateHook> updateHooks,
                                    TenantAliasTreeStorage tenantAliasTreeStorage,
                                    ApplicationProperties applicationProperties,
                                    @Qualifier(TENANT_CONFIGURATION_LOCK)
@@ -69,6 +71,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
         this.applicationProperties = applicationProperties;
         AnnotationAwareOrderComparator.sort(configurationProcessors);
         this.configurationProcessors = configurationProcessors;
+        this.updateHooks = updateHooks;
         this.tenantAliasTreeStorage = tenantAliasTreeStorage;
         this.lock = lock;
     }
@@ -213,6 +216,7 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     private Set<String> saveConfigs(List<Configuration> configs, boolean fullReload) {
         StopWatch stopWatch = StopWatch.createStarted();
 
+        configs = applyUpdateHooks(configs);
         log.info("Save configurations to inmemory storage configs.size: {}", configs.size());
         var fullConfiguration = getFullConfiguration(configs);
 
@@ -248,6 +252,14 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
             log.info("Configuration inmemory updated in {} ms", stopWatch.getTime());
             return changedFiles;
         });
+    }
+
+    private List<Configuration> applyUpdateHooks(List<Configuration> configs) {
+        List<Configuration> result = configs;
+        for (ConfigurationUpdateHook hook : updateHooks) {
+            result = hook.beforeProcess(result, this);
+        }
+        return result;
     }
 
     private void updateExternalConfigs(Map<String, Set<Configuration>> updatedConfigs) {

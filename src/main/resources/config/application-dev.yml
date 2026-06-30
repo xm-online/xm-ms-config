@@ -83,7 +83,7 @@ application:
     config-repository:
         mode: FILE
         file:
-            path:
+            path: /Users/serhii.senko/work/XM/xm-ms-config-repository
             debounce-time: 2
             read-only: false
 

@@ -9,6 +9,7 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.ms.configuration.config.ApplicationProperties.S3;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepository;
 import com.icthh.xm.ms.configuration.repository.PersistenceConfigRepositoryStrategy;
+import com.icthh.xm.ms.configuration.repository.impl.ConfigurationUpdateHook;
 import com.icthh.xm.ms.configuration.repository.impl.DynamicConfigRepository;
 import com.icthh.xm.ms.configuration.repository.impl.FileRepository;
 import com.icthh.xm.ms.configuration.repository.impl.JGitRepository;
@@ -179,6 +180,7 @@ public class BeanConfiguration {
 
     @Bean
     public MemoryConfigStorage memoryConfigStorage(List<TenantConfigurationProcessor> tenantConfigurationProcessors,
+                                                   List<ConfigurationUpdateHook> configurationUpdateHooks,
                                                    TenantAliasTreeStorage tenantAliasTreeStorage,
                                                    ApplicationProperties applicationProperties,
                                                    @Qualifier(UPDATE_IN_MEMORY)
@@ -187,6 +189,7 @@ public class BeanConfiguration {
         return new MemoryConfigStorageExcludeConfigDecorator(
             new MemoryConfigStorageImpl(
                 tenantConfigurationProcessors,
+                configurationUpdateHooks,
                 tenantAliasTreeStorage,
                 applicationProperties,
                 lock
