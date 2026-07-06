@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.config.export;
 
+import com.icthh.xm.commons.config.client.api.FetchConfigurationSettings;
 import com.icthh.xm.commons.security.XmAuthenticationContextHolder;
 import com.icthh.xm.commons.security.internal.SpringSecurityXmAuthenticationContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextHolder;
@@ -16,12 +17,10 @@ import com.icthh.xm.ms.configuration.service.TenantAliasTreeStorage;
 import com.icthh.xm.ms.configuration.service.VersionCache;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Slf4j
@@ -29,6 +28,7 @@ import org.springframework.context.annotation.Profile;
 @Profile("export")
 @EnableConfigurationProperties({ApplicationProperties.class})
 @Import({
+    FetchConfigurationSettings.class,
     ConfigurationService.class,
     ConfigVersionDeserializer.class,
     VersionCache.class,
