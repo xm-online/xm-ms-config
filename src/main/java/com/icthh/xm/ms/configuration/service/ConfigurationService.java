@@ -224,6 +224,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void saveConfigurations(List<Configuration> configurations, Map<String, String> configHashes) {
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.saveAll(configurations, configHashes);
         Set<String> updatedConfigs = memoryStorage.saveConfigs(configurations);
         version.addVersion(configVersion);
@@ -245,6 +246,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationInMemory(List<Configuration> configurations) {
+        assertInMemoryUpdateAvailable();
         Set<String> updated = memoryStorage.saveConfigs(configurations);
         notifyChanged(version.getLastVersion(), updated);
     }
@@ -259,6 +261,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void deleteConfigurations(List<String> paths){
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.deleteAll(paths);
         Set<String> updated = memoryStorage.remove(paths);
         version.addVersion(configVersion);
@@ -266,6 +269,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void deleteConfigurationInMemory(List<String> paths) {
+        assertInMemoryUpdateAvailable();
         Set<String> updated = memoryStorage.remove(paths);
         notifyChanged(version.getLastVersion(), updated);
     }
@@ -346,6 +350,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     @SneakyThrows
     public ConfigVersion updateConfigurationsFromZip(MultipartFile zipFile) {
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.setRepositoryState(unzip(new ZipInputStream(zipFile.getInputStream())));
         refreshConfiguration();
         return configVersion;
@@ -396,6 +401,19 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     public void assertAdminRefreshAvailable() {
         if (!isAdminRefreshAvailable()) {
             throw new AccessDeniedException("Admin refresh config not available for tenant " + tenantContextHolder.getTenantKey());
+        }
+    }
+
+    private void assertPersistenceUpdateAvailable() {
+        if (!applicationProperties.isUpdateConfigAvailable()) {
+            throw new AccessDeniedException("Configuration update in persistence storage is not available");
+        }
+    }
+
+    private void assertInMemoryUpdateAvailable() {
+        if (!applicationProperties.isUpdateConfigInMemoryAvailable()) {
+            throw new AccessDeniedException(
+                "In-memory configuration update is not available; in-memory state is refreshed from persistence only");
         }
     }
 

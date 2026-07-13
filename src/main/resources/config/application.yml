@@ -182,6 +182,7 @@ application:
     kafka-metadata-max-age: 60000 #in milliseconds
     versionCacheMaxSize: 100
     update-config-available: true
+    update-config-in-memory-available: true
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
