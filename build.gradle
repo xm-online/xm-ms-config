@@ -17,6 +17,7 @@ plugins {
     id "org.springframework.boot"
     id "com.google.cloud.tools.jib"
     id "com.gorylenko.gradle-git-properties"
+    id "org.sonarqube"
     id "io.spring.nohttp"
     id 'pmd'
     id "war"
@@ -41,6 +42,7 @@ java {
 assert System.properties["java.specification.version"] == "25"
 
 apply from: "gradle/docker.gradle"
+apply from: "gradle/sonar.gradle"
 apply from: "gradle/version.gradle"
 //jhipster-needle-gradle-apply-from - JHipster will add additional gradle scripts to be applied here
 

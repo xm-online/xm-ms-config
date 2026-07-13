@@ -1,0 +1,34 @@
+jacoco {
+    toolVersion = "0.8.13"
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+    executionData.from(tasks.withType(Test))
+    classDirectories.from(sourceSets.main.output.classesDirs)
+    sourceDirectories.from(sourceSets.main.java.srcDirs)
+
+    reports {
+        xml.required = true
+    }
+}
+
+file("sonar-project.properties").withReader {
+    Properties sonarProperties = new Properties()
+    sonarProperties.load(it)
+
+    sonarProperties.each { key, value ->
+        sonarqube {
+            properties {
+                property key, value
+            }
+        }
+    }
+}
+
+tasks.named('test') {
+    finalizedBy tasks.named('jacocoTestReport')
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.withType(Test)
+}
