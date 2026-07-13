@@ -12,7 +12,7 @@ import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -49,11 +49,11 @@ public class ConfigurationUpdateEventProcessorIntTest {
     }
 
     @Test
-    public void process_throwConcurrentConfigModificationException() {
+    public void process_swallowConcurrentConfigModificationException() {
         doThrow(new ConcurrentConfigModificationException()).when(configurationService)
             .updateConfiguration(argThat(configWith(PATH, CONTENT)), argThat(eqString(OLD_CONFIG_HASH)));
 
-        assertThrows(ConcurrentConfigModificationException.class, () -> processor.process(MESSAGE, TENANT));
+        assertDoesNotThrow(() -> processor.process(MESSAGE, TENANT));
 
         verify(lepManagementService).beginThreadContext();
         verify(configurationService).updateConfiguration(argThat(configWith(PATH, CONTENT)), argThat(eqString(OLD_CONFIG_HASH)));
