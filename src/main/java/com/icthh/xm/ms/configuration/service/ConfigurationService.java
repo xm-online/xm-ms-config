@@ -46,6 +46,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
+import static com.icthh.xm.commons.domain.idp.IdpConstants.PUBLIC_JWKS_CONFIG_PATTERN;
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_IN_MEMORY;
 import static com.icthh.xm.ms.configuration.domain.ConfigVersion.UNDEFINED_VERSION;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
@@ -73,6 +74,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final ApplicationEventPublisher publisher;
     private final VersionCache version;
     private final Lock lock;
+    private final AntPathMatcher jwkPathMatcher = new AntPathMatcher();
 
     public ConfigurationService(MemoryConfigStorage memoryStorage,
                                 @Qualifier("configRepository")
@@ -224,6 +226,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void saveConfigurations(List<Configuration> configurations, Map<String, String> configHashes) {
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.saveAll(configurations, configHashes);
         Set<String> updatedConfigs = memoryStorage.saveConfigs(configurations);
         version.addVersion(configVersion);
@@ -245,6 +248,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationInMemory(List<Configuration> configurations) {
+        if (!isJwkPublicKeysUpdate(configurations)) {
+            assertInMemoryUpdateAvailable();
+        }
         Set<String> updated = memoryStorage.saveConfigs(configurations);
         notifyChanged(version.getLastVersion(), updated);
     }
@@ -259,6 +265,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void deleteConfigurations(List<String> paths){
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.deleteAll(paths);
         Set<String> updated = memoryStorage.remove(paths);
         version.addVersion(configVersion);
@@ -266,6 +273,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void deleteConfigurationInMemory(List<String> paths) {
+        assertInMemoryUpdateAvailable();
         Set<String> updated = memoryStorage.remove(paths);
         notifyChanged(version.getLastVersion(), updated);
     }
@@ -346,6 +354,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     @SneakyThrows
     public ConfigVersion updateConfigurationsFromZip(MultipartFile zipFile) {
+        assertPersistenceUpdateAvailable();
         ConfigVersion configVersion = persistenceRepository.setRepositoryState(unzip(new ZipInputStream(zipFile.getInputStream())));
         refreshConfiguration();
         return configVersion;
@@ -397,6 +406,30 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         if (!isAdminRefreshAvailable()) {
             throw new AccessDeniedException("Admin refresh config not available for tenant " + tenantContextHolder.getTenantKey());
         }
+    }
+
+    private void assertPersistenceUpdateAvailable() {
+        if (!applicationProperties.isUpdateConfigAvailable()) {
+            throw new AccessDeniedException("Configuration update in persistence storage is not available");
+        }
+    }
+
+    private void assertInMemoryUpdateAvailable() {
+        if (!applicationProperties.isUpdateConfigInMemoryAvailable()) {
+            throw new AccessDeniedException(
+                "In-memory configuration update is not available; in-memory state is refreshed from persistence only");
+        }
+    }
+
+    /**
+     * JWK public-key caches are fetched from the IdP at runtime (see {@link JwksService}) and are not stored
+     * in git, so they must keep updating even when in-memory updates are disabled — otherwise
+     * {@code update-config-in-memory-available=false} would freeze key rotation and break token validation.
+     * Only updates whose paths are all JWK caches are exempt from the in-memory guard.
+     */
+    private boolean isJwkPublicKeysUpdate(List<Configuration> configurations) {
+        return !configurations.isEmpty()
+            && configurations.stream().allMatch(config -> jwkPathMatcher.match(PUBLIC_JWKS_CONFIG_PATTERN, config.getPath()));
     }
 
     public void refreshTenantsConfigurations(List<String> tenants) {

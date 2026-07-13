@@ -4,14 +4,12 @@ import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -43,15 +41,12 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
     @MockitoBean
     private ConfigurationService configurationService;
 
-    @Mock
-    private ApplicationProperties applicationProperties;
-
     private MockMvc restTaskMockMvc;
 
     @BeforeEach
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        this.restTaskMockMvc = MockMvcBuilders.standaloneSetup(new ConfigMapResource(configurationService, applicationProperties))
+        this.restTaskMockMvc = MockMvcBuilders.standaloneSetup(new ConfigMapResource(configurationService))
             .setControllerAdvice(exceptionTranslator)
             .build();
     }
@@ -107,8 +102,6 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
     @Test
     @SneakyThrows
     public void updateConfigMapWithCommit() {
-        when(applicationProperties.isUpdateConfigAvailable()).thenReturn(true);
-
         restTaskMockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "someHash").content(toJson(new Configuration("somePath", "some content")))
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk());
