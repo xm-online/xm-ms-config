@@ -46,6 +46,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.getRequiredTenantKeyValue;
+import static com.icthh.xm.commons.domain.idp.IdpConstants.PUBLIC_JWKS_CONFIG_PATTERN;
 import static com.icthh.xm.ms.configuration.config.BeanConfiguration.UPDATE_IN_MEMORY;
 import static com.icthh.xm.ms.configuration.domain.ConfigVersion.UNDEFINED_VERSION;
 import static com.icthh.xm.ms.configuration.service.TenantAliasTreeService.TENANT_ALIAS_CONFIG;
@@ -73,6 +74,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     private final ApplicationEventPublisher publisher;
     private final VersionCache version;
     private final Lock lock;
+    private final AntPathMatcher jwkPathMatcher = new AntPathMatcher();
 
     public ConfigurationService(MemoryConfigStorage memoryStorage,
                                 @Qualifier("configRepository")
@@ -246,7 +248,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
     }
 
     public void updateConfigurationInMemory(List<Configuration> configurations) {
-        assertInMemoryUpdateAvailable();
+        if (!isJwkPublicKeysUpdate(configurations)) {
+            assertInMemoryUpdateAvailable();
+        }
         Set<String> updated = memoryStorage.saveConfigs(configurations);
         notifyChanged(version.getLastVersion(), updated);
     }
@@ -415,6 +419,17 @@ public class ConfigurationService extends AbstractConfigService implements Initi
             throw new AccessDeniedException(
                 "In-memory configuration update is not available; in-memory state is refreshed from persistence only");
         }
+    }
+
+    /**
+     * JWK public-key caches are fetched from the IdP at runtime (see {@link JwksService}) and are not stored
+     * in git, so they must keep updating even when in-memory updates are disabled — otherwise
+     * {@code update-config-in-memory-available=false} would freeze key rotation and break token validation.
+     * Only updates whose paths are all JWK caches are exempt from the in-memory guard.
+     */
+    private boolean isJwkPublicKeysUpdate(List<Configuration> configurations) {
+        return !configurations.isEmpty()
+            && configurations.stream().allMatch(config -> jwkPathMatcher.match(PUBLIC_JWKS_CONFIG_PATTERN, config.getPath()));
     }
 
     public void refreshTenantsConfigurations(List<String> tenants) {

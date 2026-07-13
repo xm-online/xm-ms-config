@@ -320,6 +320,30 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
     }
 
     @Test
+    public void updateConfigurationInMemory_shouldAllowJwkCacheUpdateWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+        List<Configuration> jwks = List.of(new Configuration(
+            "/config/tenants/XM/config/idp/clients/Google-jwks-cache.json", "{\"keys\":[]}"));
+        when(memoryStorage.saveConfigs(jwks)).thenReturn(Set.of());
+
+        configurationService.updateConfigurationInMemory(jwks);
+
+        verify(memoryStorage).saveConfigs(jwks);
+    }
+
+    @Test
+    public void updateConfigurationInMemory_shouldRejectMixedJwkAndNonJwkWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+        List<Configuration> mixed = List.of(
+            new Configuration("/config/tenants/XM/config/idp/clients/Google-jwks-cache.json", "{}"),
+            new Configuration("/config/tenants/XM/other.yml", "a: b"));
+
+        assertThrows(AccessDeniedException.class, () -> configurationService.updateConfigurationInMemory(mixed));
+
+        verify(memoryStorage, never()).saveConfigs(anyList());
+    }
+
+    @Test
     public void inMemoryUpdateDisabled_shouldStillAllowRefreshFromPersistence() {
         applicationProperties.setUpdateConfigInMemoryAvailable(false);
         ConfigVersion version = new ConfigVersion("v1");
