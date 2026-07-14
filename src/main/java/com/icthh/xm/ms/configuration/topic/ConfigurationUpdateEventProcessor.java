@@ -35,7 +35,6 @@ public class ConfigurationUpdateEventProcessor {
 
             } catch (ConcurrentConfigModificationException e) {
                 log.warn("Error occurred when update configuration", e);
-                throw e;
             }
             MdcUtils.removeRid();
         });

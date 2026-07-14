@@ -4,6 +4,7 @@ import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
+import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,6 +25,7 @@ import java.util.List;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -106,6 +108,18 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
                 .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk());
         verify(configurationService).updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("someHash"));
+    }
+
+    @Test
+    @SneakyThrows
+    public void updateConfigMap_returnsConflictOnConcurrentModification() {
+        doThrow(new ConcurrentConfigModificationException()).when(configurationService)
+            .updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("staleHash"));
+
+        restTaskMockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "staleHash")
+                .content(toJson(new Configuration("somePath", "some content")))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isConflict());
     }
 
     private String toJson(Object object) {
