@@ -99,9 +99,7 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         // produced by a processor (e.g. feature configuration) - lives only in the processed store
         Configuration producedFile = new Configuration(folder + "/admin-dashboards.json", "{\"b\":2}");
 
-        // raw in-memory store does NOT contain the produced file
-        when(memoryStorage.getConfigsFromTenant(anyString())).thenReturn(List.of(storedFile));
-        // processed store (in-memory + processor output) contains both
+        // processed store (in-memory + processor output) contains both the stored and the produced file
         when(memoryStorage.getProcessedConfigsFromTenant(anyString()))
             .thenReturn(List.of(storedFile, producedFile));
 
