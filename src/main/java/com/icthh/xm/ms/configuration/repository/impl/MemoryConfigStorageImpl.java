@@ -124,6 +124,14 @@ public class MemoryConfigStorageImpl implements MemoryConfigStorage {
     }
 
     @Override
+    public List<Configuration> getProcessedConfigsFromTenant(String tenant) {
+        return Optional.ofNullable(tenantConfigStates.get(tenant))
+            .map(ConfigState::getProcessedConfiguration)
+            .map(configs -> List.copyOf(configs.values()))
+            .orElse(List.of());
+    }
+
+    @Override
     public Set<String> getTenants() {
         return tenantConfigStates.keySet();
     }

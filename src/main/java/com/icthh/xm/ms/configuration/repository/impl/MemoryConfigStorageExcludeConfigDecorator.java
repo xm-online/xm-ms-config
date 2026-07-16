@@ -106,6 +106,11 @@ public class MemoryConfigStorageExcludeConfigDecorator implements MemoryConfigSt
     }
 
     @Override
+    public List<Configuration> getProcessedConfigsFromTenant(String tenant) {
+        return memoryConfigStorage.getProcessedConfigsFromTenant(tenant);
+    }
+
+    @Override
     public Set<String> getTenants() {
         return memoryConfigStorage.getTenants();
     }

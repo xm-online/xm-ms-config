@@ -312,6 +312,21 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
+    public void testListReturnsProcessedConfigContent() {
+        environmentVariables.set("VARIABLE_FOR_REPLACE", "expectedValue");
+        // a file that is transformed by a processor (env externalization) -> processed content differs from raw
+        addPublicFile("/webapp/public/translations/en/config.yml",
+            "greeting: ${environment.VARIABLE_FOR_REPLACE}");
+
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/translations/en?list"))
+                .andExpect(status().isOk())
+                // the listing must expose the processed content, not the raw ${...} placeholder
+                .andExpect(jsonPath("$[?(@.path == '/webapp/public/translations/en/config.yml')].content",
+                    Matchers.contains("greeting: expectedValue")));
+    }
+
+    @Test
+    @SneakyThrows
     public void testListPublicFilesForEmptyFolderReturnsEmptyArray() {
         mockMvc.perform(get(API_PREFIX + PROFILE + "/webapp/public/does/not/exist?list"))
                 .andExpect(status().isOk())
