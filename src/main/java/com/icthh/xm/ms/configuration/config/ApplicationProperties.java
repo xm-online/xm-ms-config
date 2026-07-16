@@ -33,6 +33,7 @@ public class ApplicationProperties {
     private String kafkaInMemoryConfigTopic;
     private Integer kafkaMetadataMaxAge;
     private boolean updateConfigAvailable = true;
+    private boolean updateConfigInMemoryAvailable = true;
 
     private Boolean envConfigExternalizationEnabled;
     private Integer updateConfigWaitTimeSecond = 120;

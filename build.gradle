@@ -286,6 +286,9 @@ tasks.register('exportConfig', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.icthh.xm.ms.configuration.ConfigExporter'
     args = findProperty('exportArgs')?.split(' ')?.toList() ?: []
+    if (project.hasProperty('branchName')) {
+        systemProperty 'application.git.branch-name', project.property('branchName')
+    }
 }
 
 tasks.register('preCompileLep', JavaExec) {
