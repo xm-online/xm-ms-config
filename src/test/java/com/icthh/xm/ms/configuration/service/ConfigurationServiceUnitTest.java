@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -96,6 +97,24 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
         assertEquals(1, result.size());
         assertEquals("content", result.get("path").getContent());
+    }
+
+    @Test
+    public void getConfigurationsUnderFolder_shouldIncludeProcessorProducedConfigs() {
+        String folder = "/config/tenants/TENANT_NAME/webapp/public/translations/en";
+        Configuration storedFile = new Configuration(folder + "/common.json", "{\"a\":1}");
+        // produced by a processor (e.g. feature configuration) - lives only in the processed store
+        Configuration producedFile = new Configuration(folder + "/admin-dashboards.json", "{\"b\":2}");
+
+        // processed store (in-memory + processor output) contains both the stored and the produced file
+        when(memoryStorage.getProcessedConfigsFromTenant(anyString()))
+            .thenReturn(List.of(storedFile, producedFile));
+
+        List<Configuration> result = configurationService.getConfigurationsUnderFolder(folder).toList();
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().anyMatch(c -> c.getPath().equals(producedFile.getPath())),
+            "processor-produced config should be listed under the folder");
     }
 
     @Test

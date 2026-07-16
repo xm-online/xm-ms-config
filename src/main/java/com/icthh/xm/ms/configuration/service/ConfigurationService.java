@@ -178,6 +178,9 @@ public class ConfigurationService extends AbstractConfigService implements Initi
 
     /**
      * Lists all configurations (with content) stored under the given folder (recursively) for the current tenant.
+     * <p>
+     * Reads from the processed store (in-memory files merged with processor output), so files produced by
+     * processors - e.g. feature configurations - and processed content are included, not just the raw sources.
      *
      * @param folder absolute folder path (e.g. {@code /config/tenants/XM/webapp/public/translations/en}); it is
      *               normalized to collapse any {@code ..} segments before matching.
@@ -187,7 +190,7 @@ public class ConfigurationService extends AbstractConfigService implements Initi
         String tenant = getRequiredTenantKeyValue(tenantContextHolder);
         String normalizedFolder = Path.of("/", folder).normalize().toString();
         String prefix = StringUtils.appendIfMissing(normalizedFolder, "/");
-        return memoryStorage.getConfigsFromTenant(tenant).stream()
+        return memoryStorage.getProcessedConfigsFromTenant(tenant).stream()
             .filter(config -> config.getPath().startsWith(prefix))
             .sorted(comparing(Configuration::getPath));
     }
