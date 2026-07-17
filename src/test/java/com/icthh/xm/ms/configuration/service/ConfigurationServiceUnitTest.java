@@ -17,17 +17,23 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static com.icthh.xm.commons.tenant.TenantContextUtils.buildTenant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,6 +57,8 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
     private ApplicationProperties applicationProperties = new ApplicationProperties();
     @Mock
     private ConfigVersionDeserializer configVersionDeserializer;
+    @Mock
+    private ApplicationEventPublisher publisher;
     @Spy
     private VersionCache versionCache = new VersionCache(applicationProperties);
     @Spy
@@ -89,6 +97,24 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
 
         assertEquals(1, result.size());
         assertEquals("content", result.get("path").getContent());
+    }
+
+    @Test
+    public void getConfigurationsUnderFolder_shouldIncludeProcessorProducedConfigs() {
+        String folder = "/config/tenants/TENANT_NAME/webapp/public/translations/en";
+        Configuration storedFile = new Configuration(folder + "/common.json", "{\"a\":1}");
+        // produced by a processor (e.g. feature configuration) - lives only in the processed store
+        Configuration producedFile = new Configuration(folder + "/admin-dashboards.json", "{\"b\":2}");
+
+        // processed store (in-memory + processor output) contains both the stored and the produced file
+        when(memoryStorage.getProcessedConfigsFromTenant(anyString()))
+            .thenReturn(List.of(storedFile, producedFile));
+
+        List<Configuration> result = configurationService.getConfigurationsUnderFolder(folder).toList();
+
+        assertEquals(2, result.size());
+        assertTrue(result.stream().anyMatch(c -> c.getPath().equals(producedFile.getPath())),
+            "processor-produced config should be listed under the folder");
     }
 
     @Test
@@ -264,6 +290,91 @@ public class ConfigurationServiceUnitTest extends AbstractUnitTest {
         verify(memoryStorage).getConfigsFromTenant(eq("TENANT_NAME"));
         verifyNoMoreInteractions(persistenceRepository);
         verifyNoMoreInteractions(memoryStorage);
+    }
+
+    @Test
+    public void updateConfiguration_shouldBeRejectedWhenPersistenceUpdateDisabled() {
+        applicationProperties.setUpdateConfigAvailable(false);
+
+        assertThrows(AccessDeniedException.class,
+            () -> configurationService.updateConfiguration(new Configuration("path", "content")));
+
+        verify(persistenceRepository, never()).saveAll(anyList(), anyMap());
+        verify(memoryStorage, never()).saveConfigs(anyList());
+        verifyNoMoreInteractions(configTopicProducer);
+    }
+
+    @Test
+    public void deleteConfigurations_shouldBeRejectedWhenPersistenceUpdateDisabled() {
+        applicationProperties.setUpdateConfigAvailable(false);
+
+        assertThrows(AccessDeniedException.class,
+            () -> configurationService.deleteConfigurations(List.of("path")));
+
+        verify(persistenceRepository, never()).deleteAll(anyList());
+        verify(memoryStorage, never()).remove(anyList());
+        verifyNoMoreInteractions(configTopicProducer);
+    }
+
+    @Test
+    public void updateConfigurationInMemory_shouldBeRejectedWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+
+        assertThrows(AccessDeniedException.class,
+            () -> configurationService.updateConfigurationInMemory(List.of(new Configuration("path", "content"))));
+
+        verify(memoryStorage, never()).saveConfigs(anyList());
+        verifyNoMoreInteractions(configTopicProducer);
+    }
+
+    @Test
+    public void deleteConfigurationInMemory_shouldBeRejectedWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+
+        assertThrows(AccessDeniedException.class,
+            () -> configurationService.deleteConfigurationInMemory(List.of("path")));
+
+        verify(memoryStorage, never()).remove(anyList());
+        verifyNoMoreInteractions(configTopicProducer);
+    }
+
+    @Test
+    public void updateConfigurationInMemory_shouldAllowJwkCacheUpdateWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+        List<Configuration> jwks = List.of(new Configuration(
+            "/config/tenants/XM/config/idp/clients/Google-jwks-cache.json", "{\"keys\":[]}"));
+        when(memoryStorage.saveConfigs(jwks)).thenReturn(Set.of());
+
+        configurationService.updateConfigurationInMemory(jwks);
+
+        verify(memoryStorage).saveConfigs(jwks);
+    }
+
+    @Test
+    public void updateConfigurationInMemory_shouldRejectMixedJwkAndNonJwkWhenInMemoryUpdateDisabled() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+        List<Configuration> mixed = List.of(
+            new Configuration("/config/tenants/XM/config/idp/clients/Google-jwks-cache.json", "{}"),
+            new Configuration("/config/tenants/XM/other.yml", "a: b"));
+
+        assertThrows(AccessDeniedException.class, () -> configurationService.updateConfigurationInMemory(mixed));
+
+        verify(memoryStorage, never()).saveConfigs(anyList());
+    }
+
+    @Test
+    public void inMemoryUpdateDisabled_shouldStillAllowRefreshFromPersistence() {
+        applicationProperties.setUpdateConfigInMemoryAvailable(false);
+        ConfigVersion version = new ConfigVersion("v1");
+        List<Configuration> data = List.of(new Configuration("path", "content"));
+        when(persistenceRepository.findAll()).thenReturn(new ConfigurationList(version, data));
+        when(memoryStorage.replaceByConfiguration(anyList())).thenReturn(Set.of());
+
+        configurationService.refreshConfiguration();
+
+        verify(persistenceRepository).findAll();
+        verify(memoryStorage).replaceByConfiguration(eq(data));
+        verify(versionCache).addVersion(version);
     }
 
 }
