@@ -20,6 +20,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.icthh.xm.ms.configuration.repository.kafka.InMemoryConfigQueueConsumer.UPDATE_IN_MEMORY;
@@ -128,9 +129,9 @@ public class IdpUpdateConfigIntTest extends AbstractSpringBootTest {
             return null;
         });
         when(jwkFetcher.fetchJwk(eq("https://test1.com/certs")))
-            .thenAnswer(it -> jwkConfigFromTemplate(1));
+            .thenAnswer(it -> Optional.of(jwkConfigFromTemplate(1)));
         when(jwkFetcher.fetchJwk(eq("https://test2.com/certs")))
-            .thenAnswer(it -> jwkConfigFromTemplate(2));
+            .thenAnswer(it -> Optional.of(jwkConfigFromTemplate(2)));
     }
 
     @SneakyThrows
