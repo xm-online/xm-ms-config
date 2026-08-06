@@ -119,6 +119,9 @@ test {
     mkdir("src/test/features")
     include '**/*UnitTest*'
     include '**/*IntTest*'
+    // catch-all: a class named plain *Test (e.g. ApplicationPropertiesFileTest) matched neither
+    // pattern above and was silently never executed
+    include '**/*Test*'
 
     useJUnitPlatform {}
 
