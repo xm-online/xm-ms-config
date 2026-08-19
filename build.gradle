@@ -22,6 +22,7 @@ plugins {
     id "war"
     id "com.github.spotbugs"
     id 'io.spring.dependency-management'
+    id "org.sonarqube"
     //jhipster-needle-gradle-plugins - JHipster will add additional gradle plugins here
 }
 
