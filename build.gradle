@@ -140,6 +140,16 @@ test {
     }
 
 }
+jacocoTestReport {
+    executionData tasks.withType(Test)
+    classDirectories.from = files(sourceSets.main.output.classesDirs)
+    sourceDirectories.from = files(sourceSets.main.java.srcDirs)
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
 
 tasks.register('runCategorizedTests', Test) {
     useJUnitPlatform {
