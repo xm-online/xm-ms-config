@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration scan="true">
+    <conversionRule conversionWord="m" class="com.icthh.xm.commons.logging.pattern.CrlfSafeMessageConverter"/>
+    <conversionRule conversionWord="msg" class="com.icthh.xm.commons.logging.pattern.CrlfSafeMessageConverter"/>
+    <conversionRule conversionWord="message" class="com.icthh.xm.commons.logging.pattern.CrlfSafeMessageConverter"/>
+    <conversionRule conversionWord="X" class="com.icthh.xm.commons.logging.pattern.CrlfSafeMdcConverter"/>
+    <conversionRule conversionWord="mdc" class="com.icthh.xm.commons.logging.pattern.CrlfSafeMdcConverter"/>
     <!--<include resource="org/springframework/boot/logging/logback/base.xml"/>-->
 
 <!-- The FILE and ASYNC appenders are here as examples for a production configuration -->
@@ -25,7 +30,7 @@
     <appender name="STDOUT_SYNC" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>utf-8</charset>
-            <Pattern>%d %-5level [%thread] [%X{rid}] %logger{0}: %replace(%msg){'[\r\n]+', ' '}%n</Pattern>
+            <Pattern>%d %-5level [%thread] [%X{rid}] %logger{0}: %msg%n</Pattern>
         </encoder>
     </appender>
 
