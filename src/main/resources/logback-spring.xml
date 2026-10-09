@@ -25,7 +25,7 @@
     <appender name="STDOUT_SYNC" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <charset>utf-8</charset>
-            <Pattern>%d %-5level [%thread] [%X{rid}] %logger{0}: %msg%n</Pattern>
+            <Pattern>%d %-5level [%thread] [%X{rid}] %logger{0}: %replace(%msg){'[\r\n]+', ' '}%n</Pattern>
         </encoder>
     </appender>
 

@@ -26,9 +26,46 @@ plugins {
     //jhipster-needle-gradle-plugins - JHipster will add additional gradle plugins here
 }
 
+// Security overrides of Spring Boot managed versions (Veracode SCA)
+ext["tomcat.version"] = tomcatVersion
+ext["jackson-bom.version"] = jacksonVersion
+ext["jackson-2-bom.version"] = jackson2Version
+ext["netty.version"] = nettyVersion
+ext["opentelemetry.version"] = opentelemetryVersion
+
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+    // Security overrides of transitive versions (Veracode SCA)
+    dependencies {
+        dependencySet(group: "org.bouncycastle", version: bouncycastleVersion) {
+            entry "bcprov-jdk18on"
+            entry "bcpkix-jdk18on"
+            entry "bcutil-jdk18on"
+        }
+        dependencySet(group: "org.apache.ant", version: antVersion) {
+            entry "ant"
+            entry "ant-launcher"
+            entry "ant-antlr"
+            entry "ant-junit"
+        }
+        dependencySet(group: "org.jline", version: jlineVersion) {
+            entry "jansi"
+            entry "jline-builtins"
+            entry "jline-console"
+            entry "jline-native"
+            entry "jline-reader"
+            entry "jline-style"
+            entry "jline-terminal"
+            entry "jline-terminal-jansi"
+            entry "jline-terminal-jna"
+            entry "jline-terminal-jni"
+        }
+        dependency "org.apache.ivy:ivy:${ivyVersion}"
+        dependency "com.github.luben:zstd-jni:${zstdJniVersion}"
+        dependency "at.yawk.lz4:lz4-java:${lz4JavaVersion}"
+        dependency "org.springframework.retry:spring-retry:${springRetryVersion}"
     }
 }
 
