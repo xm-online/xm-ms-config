@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.AsyncHandlerInterceptor;
 
 import java.util.List;
 
@@ -17,7 +17,7 @@ import static org.apache.commons.lang3.ObjectUtils.firstNonNull;
 @Component
 @XmRelatedComponent
 @RequiredArgsConstructor
-public class AdminApiAccessInterceptor implements HandlerInterceptor {
+public class AdminApiAccessInterceptor implements AsyncHandlerInterceptor {
 
     private final ApplicationProperties applicationProperties;
     private final TenantContextHolder tenantContextHolder;
