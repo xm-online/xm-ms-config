@@ -116,6 +116,7 @@ application:
             enabled: false
             private-key:
             pass-phrase:
+            known-hosts:
         uri:
         login:
         password:
