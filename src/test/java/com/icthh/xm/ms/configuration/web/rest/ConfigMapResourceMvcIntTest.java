@@ -4,7 +4,6 @@ import tools.jackson.databind.json.JsonMapper;
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.i18n.error.web.ExceptionTranslator;
 import com.icthh.xm.ms.configuration.AbstractSpringBootTest;
-import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,15 +17,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.refEq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -103,23 +101,11 @@ public class ConfigMapResourceMvcIntTest extends AbstractSpringBootTest {
 
     @Test
     @SneakyThrows
-    public void updateConfigMapWithCommit() {
-        restTaskMockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "someHash").content(toJson(new Configuration("somePath", "some content")))
+    public void updateConfigMapIsNotAvailable() {
+        restTaskMockMvc.perform(put("/api/private/config").content(toJson(new Configuration("somePath", "some content")))
                 .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk());
-        verify(configurationService).updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("someHash"));
-    }
-
-    @Test
-    @SneakyThrows
-    public void updateConfigMap_returnsConflictOnConcurrentModification() {
-        doThrow(new ConcurrentConfigModificationException()).when(configurationService)
-            .updateConfiguration(refEq(new Configuration("somePath", "some content")), eq("staleHash"));
-
-        restTaskMockMvc.perform(put("/api/private/config?oldConfigHash={oldConfigHash}", "staleHash")
-                .content(toJson(new Configuration("somePath", "some content")))
-                .contentType(MediaType.APPLICATION_JSON))
-            .andExpect(status().isConflict());
+            .andExpect(result -> assertInstanceOf(NoHandlerFoundException.class, result.getResolvedException()));
+        verifyNoInteractions(configurationService);
     }
 
     private String toJson(Object object) {
