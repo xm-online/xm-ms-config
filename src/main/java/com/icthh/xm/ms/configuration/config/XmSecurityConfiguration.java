@@ -31,7 +31,6 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
                 .requestMatchers("/api/private/config_map/pattern").permitAll()
                 .requestMatchers("/api/profile/webapp/settings-public.yml").permitAll()
                 .requestMatchers("/api/profile/webapp/public/**").permitAll()
-                .requestMatchers("/api/configs_hash").permitAll()
                 .requestMatchers("/api/profile-info").permitAll()
                 .requestMatchers("/api/token_key").permitAll()
                 .requestMatchers("/v3/api-docs/**").hasAuthority(RoleConstant.SUPER_ADMIN)
