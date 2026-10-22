@@ -2,13 +2,10 @@ package com.icthh.xm.ms.configuration.web.rest;
 
 import static com.icthh.xm.ms.configuration.config.Constants.API_PREFIX;
 import static com.icthh.xm.ms.configuration.config.Constants.PRIVATE;
-import static com.icthh.xm.ms.configuration.utils.RequestContextUtils.OLD_CONFIG_HASH;
-import static org.springframework.http.HttpStatus.CONFLICT;
 
 
 import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.commons.logging.LoggingAspectConfig;
-import com.icthh.xm.ms.configuration.service.ConcurrentConfigModificationException;
 import com.icthh.xm.ms.configuration.service.ConfigurationService;
 import com.icthh.xm.ms.configuration.utils.ConfigPathUtils;
 import com.icthh.xm.ms.configuration.web.rest.dto.ConfigPatternPathDTO;
@@ -18,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -52,19 +48,6 @@ public class ConfigMapResource {
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody ConfigPatternPathDTO configPatternPathDTO) {
         return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPatternPaths()));
-    }
-
-    @Deprecated(forRemoval = true)
-    @PutMapping(value = "/config")
-    public ResponseEntity<Void> updateConfiguration(@RequestBody Configuration configuration,
-                                                    @RequestParam(name = OLD_CONFIG_HASH, required = false) String oldConfigHash) {
-        try {
-            configurationService.updateConfiguration(configuration, oldConfigHash);
-        } catch (ConcurrentConfigModificationException e) {
-            log.warn("Error update configuration", e);
-            return ResponseEntity.status(CONFLICT).build();
-        }
-        return ResponseEntity.ok().build();
     }
 
     @Data

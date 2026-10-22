@@ -7,6 +7,7 @@ import jakarta.annotation.PreDestroy;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,11 +17,16 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.sshd.client.config.hosts.KnownHostEntry;
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.eclipse.jgit.api.TransportConfigCallback;
 import org.eclipse.jgit.transport.CredentialsProvider;
@@ -68,10 +74,40 @@ public class SshTransportConfigCallback implements TransportConfigCallback {
                 @Override
                 public boolean accept(String connectAddress, InetSocketAddress remoteAddress,
                                       PublicKey serverKey, Configuration config, CredentialsProvider provider) {
-                    return sshProperties.isAcceptUnknownHost();
+                    return acceptServerKey(remoteAddress, serverKey);
                 }
             })
             .build(new JGitKeyCache());
+    }
+
+    boolean acceptServerKey(InetSocketAddress remoteAddress, PublicKey serverKey) {
+        if (StringUtils.isBlank(sshProperties.getKnownHosts())) {
+            return sshProperties.isAcceptUnknownHost();
+        }
+        return isKnownHostKey(remoteAddress, serverKey);
+    }
+
+    @SneakyThrows
+    private boolean isKnownHostKey(InetSocketAddress remoteAddress, PublicKey serverKey) {
+        var knownHosts = KnownHostEntry.readKnownHostEntries(new StringReader(sshProperties.getKnownHosts()), true);
+        for (KnownHostEntry knownHost : knownHosts) {
+            if (isHostMatch(knownHost, remoteAddress) && isSameKey(knownHost, serverKey)) {
+                return true;
+            }
+        }
+        log.error("Git server key for {} is not in known hosts", remoteAddress);
+        return false;
+    }
+
+    private static boolean isHostMatch(KnownHostEntry knownHost, InetSocketAddress address) {
+        return knownHost.isHostMatch(address.getHostString(), address.getPort())
+            || !address.isUnresolved() && knownHost.isHostMatch(address.getAddress().getHostAddress(), address.getPort());
+    }
+
+    @SneakyThrows
+    private static boolean isSameKey(KnownHostEntry knownHost, PublicKey serverKey) {
+        PublicKey knownKey = knownHost.getKeyEntry().resolvePublicKey(null, Map.of(), PublicKeyEntryResolver.IGNORING);
+        return KeyUtils.compareKeys(knownKey, serverKey);
     }
 
     @SneakyThrows

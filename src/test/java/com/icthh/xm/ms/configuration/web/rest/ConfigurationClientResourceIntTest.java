@@ -547,5 +547,14 @@ public class ConfigurationClientResourceIntTest extends AbstractSpringBootTest {
                .andExpect(status().isForbidden());
     }
 
+    @Test
+    @SneakyThrows
+    @WithMockUser(authorities = {"ROLE_USER"})
+    public void userWithoutPrivilegeCanNotGetConfigurationsHashSum() {
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_hash"))
+               .andExpect(status().isForbidden());
+        mockMvc.perform(get(API_PREFIX + PROFILE + "/configs_git_hash"))
+               .andExpect(status().isForbidden());
+    }
 
 }

@@ -88,12 +88,6 @@ jhipster:
     http:
         cache: # Used by the CachingHttpHeadersFilter
             timeToLiveInDays: 1461
-    security:
-        client-authorization:
-            access-token-uri: http://uaa/oauth/token
-            token-service-id: uaa
-            client-id: internal
-            client-secret: internal
     logging:
         use-json-format: false # By default, logs are not in Json format
         logstash: # Forward logs to logstash over a socket, used by LoggingConfiguration
@@ -116,6 +110,7 @@ application:
             enabled: false
             private-key:
             pass-phrase:
+            known-hosts:
         uri:
         login:
         password:

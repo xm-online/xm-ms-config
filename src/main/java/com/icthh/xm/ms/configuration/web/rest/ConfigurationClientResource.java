@@ -179,12 +179,16 @@ public class ConfigurationClientResource {
 
     @GetMapping(value = PROFILE + "/configs_git_hash")
     @LoggingAspectConfig(resultDetails = false)
+    @PreAuthorize("hasPermission({}, 'CONFIG.CLIENT.GET_HASH_SUM')")
+    @PrivilegeDescription("Privilege to get persisted configuration hash sum for client")
     public ResponseEntity<ConfigurationsHashSumDto> getPersistedConfigurationsHashSum() {
         return ResponseEntity.ok(configurationService.findPersistedConfigurationsHashSum());
     }
 
     @GetMapping(value = PROFILE + "/configs_hash")
     @LoggingAspectConfig(resultDetails = false)
+    @PreAuthorize("hasPermission({}, 'CONFIG.CLIENT.GET_HASH_SUM')")
+    @PrivilegeDescription("Privilege to get configuration hash sum for client")
     public ResponseEntity<ConfigurationsHashSumDto> getConfigurationsHashSum() {
         return ResponseEntity.ok(configurationService.findConfigurationsHashSum());
     }
