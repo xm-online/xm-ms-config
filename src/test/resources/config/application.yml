@@ -95,7 +95,7 @@ xm-config:
 
 application:
     super-tenants-list: XM, MANAGER
-    tenant-ignored-path-list: /api/token_key, /api/private/config_map
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/v2/config_map, /api/private/v2/config_map/pattern
     env-config-externalization-enabled: false
     kafka-enabled: false
     git:

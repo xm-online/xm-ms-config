@@ -25,6 +25,10 @@ public class ApplicationProperties {
     private final Retry configQueueRetry = new Retry();
 
     private Boolean adminApiRestrictionEnabled;
+    /**
+     * Base64 Ed25519 public key (X.509): checks the token of /api/private/v2, the services sign it with the private key.
+     */
+    private String configPublicKey;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private List<String> binaryFileTypes = Collections.emptyList();

@@ -16,6 +16,46 @@ To start your application in the dev profile, simply run:
 
 For further instructions on how to develop with JHipster, have a look at [Using JHipster in development][].
 
+## Keys for the private config API
+
+Microservices read their configuration from `/api/private/v2/config_map` with a token signed by an Ed25519 key.
+One key pair is used for the whole environment:
+
+- the public key goes to xm-ms-config: `application.config-public-key`;
+- the private key goes to every other microservice: `application.config-private-key`.
+
+Both keys are base64 of DER: the private key in PKCS#8, the public key in X.509.
+
+Generate them with OpenSSL 3 (the `openssl` shipped with macOS is LibreSSL and has no ed25519,
+use `brew install openssl` and `$(brew --prefix openssl)/bin/openssl`):
+
+    openssl genpkey -algorithm ed25519 -outform DER -out private.der
+    echo "application.config-private-key=$(base64 < private.der | tr -d '\n')"
+    echo "application.config-public-key=$(openssl pkey -inform DER -in private.der -pubout -outform DER | base64 | tr -d '\n')"
+    rm private.der
+
+Or with JDK 15+, without OpenSSL:
+
+    cat > KeyGen.java <<'EOF'
+    import java.security.KeyPairGenerator;
+    import java.util.Base64;
+
+    public class KeyGen {
+        public static void main(String[] args) throws Exception {
+            var pair = KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+            System.out.println("application.config-private-key=" + Base64.getEncoder().encodeToString(pair.getPrivate().getEncoded()));
+            System.out.println("application.config-public-key=" + Base64.getEncoder().encodeToString(pair.getPublic().getEncoded()));
+        }
+    }
+    EOF
+    java KeyGen.java && rm KeyGen.java
+
+The private key starts with `MC4CAQAwBQYDK2Vw`, the public key with `MCowBQYDK2Vw`.
+Keep the private key in a secret, never in the config repository.
+
+With the profile `migration` xm-ms-config also serves the old `/api/private/config_map` without a token,
+and microservices with the profile `migration` read the old path and need no private key.
+
 ## Building for production
 
 ### Packaging as jar
