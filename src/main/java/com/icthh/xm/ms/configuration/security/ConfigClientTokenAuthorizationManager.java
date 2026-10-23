@@ -1,6 +1,5 @@
 package com.icthh.xm.ms.configuration.security;
 
-import com.icthh.xm.ms.configuration.config.ApplicationProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -12,7 +11,6 @@ import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
-import org.springframework.stereotype.Component;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
@@ -26,7 +24,6 @@ import java.util.function.Supplier;
  * so the nodes do not share a state.
  */
 @Slf4j
-@Component
 public class ConfigClientTokenAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
     static final String TOKEN_HEADER = "X-Config-Token";
@@ -35,8 +32,8 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
 
     private final PublicKey publicKey;
 
-    public ConfigClientTokenAuthorizationManager(ApplicationProperties applicationProperties) {
-        this.publicKey = readPublicKey(applicationProperties.getConfigPublicKey());
+    public ConfigClientTokenAuthorizationManager(boolean migration, String publicKey) {
+        this.publicKey = readPublicKey(migration, publicKey);
     }
 
     @Override
@@ -65,10 +62,13 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
     }
 
     @SneakyThrows
-    private static PublicKey readPublicKey(String publicKey) {
-        if (StringUtils.isBlank(publicKey)) {
-            log.error("application.config-public-key is not set: /api/private/v2 rejects every request");
+    private static PublicKey readPublicKey(boolean migration, String publicKey) {
+        if (StringUtils.isBlank(publicKey) && migration) {
+            log.warn("application.config-public-key is not set: /api/private/v2 rejects every request");
             return null;
+        }
+        if (StringUtils.isBlank(publicKey)) {
+            throw new ConfigPublicKeyNotSetException();
         }
         byte[] encoded = Base64.getDecoder().decode(publicKey.trim());
         return KeyFactory.getInstance("Ed25519").generatePublic(new X509EncodedKeySpec(encoded));

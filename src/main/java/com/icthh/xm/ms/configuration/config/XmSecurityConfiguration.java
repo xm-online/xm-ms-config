@@ -1,6 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
-import static com.icthh.xm.ms.configuration.security.OldPrivateApiAccessConfiguration.OLD_PRIVATE_API_ACCESS;
+import static com.icthh.xm.ms.configuration.security.PrivateApiAccessConfiguration.OLD_PRIVATE_API_ACCESS;
 
 import com.icthh.xm.commons.permission.access.XmPermissionEvaluator;
 import com.icthh.xm.commons.permission.constants.RoleConstant;

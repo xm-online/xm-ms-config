@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -33,9 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test keys only: the service signs with PRIVATE_KEY, xm-ms-config checks with the public key of the same pair.
+ * Test keys only: the service signs with PRIVATE_KEY, xm-ms-config checks with the public key of the same pair
+ * from the test application.yml.
  */
-@TestPropertySource(properties = "application.config-public-key=MCowBQYDK2VwAyEAxwAKZqwOmxEOT4qD/bAy6vT5pGv45C20kQ21wg5SdA0=")
 public class ConfigMapPrivateApiSecurityIntTest extends AbstractSpringBootTest {
 
     static final String TOKEN_HEADER = "X-Config-Token";
