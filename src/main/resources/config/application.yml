@@ -174,8 +174,11 @@ tenant.reject-suspended: false
 
 application:
     adminApiRestrictionEnabled: false
+    # Base64 Ed25519 public key (X.509 DER) for /api/private/v2.
+    # The services sign the token with the private key application.config-private-key.
+    config-public-key:
     super-tenants-list: XM, MANAGER
-    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config_map/pattern, /v3/api-docs
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config_map/pattern, /api/private/v2/config_map, /api/private/v2/config_map/pattern, /v3/api-docs
     kafka-enabled: true
     kafka-system-queue: system_queue
     kafka-in-memory-config-topic: in_memory_config_topic
