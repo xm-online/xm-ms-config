@@ -183,6 +183,8 @@ application:
     versionCacheMaxSize: 100
     update-config-available: true
     update-config-in-memory-available: true
+    tenant-config-externalization:
+        log-values: true # set false to hide old/new values (may be secrets) in logs
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds
