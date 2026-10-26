@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -37,6 +38,12 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
     private final ObjectMapper mapper = YAMLMapper.builder().build();
     private static final String TENANT_NAME = "tenantName";
     private final Map<String, String> env = getenv();
+    private final boolean logValues;
+
+    public TenantConfigExternalization(
+        @Value("${application.tenant-config-externalization.log-values:true}") boolean logValues) {
+        this.logValues = logValues;
+    }
 
     @Override
     public boolean isSupported(Configuration configuration) {
@@ -72,7 +79,11 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
             String envVarKey = path + "_" + key;
             if (isSimpleValueType(oldValue) && isEnvExactlyPresent(envVarKey)) {
                 Object envValue = getEnv(envVarKey);
-                log.info("{} it's simple type |{}|, and override by env variable |{}|", envVarKey, oldValue, envValue);
+                if (logValues) {
+                    log.info("{} it's simple type |{}|, and override by env variable |{}|", envVarKey, oldValue, envValue);
+                } else {
+                    log.info("{} it's simple type, and override by env variable (values hidden)", envVarKey);
+                }
                 entry.setValue(envValue);
                 continue;
             }
@@ -88,7 +99,7 @@ public class TenantConfigExternalization implements TenantConfigurationProcessor
                 processConfigMap(envVarKey, (Map<String, Object>) oldValue);
                 continue;
             } else if (isEnvExactlyPresent(envVarKey)) {
-                log.error("Unsupported type of config value {}:{}", envVarKey, oldValue.getClass());
+                log.error("Unsupported type of config value {}:{}", envVarKey, oldValue.getClass().getName());
             }
 
             log.warn("Env variables not overridden any configs {}", getEnvKeysStartBy(envVarKey));
