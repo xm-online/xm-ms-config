@@ -3,7 +3,6 @@ package com.icthh.xm.ms.configuration.config;
 import static com.icthh.xm.ms.configuration.security.PrivateApiAccessConfiguration.OLD_PRIVATE_API_ACCESS;
 
 import com.icthh.xm.commons.permission.access.XmPermissionEvaluator;
-import com.icthh.xm.commons.security.RoleConstant;
 import com.icthh.xm.commons.security.XmPermissionCheckService;
 import com.icthh.xm.commons.security.jwt.TokenProvider;
 import com.icthh.xm.commons.security.spring.config.SecurityConfiguration;
@@ -25,7 +24,6 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
 
     private final AuthorizationManager<RequestAuthorizationContext> oldPrivateApiAccess;
     private final ConfigClientTokenAuthorizationManager configClientToken;
-    private final boolean apiDocsPrivilegeCheck;
 
     public XmSecurityConfiguration(TokenProvider tokenProvider,
                                    @Value("${jhipster.security.content-security-policy}")
@@ -33,13 +31,10 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
                                    @Qualifier(OLD_PRIVATE_API_ACCESS)
                                    AuthorizationManager<RequestAuthorizationContext> oldPrivateApiAccess,
                                    ConfigClientTokenAuthorizationManager configClientToken,
-                                   XmPermissionCheckService permissionCheckService,
-                                   @Value("${application.api-docs.privilege-check:true}")
-                                   boolean apiDocsPrivilegeCheck) {
+                                   XmPermissionCheckService permissionCheckService) {
         super(tokenProvider, contentSecurityPolicy, permissionCheckService);
         this.oldPrivateApiAccess = oldPrivateApiAccess;
         this.configClientToken = configClientToken;
-        this.apiDocsPrivilegeCheck = apiDocsPrivilegeCheck;
     }
 
     @Override
@@ -55,11 +50,6 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
                 .requestMatchers("/api/profile/webapp/public/**").permitAll()
                 .requestMatchers("/api/token_key").permitAll()
         );
-        if (!apiDocsPrivilegeCheck) {
-            http.authorizeHttpRequests(auth ->
-                auth.requestMatchers("/v3/api-docs/**").hasAuthority(RoleConstant.SUPER_ADMIN)
-            );
-        }
         return super.applyUrlSecurity(http);
     }
 

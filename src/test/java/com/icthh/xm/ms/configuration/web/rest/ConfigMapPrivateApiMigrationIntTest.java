@@ -56,10 +56,12 @@ public class ConfigMapPrivateApiMigrationIntTest extends AbstractSpringBootTest 
 
     @Test
     @SneakyThrows
-    public void testApiDocsRequireSuperAdmin() {
+    public void testApiDocsRequireSuperAdminOrAdmin() {
         mockMvc.perform(get("/v3/api-docs")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/v3/api-docs").with(user("admin").authorities(new SimpleGrantedAuthority("ADMIN"))))
+        mockMvc.perform(get("/v3/api-docs").with(user("user").authorities(new SimpleGrantedAuthority("ROLE_USER"))))
             .andExpect(status().isForbidden());
+        mockMvc.perform(get("/v3/api-docs").with(user("admin").authorities(new SimpleGrantedAuthority("ADMIN"))))
+            .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
         mockMvc.perform(get("/v3/api-docs").with(user("super-admin").authorities(new SimpleGrantedAuthority("SUPER-ADMIN"))))
             .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
     }
