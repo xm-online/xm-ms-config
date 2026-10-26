@@ -3,7 +3,7 @@ package com.icthh.xm.ms.configuration.config;
 import static com.icthh.xm.ms.configuration.security.PrivateApiAccessConfiguration.OLD_PRIVATE_API_ACCESS;
 
 import com.icthh.xm.commons.permission.access.XmPermissionEvaluator;
-import com.icthh.xm.commons.permission.constants.RoleConstant;
+import com.icthh.xm.commons.security.XmPermissionCheckService;
 import com.icthh.xm.commons.security.jwt.TokenProvider;
 import com.icthh.xm.commons.security.spring.config.SecurityConfiguration;
 import com.icthh.xm.ms.configuration.security.ConfigClientTokenAuthorizationManager;
@@ -30,8 +30,9 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
                                    String contentSecurityPolicy,
                                    @Qualifier(OLD_PRIVATE_API_ACCESS)
                                    AuthorizationManager<RequestAuthorizationContext> oldPrivateApiAccess,
-                                   ConfigClientTokenAuthorizationManager configClientToken) {
-        super(tokenProvider, contentSecurityPolicy);
+                                   ConfigClientTokenAuthorizationManager configClientToken,
+                                   XmPermissionCheckService permissionCheckService) {
+        super(tokenProvider, contentSecurityPolicy, permissionCheckService);
         this.oldPrivateApiAccess = oldPrivateApiAccess;
         this.configClientToken = configClientToken;
     }
@@ -47,9 +48,7 @@ public class XmSecurityConfiguration extends SecurityConfiguration {
                 .requestMatchers("/api/private/v2/config_map/pattern").access(configClientToken)
                 .requestMatchers("/api/profile/webapp/settings-public.yml").permitAll()
                 .requestMatchers("/api/profile/webapp/public/**").permitAll()
-                .requestMatchers("/api/profile-info").permitAll()
                 .requestMatchers("/api/token_key").permitAll()
-                .requestMatchers("/v3/api-docs/**").hasAuthority(RoleConstant.SUPER_ADMIN)
         );
         return super.applyUrlSecurity(http);
     }

@@ -3,6 +3,7 @@ package com.icthh.xm.ms.configuration.config;
 import static java.util.Collections.emptySet;
 
 import com.icthh.xm.commons.lep.TenantScriptStorage;
+import com.icthh.xm.commons.security.RoleConstant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,7 @@ public class ApplicationProperties {
      * Base64 Ed25519 public key (X.509): checks the token of /api/private/v2, the services sign it with the private key.
      */
     private String configPublicKey;
+    private String configPrivateKey;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private List<String> binaryFileTypes = Collections.emptyList();
@@ -137,4 +139,38 @@ public class ApplicationProperties {
     private List<String> excludeConfigPatterns;
     private Boolean roleNameProcessorDisabled;
 
+    private final Prometheus prometheus = new Prometheus();
+    private final Management management = new Management();
+    private final XmAutoConfigurationFilter xmAutoConfigurationFilter = new XmAutoConfigurationFilter();
+
+    @Getter
+    @Setter
+    public static class Prometheus {
+        private boolean isPublic;
+    }
+
+    @Getter
+    @Setter
+    public static class Management {
+        private final Access access = new Access();
+        private final Info info = new Info();
+
+        @Getter
+        @Setter
+        public static class Access {
+            private String role = RoleConstant.SYSTEM_ADMIN;
+        }
+
+        @Getter
+        @Setter
+        public static class Info {
+            private boolean isPublic;
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class XmAutoConfigurationFilter {
+        private boolean disabled;
+    }
 }

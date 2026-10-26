@@ -47,7 +47,6 @@ management:
     endpoint:
         health:
             show-details: when_authorized
-            roles: 'SUPER-ADMIN'
             probes:
                 enabled: true
             group:
