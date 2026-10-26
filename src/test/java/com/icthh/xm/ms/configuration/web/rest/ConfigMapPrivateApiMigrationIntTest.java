@@ -24,9 +24,6 @@ import static org.springframework.security.test.web.servlet.setup.SecurityMockMv
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * With the profile migration the old private API works without authorization, as before.
- */
 @ActiveProfiles("migration")
 public class ConfigMapPrivateApiMigrationIntTest extends AbstractSpringBootTest {
 

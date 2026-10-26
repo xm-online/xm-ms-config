@@ -1,5 +1,8 @@
 package com.icthh.xm.ms.configuration.security;
 
+import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.AUDIENCE;
+import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.TOKEN_HEADER;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -19,17 +22,10 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.function.Supplier;
 
-/**
- * Allows the private API /api/private/v2 for a service with the token signed by its private key
- * (ConfigPrivateApi of xm-commons). Every node checks the token with application.config-public-key,
- * so the nodes do not share a state.
- */
 @Slf4j
 public class ConfigClientTokenAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-    static final String TOKEN_HEADER = "X-Config-Token";
-    static final String AUDIENCE = "config";
-    static final long CLOCK_SKEW_SECONDS = 30;
+    private static final long CLOCK_SKEW_SECONDS = 30;
 
     private final PublicKey publicKey;
 
@@ -64,12 +60,12 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
 
     @SneakyThrows
     private static PublicKey readPublicKey(boolean migration, String publicKey) {
-        if (StringUtils.isBlank(publicKey) && migration) {
+        if (StringUtils.isBlank(publicKey)) {
+            if (!migration) {
+                throw new ConfigPublicKeyNotSetException();
+            }
             log.warn("application.config-public-key is not set: /api/private/v2 rejects every request");
             return null;
-        }
-        if (StringUtils.isBlank(publicKey)) {
-            throw new ConfigPublicKeyNotSetException();
         }
         try {
             byte[] encoded = Base64.getDecoder().decode(publicKey.trim());

@@ -3,16 +3,13 @@ package com.icthh.xm.ms.configuration.security;
 import org.springframework.boot.diagnostics.AbstractFailureAnalyzer;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 
-/**
- * Explains on startup how to run xm-ms-config without application.config-public-key and how to set it.
- */
 public class ConfigPublicKeyNotSetFailureAnalyzer extends AbstractFailureAnalyzer<ConfigPublicKeyNotSetException> {
 
-    static final String DESCRIPTION = """
+    private static final String DESCRIPTION = """
         application.config-public-key is not set: xm-ms-config checks the requests to /api/private/v2 \
         with this public key.""";
 
-    static final String ACTION = """
+    private static final String ACTION = """
         1) Local development without keys: run with the profile migration \
         (the microservices with the profile migration too), by one of:
         - gradlew: `./gradlew bootRun --args='--spring.profiles.active=dev,migration'`;

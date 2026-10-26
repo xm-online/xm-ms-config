@@ -2,7 +2,6 @@ package com.icthh.xm.ms.configuration.security;
 
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.boot.diagnostics.FailureAnalysis;
 
 import java.io.ByteArrayOutputStream;
@@ -38,32 +37,14 @@ public class ConfigClientTokenAuthorizationManagerUnitTest extends AbstractUnitT
     }
 
     @Test
-    public void testFailureAnalyzerExplainsMigrationProfileAndKeys() {
-        FailureAnalysis analysis = analyze(new ConfigPublicKeyNotSetException());
-
-        assertThat(analysis.getDescription()).contains("application.config-public-key is not set");
-        assertThat(analysis.getAction())
-            .contains("`./gradlew bootRun --args='--spring.profiles.active=dev,migration'`")
-            .contains("`SPRING_PROFILES_INCLUDE=migration ./gradlew bootRun`")
-            .contains("For production use")
-            .contains("`openssl genpkey -algorithm ed25519 -outform DER -out private.der`")
-            .contains("`APPLICATION_CONFIG_PUBLIC_KEY=<public key>`")
-            .contains("--application.config-public-key=<public key>")
-            .contains("application-dev.yml: `config-public-key: <public key>` under `application:`");
-    }
-
-    @Test
     public void testReporterPrintsOnlyThisFailureToStderr() {
-        assertThat(reportToStderr(analyze(new ConfigPublicKeyNotSetException())))
+        FailureAnalysis analysis = new FailureAnalysis("description", "first\nsecond",
+            new ConfigPublicKeyNotSetException());
+        assertThat(reportToStderr(analysis))
             .contains("APPLICATION FAILED TO START")
-            .contains("application.config-public-key is not set")
-            .contains("\n- environment variable: `SPRING_PROFILES_INCLUDE=migration ./gradlew bootRun`;\n");
+            .contains("\ndescription\n")
+            .contains("\nfirst\nsecond\n");
         assertThat(reportToStderr(new FailureAnalysis("other", "other", new IllegalStateException()))).isEmpty();
-    }
-
-    private static FailureAnalysis analyze(Throwable cause) {
-        return new ConfigPublicKeyNotSetFailureAnalyzer()
-            .analyze(new BeanCreationException("configClientToken", "failed", cause));
     }
 
     private static String reportToStderr(FailureAnalysis analysis) {

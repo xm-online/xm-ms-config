@@ -23,6 +23,8 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 
+import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.AUDIENCE;
+import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.TOKEN_HEADER;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -31,13 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Test keys only: the service signs with PRIVATE_KEY, xm-ms-config checks with the public key of the same pair
- * from the test application.yml.
- */
 public class ConfigMapPrivateApiSecurityIntTest extends AbstractSpringBootTest {
 
-    static final String TOKEN_HEADER = "X-Config-Token";
     private static final String PRIVATE_KEY = "MC4CAQAwBQYDK2VwBCIEIOIvuCuM2px95QXJIqbjhd2ZvQjXq5C83PtrriD4d7ar";
     private static final String OTHER_PRIVATE_KEY = "MC4CAQAwBQYDK2VwBCIEIPoQHdQ9DJDQocfwvUsh2lv3SX7sdVA+SqDFbz2cLs9p";
 
@@ -102,11 +99,11 @@ public class ConfigMapPrivateApiSecurityIntTest extends AbstractSpringBootTest {
         mockMvc.perform(request).andExpect(status().is4xxClientError());
     }
 
-    static JwtBuilder token(String privateKey) {
-        return token(privateKey, "config");
+    private static JwtBuilder token(String privateKey) {
+        return token(privateKey, AUDIENCE);
     }
 
-    static JwtBuilder token(String privateKey, String audience) {
+    private static JwtBuilder token(String privateKey, String audience) {
         Instant now = Instant.now();
         return Jwts.builder()
             .issuer("entity")
