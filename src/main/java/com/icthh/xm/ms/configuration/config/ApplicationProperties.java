@@ -140,6 +140,7 @@ public class ApplicationProperties {
     private Boolean roleNameProcessorDisabled;
 
     private final ApiDocs apiDocs = new ApiDocs();
+    private final TenantConfigExternalization tenantConfigExternalization = new TenantConfigExternalization();
     private final Prometheus prometheus = new Prometheus();
     private final Management management = new Management();
     private final XmAutoConfigurationFilter xmAutoConfigurationFilter = new XmAutoConfigurationFilter();
@@ -148,6 +149,12 @@ public class ApplicationProperties {
     @Setter
     public static class ApiDocs {
         private boolean privilegeCheck = true;
+    }
+
+    @Getter
+    @Setter
+    public static class TenantConfigExternalization {
+        private boolean logValues;
     }
 
     @Getter
