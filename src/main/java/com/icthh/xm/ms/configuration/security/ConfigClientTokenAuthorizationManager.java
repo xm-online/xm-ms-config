@@ -2,6 +2,7 @@ package com.icthh.xm.ms.configuration.security;
 
 import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.AUDIENCE;
 import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.TOKEN_HEADER;
+import static com.icthh.xm.commons.config.client.repository.ConfigPrivateApi.TOKEN_TTL;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -19,7 +20,9 @@ import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 import java.util.function.Supplier;
 
 @Slf4j
@@ -51,11 +54,16 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-            return claims.getExpiration() != null;
+            return isExpirationAllowed(claims.getExpiration());
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("Config client token is rejected: {}", e.getMessage());
             return false;
         }
+    }
+
+    private static boolean isExpirationAllowed(Date expiration) {
+        return expiration != null
+            && !expiration.toInstant().isAfter(Instant.now().plus(TOKEN_TTL).plusSeconds(CLOCK_SKEW_SECONDS));
     }
 
     @SneakyThrows
