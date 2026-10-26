@@ -188,6 +188,8 @@ application:
     update-config-in-memory-available: true
     api-docs:
         privilege-check: true
+    tenant-config-externalization:
+        log-values: true # set false to hide old/new values (may be secrets) in logs
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds

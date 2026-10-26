@@ -7,8 +7,13 @@ import com.icthh.xm.commons.config.domain.Configuration;
 import com.icthh.xm.ms.configuration.AbstractUnitTest;
 import com.icthh.xm.ms.configuration.web.rest.TestUtil;
 import lombok.SneakyThrows;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,6 +29,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(SystemStubsExtension.class)
 public class TenantConfigExternalizationUnitTest extends AbstractUnitTest {
@@ -119,10 +126,42 @@ public class TenantConfigExternalizationUnitTest extends AbstractUnitTest {
     }
 
 
+    @Test
+    public void valuesAreLoggedByDefaultFlag() {
+        String secret = "secret-" + UUID.randomUUID();
+        List<String> logs = overrideAndCaptureLogs(true, secret);
+        assertTrue(logs.stream().anyMatch(it -> it.contains(secret)));
+    }
+
+    @Test
+    public void valuesAreNotLoggedWhenDisabled() {
+        String secret = "secret-" + UUID.randomUUID();
+        List<String> logs = overrideAndCaptureLogs(false, secret);
+        assertTrue(logs.stream().anyMatch(it -> it.contains("XM_clientCabinetBaseUrl")));
+        assertFalse(logs.stream().anyMatch(it -> it.contains(secret)));
+    }
+
+    @SneakyThrows
+    private List<String> overrideAndCaptureLogs(boolean logValues, String secret) {
+        environmentVariables.set("XM_clientCabinetBaseUrl", secret);
+        Logger logger = (Logger) LoggerFactory.getLogger(TenantConfigExternalization.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", TestUtil.loadFile("tenant-config.yml"));
+            new TenantConfigExternalization(logValues)
+                .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
+            return appender.list.stream().map(ILoggingEvent::getFormattedMessage).collect(java.util.stream.Collectors.toList());
+        } finally {
+            logger.detachAppender(appender);
+        }
+    }
+
     @SneakyThrows
     private Object overrideParameterAndReturnResult(List<String> path) {
         Configuration configuration = new Configuration("/config/tenants/XM/tenant-config.yml", TestUtil.loadFile("tenant-config.yml"));
-        List<Configuration> processedConfigurations = new TenantConfigExternalization()
+        List<Configuration> processedConfigurations = new TenantConfigExternalization(true)
             .processConfiguration(configuration, emptyMap(), emptyMap(), new HashSet<>(), new HashMap<>());
         Configuration processedConfiguration = configuration;
         if (!processedConfigurations.isEmpty()) {
