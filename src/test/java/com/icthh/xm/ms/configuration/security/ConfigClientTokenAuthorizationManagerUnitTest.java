@@ -23,6 +23,16 @@ public class ConfigClientTokenAuthorizationManagerUnitTest extends AbstractUnitT
     }
 
     @Test
+    public void testInvalidPublicKeyFailsWithPropertyName() {
+        assertThatThrownBy(() -> new ConfigClientTokenAuthorizationManager(false, "not-a-key"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("application.config-public-key");
+        assertThatThrownBy(() -> new ConfigClientTokenAuthorizationManager(true, "bm90LWEta2V5"))
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("application.config-public-key");
+    }
+
+    @Test
     public void testMissingPublicKeyIsAllowedWithMigration() {
         assertThatNoException().isThrownBy(() -> new ConfigClientTokenAuthorizationManager(true, null));
     }

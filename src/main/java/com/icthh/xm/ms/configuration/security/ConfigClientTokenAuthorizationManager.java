@@ -14,6 +14,7 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.function.Supplier;
@@ -70,7 +71,12 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
         if (StringUtils.isBlank(publicKey)) {
             throw new ConfigPublicKeyNotSetException();
         }
-        byte[] encoded = Base64.getDecoder().decode(publicKey.trim());
-        return KeyFactory.getInstance("Ed25519").generatePublic(new X509EncodedKeySpec(encoded));
+        try {
+            byte[] encoded = Base64.getDecoder().decode(publicKey.trim());
+            return KeyFactory.getInstance("Ed25519").generatePublic(new X509EncodedKeySpec(encoded));
+        } catch (IllegalArgumentException | InvalidKeySpecException e) {
+            throw new IllegalStateException("application.config-public-key is not a base64 X.509 DER "
+                + "Ed25519 public key: " + e.getMessage(), e);
+        }
     }
 }
