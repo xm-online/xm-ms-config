@@ -186,6 +186,8 @@ application:
     versionCacheMaxSize: 100
     update-config-available: true
     update-config-in-memory-available: true
+    api-docs:
+        privilege-check: true
     retry:
         max-attempts: 3
         delay: 10000 #in milliseconds

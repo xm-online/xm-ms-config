@@ -139,9 +139,16 @@ public class ApplicationProperties {
     private List<String> excludeConfigPatterns;
     private Boolean roleNameProcessorDisabled;
 
+    private final ApiDocs apiDocs = new ApiDocs();
     private final Prometheus prometheus = new Prometheus();
     private final Management management = new Management();
     private final XmAutoConfigurationFilter xmAutoConfigurationFilter = new XmAutoConfigurationFilter();
+
+    @Getter
+    @Setter
+    public static class ApiDocs {
+        private boolean privilegeCheck = true;
+    }
 
     @Getter
     @Setter
