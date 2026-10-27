@@ -1,9 +1,9 @@
 package com.icthh.xm.ms.configuration.config;
 
+import com.icthh.xm.commons.config.XmCommonsApplicationProperties;
 import static java.util.Collections.emptySet;
 
 import com.icthh.xm.commons.lep.TenantScriptStorage;
-import com.icthh.xm.commons.security.RoleConstant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 @Getter
 @Setter
-public class ApplicationProperties {
+public class ApplicationProperties extends XmCommonsApplicationProperties {
 
     private GitProperties git;
     private final Retry retry = new Retry();
@@ -27,7 +27,6 @@ public class ApplicationProperties {
 
     private Boolean adminApiRestrictionEnabled;
     private String configPublicKey;
-    private String configPrivateKey;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private List<String> binaryFileTypes = Collections.emptyList();
@@ -135,18 +134,7 @@ public class ApplicationProperties {
 
     private List<String> excludeConfigPatterns;
     private Boolean roleNameProcessorDisabled;
-
-    private final ApiDocs apiDocs = new ApiDocs();
     private final TenantConfigExternalization tenantConfigExternalization = new TenantConfigExternalization();
-    private final Prometheus prometheus = new Prometheus();
-    private final Management management = new Management();
-    private final XmAutoConfigurationFilter xmAutoConfigurationFilter = new XmAutoConfigurationFilter();
-
-    @Getter
-    @Setter
-    public static class ApiDocs {
-        private boolean privilegeCheck = true;
-    }
 
     @Getter
     @Setter
@@ -154,53 +142,4 @@ public class ApplicationProperties {
         private boolean logValues;
     }
 
-    public static class Prometheus {
-        private boolean publicAccess;
-
-        public boolean isPublic() {
-            return publicAccess;
-        }
-
-        public void setPublic(boolean publicAccess) {
-            this.publicAccess = publicAccess;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class Management {
-        private final Access access = new Access();
-        private final Info info = new Info();
-        private final Logs logs = new Logs();
-
-        @Getter
-        @Setter
-        public static class Access {
-            private String role = RoleConstant.SYSTEM_ADMIN;
-        }
-
-        public static class Info {
-            private boolean publicAccess;
-
-            public boolean isPublic() {
-                return publicAccess;
-            }
-
-            public void setPublic(boolean publicAccess) {
-                this.publicAccess = publicAccess;
-            }
-        }
-
-        @Getter
-        @Setter
-        public static class Logs {
-            private boolean systemAdminOnly;
-        }
-    }
-
-    @Getter
-    @Setter
-    public static class XmAutoConfigurationFilter {
-        private boolean disabled;
-    }
 }
