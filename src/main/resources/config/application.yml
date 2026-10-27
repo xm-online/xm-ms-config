@@ -47,7 +47,6 @@ management:
     endpoint:
         health:
             show-details: when_authorized
-            roles: 'SUPER-ADMIN'
             probes:
                 enabled: true
             group:
@@ -122,6 +121,7 @@ spring:
         producer:
             key-serializer: org.apache.kafka.common.serialization.StringSerializer
             value-serializer: org.apache.kafka.common.serialization.StringSerializer
+        # Kafka connection by environment variables, PLAINTEXT when not set: https://github.com/xm-online/xm-ms-template/blob/main/src/main/resources/config/application.yml
     servlet:
         multipart:
             max-file-size: 50MB
@@ -174,8 +174,11 @@ tenant.reject-suspended: false
 
 application:
     adminApiRestrictionEnabled: false
+    # Base64 Ed25519 public key (X.509 DER) for /api/private/v2.
+    # The services sign the token with the private key application.config-private-key.
+    config-public-key:
     super-tenants-list: XM, MANAGER
-    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config_map/pattern, /v3/api-docs
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/config_map/pattern, /api/private/v2/config_map, /api/private/v2/config_map/pattern, /v3/api-docs, /management/health/liveness, /management/health/readiness, /error
     kafka-enabled: true
     kafka-system-queue: system_queue
     kafka-in-memory-config-topic: in_memory_config_topic
@@ -183,6 +186,8 @@ application:
     versionCacheMaxSize: 100
     update-config-available: true
     update-config-in-memory-available: true
+    api-docs:
+        privilege-check: true
     tenant-config-externalization:
         log-values: true # set false to hide old/new values (may be secrets) in logs
     retry:
