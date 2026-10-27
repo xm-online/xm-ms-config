@@ -62,8 +62,17 @@ public class ConfigClientTokenAuthorizationManager implements AuthorizationManag
     }
 
     private static boolean isExpirationAllowed(Date expiration) {
-        return expiration != null
-            && !expiration.toInstant().isAfter(Instant.now().plus(TOKEN_TTL).plusSeconds(CLOCK_SKEW_SECONDS));
+        if (expiration == null) {
+            log.warn("Config client token is rejected: no expiration");
+            return false;
+        }
+        Instant latestAllowed = Instant.now().plus(TOKEN_TTL).plusSeconds(CLOCK_SKEW_SECONDS);
+        if (expiration.toInstant().isAfter(latestAllowed)) {
+            log.warn("Config client token is rejected: expiration {} is later than allowed {} (token ttl {} + clock skew {}s), "
+                + "check the clock of the service", expiration.toInstant(), latestAllowed, TOKEN_TTL, CLOCK_SKEW_SECONDS);
+            return false;
+        }
+        return true;
     }
 
     @SneakyThrows

@@ -72,6 +72,8 @@ jhipster:
 # ===================================================================
 
 application:
+    # dev-only public key of the dev key pair (private key in xm-ms-template application-dev.yml); the dev profile is never used in prod
+    config-public-key: MCowBQYDK2VwAyEA7HfA5njkJ0uPi0aCFBRmpKSOQwBpGPvmOi2v0Ds1VXY=
     adminApiRestrictionEnabled: true
     git:
         uri:
