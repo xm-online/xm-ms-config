@@ -4,7 +4,7 @@ services:
         image: configuration
         environment:
             - _JAVA_OPTIONS=-Xmx512m -Xms256m
-            - SPRING_PROFILES_ACTIVE=prod,swagger
+            - SPRING_PROFILES_ACTIVE=prod,swagger,migration
             - SPRING_CLOUD_CONSUL_HOST=consul
             - SPRING_CLOUD_CONSUL_PORT=8500
             - JHIPSTER_SLEEP=10 # gives time for the database to boot before the application

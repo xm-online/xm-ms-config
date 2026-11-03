@@ -31,20 +31,20 @@ public class ConfigMapResource {
 
     private final ConfigurationService configurationService;
 
-    @GetMapping("/config_map")
+    @GetMapping({"/config_map", "/v2/config_map"})
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(
         @RequestParam(name = "version", required = false) String version) {
         return ResponseEntity.ok(configurationService.getConfigurationMap(version));
     }
 
-    @PostMapping("/config_map")
+    @PostMapping({"/config_map", "/v2/config_map"})
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurations(@RequestBody GetConfigRequest getConfigRequest) {
         return ResponseEntity.ok(configurationService.getConfigurationMap(getConfigRequest.getVersion(), getConfigRequest.getPaths()));
     }
 
-    @PostMapping("/config_map/pattern")
+    @PostMapping({"/config_map/pattern", "/v2/config_map/pattern"})
     @LoggingAspectConfig(resultDetails = false)
     public ResponseEntity<Map<String, Configuration>> getAllConfigurationsByPattern(@RequestBody ConfigPatternPathDTO configPatternPathDTO) {
         return ResponseEntity.ok(configurationService.getConfigMapAntPattern(configPatternPathDTO.getVersion(), configPatternPathDTO.getPatternPaths()));

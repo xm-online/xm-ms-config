@@ -94,8 +94,10 @@ xm-config:
     kafka-config-queue: config_queue
 
 application:
+    # test key only, its private key is in ConfigMapPrivateApiSecurityIntTest
+    config-public-key: MCowBQYDK2VwAyEAxwAKZqwOmxEOT4qD/bAy6vT5pGv45C20kQ21wg5SdA0=
     super-tenants-list: XM, MANAGER
-    tenant-ignored-path-list: /api/token_key, /api/private/config_map
+    tenant-ignored-path-list: /api/token_key, /api/private/config_map, /api/private/v2/config_map, /api/private/v2/config_map/pattern
     env-config-externalization-enabled: false
     kafka-enabled: false
     git:

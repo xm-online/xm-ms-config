@@ -1,5 +1,6 @@
 package com.icthh.xm.ms.configuration.config;
 
+import com.icthh.xm.commons.config.XmCommonsApplicationProperties;
 import static java.util.Collections.emptySet;
 
 import com.icthh.xm.commons.lep.TenantScriptStorage;
@@ -18,13 +19,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "application", ignoreUnknownFields = false)
 @Getter
 @Setter
-public class ApplicationProperties {
+public class ApplicationProperties extends XmCommonsApplicationProperties {
 
     private GitProperties git;
     private final Retry retry = new Retry();
     private final Retry configQueueRetry = new Retry();
 
     private Boolean adminApiRestrictionEnabled;
+    private String configPublicKey;
     private List<String> superTenantsList;
     private List<String> tenantIgnoredPathList = Collections.emptyList();
     private List<String> binaryFileTypes = Collections.emptyList();
@@ -132,5 +134,12 @@ public class ApplicationProperties {
 
     private List<String> excludeConfigPatterns;
     private Boolean roleNameProcessorDisabled;
+    private final TenantConfigExternalization tenantConfigExternalization = new TenantConfigExternalization();
+
+    @Getter
+    @Setter
+    public static class TenantConfigExternalization {
+        private boolean logValues;
+    }
 
 }

@@ -1,0 +1,4 @@
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.icthh.xm.ms.configuration.security.ConfigPublicKeyNotSetFailureAnalyzer
+org.springframework.boot.diagnostics.FailureAnalysisReporter=\
+com.icthh.xm.ms.configuration.security.ConfigPublicKeyNotSetFailureReporter
