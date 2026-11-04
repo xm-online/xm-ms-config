@@ -9,9 +9,10 @@ import com.icthh.xm.commons.tenant.TenantContextHolder;
 import com.icthh.xm.commons.tenant.TenantContextUtils;
 import com.icthh.xm.ms.configuration.service.TransactionPropagationService;
 import com.icthh.xm.ms.configuration.service.processors.lep.ConfigurationLepResolver;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -28,14 +29,25 @@ import static java.util.Collections.emptyList;
 @Component
 @LepService(group = "processors")
 @ConditionalOnProperty("application.lep.processor-enabled")
-@RequiredArgsConstructor
-public class LepConfigProcessor extends TransactionPropagationService<LepConfigProcessor> implements TenantConfigurationProcessor {
+public class LepConfigProcessor extends TransactionPropagationService<LepConfigProcessor>
+    implements TenantConfigurationProcessor, SmartInitializingSingleton {
 
     private final TenantContextHolder tenantContextHolder;
     private final LepManagementService lepManager;
     private final AntPathMatcher matcher = new AntPathMatcher();
+    private volatile boolean singletonsInstantiated;
 
     private static final String TENANT_CONFIG_PATTERN = TENANT_PREFIX + "{" + TENANT_NAME + "}/**/*";
+
+    public LepConfigProcessor(TenantContextHolder tenantContextHolder, @Lazy LepManagementService lepManager) {
+        this.tenantContextHolder = tenantContextHolder;
+        this.lepManager = lepManager;
+    }
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        singletonsInstantiated = true;
+    }
 
     @Override
     public boolean isSupported(Configuration configuration) {
@@ -78,7 +90,7 @@ public class LepConfigProcessor extends TransactionPropagationService<LepConfigP
     }
 
     private <T> T runWithLepContext(Configuration configuration, Supplier<T> task, T defaultValue) {
-        if (!matcher.match(TENANT_CONFIG_PATTERN, configuration.getPath())) {
+        if (!singletonsInstantiated || !matcher.match(TENANT_CONFIG_PATTERN, configuration.getPath())) {
             return defaultValue;
         }
         String tenantKey = matcher.extractUriTemplateVariables(TENANT_CONFIG_PATTERN, configuration.getPath()).get(TENANT_NAME);
